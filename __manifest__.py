@@ -13,7 +13,7 @@ install/uninstall at any time without touching your data.
 
 What it changes:
 - Design tokens: Deep Indigo primary, tiered white surfaces, 8/12/16px radii
-- Typography: Inter and JetBrains Mono, bundled in-module (no CDN request)
+- Typography: Inter and Poppins, bundled in-module (no CDN request)
 - Top navbar colors/typography
 - Control panel styled as a page header (headline-lg title)
 - Kanban board: 320px stage columns, glassmorphic cards with an accent spine
