@@ -17,6 +17,12 @@
     --NavBar-entry-backgroundColor--active: var(--cmt-primary-light);
     --NavBar-brand-color: var(--cmt-primary);
 
+    // Systray counter badges (unread messages, pending activities).
+    // Odoo ships these in $o-success green; the base rule reads the
+    // value through var(--o-navbar-badge-bg, …) with no one setting
+    // it, so simply defining it here cascades down to every badge.
+    --o-navbar-badge-bg: var(--cmt-primary);
+
     background: var(--cmt-surface) !important;
     border-bottom: 1px solid var(--cmt-border);
     box-shadow: var(--cmt-shadow-sm);

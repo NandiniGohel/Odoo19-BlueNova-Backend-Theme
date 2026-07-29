@@ -59,11 +59,11 @@
     --cmt-glass-blur: 20px;
 
     // ── Typography ───────────────────────────────────────────
-    // Inter for all UI text, JetBrains Mono for labels, statuses
-    // and numeric metadata. Both are bundled in fonts.scss; the
+    // Inter for all UI text, Poppins for labels, statuses and
+    // numeric metadata. Both are bundled in fonts.scss; the
     // fallbacks keep things readable if the woff2 fails to load.
     --cmt-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --cmt-font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --cmt-font-label: 'Poppins', 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
 
     --cmt-tracking-label: 0.05em;    // label-sm letter-spacing
 }

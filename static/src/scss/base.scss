@@ -1,7 +1,7 @@
 // ============================================================
 // Base canvas + typography
 //
-// Applies the Inter/JetBrains Mono pairing across the backend and
+// Applies the Inter/Poppins pairing across the backend and
 // sets the "surface-dim" canvas the rest of the theme sits on.
 // ============================================================
 .o_web_client {
@@ -17,14 +17,44 @@
     }
 }
 
-// label-sm — all-caps monospaced utility labels. Used for stat-card
-// headings, system statuses and any numeric metadata.
+// label-sm — utility labels in Poppins. Used for stat-card headings,
+// statuses, badges and any numeric metadata.
+//
+// tabular-nums keeps figures column-aligned; Poppins is proportional,
+// so without it revenue values of differing digit widths would sit
+// ragged against each other in the kanban and list views.
 @mixin cmt-label-sm {
-    font-family: var(--cmt-font-mono);
+    font-family: var(--cmt-font-label);
     font-size: 12px;
     line-height: 16px;
     font-weight: 500;
     letter-spacing: var(--cmt-tracking-label);
+    font-variant-numeric: tabular-nums;
+}
+
+// ── Onboarding tour pointer ──────────────────────────────────
+// The bouncing teardrop that Odoo's tours park next to a target
+// (border-radius: 0 50% 50% 50%). It ships in Odoo's enterprise
+// plum (#714B67), which clashes badly with an indigo theme.
+// Both colours are exposed as custom properties, so retinting is
+// a two-line override rather than a rule fight.
+//
+// `body` prefix keeps this above the base declaration regardless
+// of how the bundle happens to be ordered; the pointer is
+// appended to <body>, not inside .o_web_client.
+body .o_tour_pointer {
+    --TourPointer__color: var(--cmt-primary);
+    --TourPointer__color-accent: #4467c7;   // lighten(#3959b0, 7%)
+}
+
+// ── Notification counters ────────────────────────────────────
+// Discuss/messaging badges default to $o-success. The navbar
+// systray counters are handled in navbar.scss via
+// --o-navbar-badge-bg. The :not(.o-muted) guard leaves the
+// deliberately greyed-out variant alone.
+.o-discuss-badge:not(.o-muted),
+.o-discuss-badge:not(.o-muted) .o-innerBadge {
+    --o-discuss-badge-bg: var(--cmt-primary);
 }
 
 // Slim scrollbars, matching the mockup's 6px rails.

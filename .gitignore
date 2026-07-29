@@ -41,7 +41,6 @@ env/
 # Images (Optional)
 # Uncomment if you don't want screenshots
 # ===========================
-
 *.png
 *.jpg
 *.jpeg

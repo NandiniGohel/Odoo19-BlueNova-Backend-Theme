@@ -57,7 +57,7 @@
             </xpath>
 
             <!-- Revenue block: keep the original class (other views xpath
-                 on it) and add ours for the monospace/primary treatment. -->
+                 on it) and add ours for the Poppins/primary treatment. -->
             <xpath expr="//t[@t-name='card']//div[hasclass('o_kanban_card_crm_lead_revenue')]"
                    position="attributes">
                 <attribute name="class" add="o_cmt_card_revenue" separator=" "/>
