@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Restyle the CRM pipeline kanban card toward the "Enterprise Elite"
+        layout: title + priority on the top row, a contact metadata line,
+        then expected revenue and the assignee avatar on the footer row.
+
+        These are deliberately surgical xpaths rather than a wholesale
+        replace of <t t-name="card">. Sibling views inherit the same base
+        arch and xpath into its internals - notably
+        crm.crm_lead_view_kanban_forecast, which targets
+        //t[@t-name='card']//div[hasclass('o_kanban_card_crm_lead_revenue')]
+        and //widget[@id='lost_ribbon']. Replacing the card outright
+        deletes those anchors and breaks the Forecast view at install time.
+        Every node another view depends on is therefore kept in place; we
+        only add classes and regroup.
+    -->
+    <record id="crm_lead_view_kanban_elite" model="ir.ui.view">
+        <field name="name">crm.lead.kanban.elite</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_kanban_view_leads"/>
+        <field name="arch" type="xml">
+
+            <!-- Marker used by kanban.scss :has() to give won cards the
+                 ocean-blue accent spine. Placed after the ribbons so the
+                 ribbon anchors other views rely on stay untouched. -->
+            <xpath expr="//t[@t-name='card']//widget[@id='archived_ribbon']" position="after">
+                <div t-if="record.won_status.raw_value === 'won'"
+                     class="o_cmt_won_marker d-none"/>
+            </xpath>
+
+            <!-- Top row: pull the name and the priority stars onto a single
+                 flex row, as in the reference card. Both nodes are moved,
+                 not recreated, so their widgets and groups survive.
+
+                 This has to be two steps: position="move" is only honoured
+                 on direct children of the position element, so an empty
+                 wrapper is inserted first and the nodes are moved into it
+                 second. Nesting the moves inside the <div> in one pass
+                 makes Odoo emit the <xpath> tags into the arch verbatim. -->
+            <xpath expr="//t[@t-name='card']/field[@name='name']" position="before">
+                <div class="o_cmt_card_head d-flex justify-content-between align-items-start gap-2"/>
+            </xpath>
+
+            <xpath expr="//t[@t-name='card']/div[hasclass('o_cmt_card_head')]" position="inside">
+                <xpath expr="//t[@t-name='card']/field[@name='name']" position="move"/>
+                <xpath expr="//t[@t-name='card']/footer//field[@name='priority']" position="move"/>
+            </xpath>
+
+            <xpath expr="//t[@t-name='card']//field[@name='name']" position="attributes">
+                <attribute name="class">o_cmt_card_title</attribute>
+            </xpath>
+
+            <xpath expr="//t[@t-name='card']//field[@name='priority']" position="attributes">
+                <attribute name="class">o_cmt_card_priority</attribute>
+            </xpath>
+
+            <!-- Revenue block: keep the original class (other views xpath
+                 on it) and add ours for the monospace/primary treatment. -->
+            <xpath expr="//t[@t-name='card']//div[hasclass('o_kanban_card_crm_lead_revenue')]"
+                   position="attributes">
+                <attribute name="class" add="o_cmt_card_revenue" separator=" "/>
+            </xpath>
+
+            <!-- Contact metadata line -->
+            <xpath expr="//t[@t-name='card']/div[@invisible='not partner_id']"
+                   position="attributes">
+                <attribute name="class" add="o_cmt_card_contact" separator=" "/>
+            </xpath>
+
+            <xpath expr="//t[@t-name='card']/field[@name='contact_name']" position="attributes">
+                <attribute name="class">o_cmt_card_contact</attribute>
+            </xpath>
+
+            <xpath expr="//t[@t-name='card']/field[@name='partner_name']" position="attributes">
+                <attribute name="class">o_cmt_card_contact</attribute>
+            </xpath>
+
+            <!-- Footer row -->
+            <xpath expr="//t[@t-name='card']/footer" position="attributes">
+                <attribute name="class" add="o_cmt_card_footer" separator=" "/>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

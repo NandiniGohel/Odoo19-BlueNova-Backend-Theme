@@ -1,0 +1,69 @@
+// ============================================================
+// Modern CRM Backend Theme — design tokens
+//
+// Values come from the "Enterprise Elite" spec (DESIGN.md +
+// the tailwind.config block in the reference mockup). Change
+// them here and the whole theme follows.
+// ============================================================
+:root {
+    // ── Brand ────────────────────────────────────────────────
+    --cmt-primary: #3959b0;          // Deep Indigo — brand + primary actions
+    --cmt-primary-dark: #1e40af;     // on-primary-fixed-variant, hover/pressed
+    --cmt-primary-light: #eff6ff;    // primary-container, active nav / hover fills
+    --cmt-on-primary-container: #1e3a8a;
+
+    --cmt-tertiary: #0284c7;         // Ocean Blue — status + secondary accents
+    --cmt-tertiary-container: #e0f2fe;
+    --cmt-on-tertiary-container: #0369a1;
+
+    // ── Surfaces ─────────────────────────────────────────────
+    --cmt-bg: #f8f9fa;               // background — the main canvas
+    --cmt-surface: #ffffff;          // surface-bright — cards, navbar, panels
+    --cmt-surface-dim: #f9fafb;      // inputs, table headers
+    --cmt-surface-highest: #f3f4f6;  // count pills, chips
+
+    --cmt-border: #e5e7eb;           // outline-variant — standard hairline
+    --cmt-outline: #9ca3af;          // outline — muted icons, placeholders
+
+    // ── Text ─────────────────────────────────────────────────
+    --cmt-text: #111827;             // on-surface
+    --cmt-text-muted: #4b5563;       // on-surface-variant — metadata
+
+    // ── Status ───────────────────────────────────────────────
+    --cmt-success: #16a34a;
+    --cmt-warning: #d97706;
+    --cmt-danger: #ef4444;
+
+    // ── Shape ────────────────────────────────────────────────
+    // Per the spec's component notes: 8px for buttons/inputs,
+    // 12px for cards, 16px for high-interaction surfaces.
+    --cmt-radius-sm: 6px;
+    --cmt-radius-md: 8px;            // buttons, inputs, KPI cards
+    --cmt-radius-lg: 12px;           // kanban cards
+    --cmt-radius-xl: 16px;
+
+    // ── Elevation ────────────────────────────────────────────
+    --cmt-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.02);
+    --cmt-shadow-md: 0 4px 15px rgba(0, 0, 0, 0.05);
+    --cmt-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.05);
+
+    // "Chrome border" — 1px outer stroke plus an inset white
+    // reflection along the top edge. Used on KPI cards and pinned
+    // surfaces to get the spec's brushed-metal feel.
+    --cmt-chrome-border: 1px solid rgba(0, 0, 0, 0.1);
+    --cmt-chrome-inset: inset 0 1px 0 rgba(255, 255, 255, 1);
+
+    // Glass surfaces — translucent white over a blurred backdrop.
+    --cmt-glass-bg: rgba(255, 255, 255, 0.7);
+    --cmt-glass-border: 1px solid rgba(0, 0, 0, 0.08);
+    --cmt-glass-blur: 20px;
+
+    // ── Typography ───────────────────────────────────────────
+    // Inter for all UI text, JetBrains Mono for labels, statuses
+    // and numeric metadata. Both are bundled in fonts.scss; the
+    // fallbacks keep things readable if the woff2 fails to load.
+    --cmt-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --cmt-font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+    --cmt-tracking-label: 0.05em;    // label-sm letter-spacing
+}

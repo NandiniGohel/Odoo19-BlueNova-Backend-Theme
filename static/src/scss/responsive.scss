@@ -1,0 +1,79 @@
+// ============================================================
+// Responsive adjustments
+// Breakpoints mirror Bootstrap (used internally by Odoo's web client):
+// >=1200 desktop, 992-1199 small desktop/large tablet,
+// 768-991 tablet, 576-767 large phone, <576 phone
+// ============================================================
+
+@media (max-width: 1199.98px) {
+    .o_kanban_view.o_kanban_small_column .o_kanban_renderer.o_kanban_grouped,
+    .o_kanban_view .o_kanban_renderer.o_kanban_grouped {
+        --KanbanGroup-width: 288px;
+        --KanbanGroup-max-width: 288px;
+        --Kanban-gap: 16px;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .o_control_panel {
+        flex-wrap: wrap;
+        row-gap: 8px;
+        padding: 16px 16px 8px;
+
+        .o_breadcrumb .o_last_breadcrumb_item,
+        .o_breadcrumb .o_last_breadcrumb_item.fs-4 {
+            // headline-lg-mobile
+            font-size: 24px !important;
+            line-height: 32px;
+        }
+    }
+
+    .o_kanban_view.o_kanban_small_column .o_kanban_renderer.o_kanban_grouped,
+    .o_kanban_view .o_kanban_renderer.o_kanban_grouped {
+        --KanbanGroup-width: 264px;
+        --KanbanGroup-max-width: 264px;
+    }
+
+    .o_main_navbar .o_menu_sections {
+        flex-wrap: wrap;
+    }
+
+    .o_main_navbar .o_menu_brand {
+        font-size: 22px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    // Stack pipeline columns vertically instead of horizontal scroll
+    .o_kanban_renderer.o_kanban_grouped {
+        flex-direction: column;
+    }
+
+    .o_kanban_view .o_kanban_group {
+        width: 100% !important;
+        max-width: 100%;
+        margin-bottom: 16px;
+    }
+
+    .o_control_panel {
+        padding: 12px 12px 8px;
+    }
+
+    .o_searchview {
+        width: 100%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .o_kanban_view .o_kanban_record {
+        padding: 12px;
+    }
+
+    .o_main_navbar .o_menu_brand {
+        font-size: 18px;
+    }
+
+    .o_list_view .o_list_table thead th {
+        font-size: 11px;
+    }
+}

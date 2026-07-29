@@ -1,0 +1,49 @@
+// ============================================================
+// Base canvas + typography
+//
+// Applies the Inter/JetBrains Mono pairing across the backend and
+// sets the "surface-dim" canvas the rest of the theme sits on.
+// ============================================================
+.o_web_client {
+    font-family: var(--cmt-font-sans);
+    color: var(--cmt-text);
+
+    // body-md — 15px/22px is the spec's default reading size.
+    font-size: 15px;
+    line-height: 22px;
+
+    .o_action_manager {
+        background: var(--cmt-bg);
+    }
+}
+
+// label-sm — all-caps monospaced utility labels. Used for stat-card
+// headings, system statuses and any numeric metadata.
+@mixin cmt-label-sm {
+    font-family: var(--cmt-font-mono);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    letter-spacing: var(--cmt-tracking-label);
+}
+
+// Slim scrollbars, matching the mockup's 6px rails.
+.o_web_client {
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 10px;
+
+        &:hover {
+            background: var(--cmt-outline);
+        }
+    }
+}

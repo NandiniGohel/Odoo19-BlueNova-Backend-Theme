@@ -1,0 +1,220 @@
+// ============================================================
+// Kanban board — this is what renders the CRM pipeline
+// (columns = stages, cards = leads/opportunities).
+// ============================================================
+.o_kanban_view {
+    --Kanban-background: var(--cmt-bg);
+    --KanbanGroup-background: var(--cmt-bg);
+
+    background: var(--cmt-bg);
+    font-family: var(--cmt-font-sans);
+
+    // ── Columns ──────────────────────────────────────────────
+    // Spec: fixed 320px stage columns with a 24px gutter. Odoo
+    // exposes both as custom properties, so we set those instead
+    // of overriding widths directly. The extra `.o_kanban_view`
+    // /`.o_kanban_small_column` qualifiers are there to outrank
+    // the CRM arch's own small-column sizing.
+    &.o_kanban_small_column .o_kanban_renderer.o_kanban_grouped,
+    .o_kanban_renderer.o_kanban_grouped {
+        --KanbanGroup-width: 320px;
+        --KanbanGroup-max-width: 320px;
+        --Kanban-gap: 24px;
+    }
+
+    .o_kanban_group {
+        background: transparent;
+        padding: 4px 0;
+
+        // ── Column header ────────────────────────────────────
+        .o_kanban_header {
+            background: var(--cmt-bg);
+            padding: 4px 4px 12px;
+
+            .o_column_title {
+                font-family: var(--cmt-font-sans);
+                font-size: 18px !important;   // title-md; base sets fs-4
+                line-height: 24px;
+                font-weight: 600;
+                color: var(--cmt-text);
+            }
+
+            // Quick-add and the column cog stay, but recede to the
+            // spec's muted "outline" colour until hovered.
+            .o_kanban_quick_add i,
+            .o_kanban_config {
+                color: var(--cmt-outline);
+
+                &:hover {
+                    color: var(--cmt-primary);
+                }
+            }
+        }
+
+        // ── Stage progress bar + aggregate ───────────────────
+        // The mockup shows a plain count pill here. Odoo puts the
+        // activity-state progress bar and the revenue aggregate in
+        // this slot instead; both are genuinely useful on a CRM
+        // pipeline, so they are restyled rather than hidden.
+        .o_kanban_counter {
+            .o_column_progress {
+                height: 4px;
+                border-radius: 999px;
+                overflow: hidden;
+                background: var(--cmt-surface-highest) !important;
+
+                .progress-bar {
+                    border-radius: 999px;
+                }
+            }
+
+            .o_animated_number,
+            .o_kanban_counter_side {
+                @include cmt-label-sm;
+                color: var(--cmt-primary);
+            }
+        }
+    }
+
+    // ── Cards ────────────────────────────────────────────────
+    // "Interactive Glass": 70% white over a 20px backdrop blur,
+    // with a 4px accent spine on the leading edge.
+    .o_kanban_record {
+        background: var(--cmt-glass-bg);
+        backdrop-filter: blur(var(--cmt-glass-blur));
+        -webkit-backdrop-filter: blur(var(--cmt-glass-blur));
+        border: var(--cmt-glass-border);
+        border-left: 4px solid var(--cmt-border);
+        border-radius: var(--cmt-radius-lg);
+        box-shadow: var(--cmt-shadow-md);
+        padding: 16px;
+        margin-bottom: 16px;
+        transition: box-shadow .2s ease, transform .2s ease, border-left-color .2s ease;
+
+        &:hover {
+            border-left-color: var(--cmt-primary);
+            box-shadow: var(--cmt-shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        // Won opportunities take the tertiary (ocean blue) spine and a
+        // faint tint, as in the reference "Won" column. The marker div
+        // is emitted by the card template in views/crm_lead_views.xml.
+        &:has(.o_cmt_won_marker) {
+            border-left-color: var(--cmt-tertiary);
+            background: rgba(224, 242, 254, 0.35);
+        }
+
+        // Top row: title left, priority stars right
+        .o_cmt_card_head {
+            margin-bottom: 4px;
+        }
+
+        // Card title
+        .o_cmt_card_title,
+        .o_kanban_record_title {
+            font-family: var(--cmt-font-sans);
+            font-size: 15px;
+            line-height: 22px;
+            font-weight: 500;
+            color: var(--cmt-text);
+            min-width: 0;          // let long names truncate, not push the stars
+        }
+
+        .o_cmt_card_priority {
+            flex: 0 0 auto;
+        }
+
+        // Contact metadata line
+        .o_cmt_card_contact {
+            font-size: 12px;
+            line-height: 16px;
+            color: var(--cmt-text-muted);
+            margin-bottom: 12px;
+            align-items: center;
+
+            // The base card puts a small avatar before the partner name;
+            // the reference card is text-only, so it is dropped here while
+            // the assignee avatar in the footer is kept.
+            .o_m2o_avatar {
+                display: none;
+            }
+        }
+
+        // Monetary values — label-sm in primary, per the spec's
+        // "technical, monitored" numeric treatment.
+        .o_cmt_card_revenue,
+        .o_field_monetary,
+        [name="expected_revenue"] {
+            @include cmt-label-sm;
+            color: var(--cmt-primary);
+        }
+
+        &:has(.o_cmt_won_marker) .o_cmt_card_revenue {
+            color: var(--cmt-tertiary);
+        }
+
+        // Priority stars
+        .o_priority .fa-star {
+            color: var(--cmt-tertiary);
+        }
+
+        .o_priority .fa-star-o {
+            color: var(--cmt-outline);
+        }
+
+        // Footer row: revenue on the left, activity + assignee on the right
+        .o_cmt_card_footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 8px;
+        }
+
+        // Avatars
+        .o_cmt_card_footer img,
+        .o_kanban_record_bottom img,
+        .o_avatar img,
+        img.o_image_24_cover {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid var(--cmt-border);
+        }
+
+        // Tag pills
+        .o_tag, .badge {
+            @include cmt-label-sm;
+            background: var(--cmt-surface-highest);
+            color: var(--cmt-text-muted);
+            border-radius: 999px;
+            padding: 2px 8px;
+        }
+    }
+}
+
+// ============================================================
+// Layout: keep the stats banner and the board in one column.
+//
+// The banner is injected as a sibling before .o_kanban_renderer
+// inside <main class="o_content">, and the grouped renderer
+// carries `min-height: 100%`. Left alone that sums to more than
+// the container height, so o_content grows a scrollbar and the
+// banner scrolls away with the board. Turning o_content into a
+// flex column and zeroing the renderer's min-height pins the
+// banner and lets the board scroll on its own.
+// ============================================================
+.o_kanban_view .o_content:has(> .cmt-stats-banner) {
+    display: flex;
+    flex-direction: column;
+
+    > .cmt-stats-banner {
+        flex: 0 0 auto;
+    }
+
+    > .o_kanban_renderer {
+        flex: 1 1 auto;
+        min-height: 0 !important;
+        overflow-y: auto;
+    }
+}

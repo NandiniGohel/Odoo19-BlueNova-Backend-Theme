@@ -1,0 +1,89 @@
+// ============================================================
+// Stat-card dashboard banner (KPI row above the pipeline)
+//
+// Spec: "Chrome Borders (inset 1px white stroke) and centered
+// typography for a dashboard-style readout."
+// ============================================================
+.cmt-stats-banner {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 0 24px 24px;
+    background: var(--cmt-bg);
+    width: 100%;
+    box-sizing: border-box;
+
+    .cmt-stat-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 16px;
+
+        background: var(--cmt-surface);
+        border: var(--cmt-chrome-border);
+        border-radius: var(--cmt-radius-md);
+        box-shadow: var(--cmt-shadow-sm), var(--cmt-chrome-inset);
+        transition: box-shadow .3s ease;
+
+        &:hover {
+            box-shadow: var(--cmt-shadow-md), var(--cmt-chrome-inset);
+        }
+    }
+
+    .cmt-stat-card__label {
+        @include cmt-label-sm;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;       // tracking-widest
+        color: var(--cmt-text-muted);
+        margin-bottom: 4px;
+    }
+
+    // headline-lg — Inter 32px/40px 600
+    .cmt-stat-card__value {
+        font-family: var(--cmt-font-sans);
+        font-size: 32px;
+        line-height: 40px;
+        font-weight: 600;
+        color: var(--cmt-text);
+    }
+
+    .cmt-stat-card__sub {
+        @include cmt-label-sm;
+        color: var(--cmt-primary);
+    }
+
+    // Per-card value colours, matching the reference readout.
+    .cmt-stat-card--qualified .cmt-stat-card__value {
+        color: var(--cmt-on-tertiary-container);
+    }
+
+    .cmt-stat-card--revenue .cmt-stat-card__value {
+        color: var(--cmt-primary);
+    }
+}
+
+// ── Responsive ───────────────────────────────────────────────
+// 4-up on desktop, 2-up on tablet, stacked on phones.
+
+@media (max-width: 991.98px) {
+    .cmt-stats-banner {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        padding: 0 16px 16px;
+
+        .cmt-stat-card__value {
+            font-size: 24px;         // headline-lg-mobile
+            line-height: 32px;
+        }
+    }
+}
+
+@media (max-width: 767.98px) {
+    .cmt-stats-banner {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 0 12px 12px;
+    }
+}

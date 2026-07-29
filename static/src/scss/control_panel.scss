@@ -1,0 +1,79 @@
+// ============================================================
+// Control panel — the row Odoo uses for breadcrumb, action
+// buttons, search and the view switcher.
+//
+// In the reference design this region reads as a page header:
+// a headline-lg title on the left, primary actions on the right,
+// sitting flush on the canvas with no divider rule.
+// ============================================================
+.o_control_panel {
+    background: var(--cmt-bg);
+    border-bottom: 0;
+    padding: 20px 24px 12px;   // spec: lg margins, gutter below
+
+    // ── Page title ───────────────────────────────────────────
+    // headline-lg: Inter 32px/40px 600. Only the *last* crumb is
+    // promoted — parent crumbs stay small so navigation still
+    // reads as navigation.
+    .o_breadcrumb .o_last_breadcrumb_item {
+        font-family: var(--cmt-font-sans);
+        font-size: 32px;
+        line-height: 40px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--cmt-text);
+    }
+
+    .o_breadcrumb .breadcrumb-item,
+    .o_back_button {
+        font-size: 13px;
+        color: var(--cmt-text-muted);
+    }
+
+    // Odoo's own `fs-4` on the last crumb would otherwise win.
+    .o_breadcrumb .o_last_breadcrumb_item.fs-4 {
+        font-size: 32px !important;
+    }
+}
+
+// ── Search bar ───────────────────────────────────────────────
+// Mockup: white field, 1px outline-variant border, 8px radius,
+// 1px primary ring on focus.
+.o_searchview {
+    background: var(--cmt-surface);
+    border: 1px solid var(--cmt-border) !important;
+    border-radius: var(--cmt-radius-md) !important;
+    padding: 5px 12px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+
+    input {
+        font-family: var(--cmt-font-sans);
+        font-size: 14px;
+        color: var(--cmt-text);
+
+        &::placeholder {
+            color: var(--cmt-outline);
+        }
+    }
+
+    .o_searchview_icon {
+        color: var(--cmt-outline);
+    }
+
+    &:focus-within {
+        border-color: var(--cmt-primary) !important;
+        box-shadow: 0 0 0 1px var(--cmt-primary);
+    }
+}
+
+// ── View switcher ────────────────────────────────────────────
+.o_cp_switch_buttons .btn,
+.o_view_switcher .btn {
+    border-radius: var(--cmt-radius-md) !important;
+    color: var(--cmt-text-muted);
+
+    &.active {
+        color: var(--cmt-primary);
+        background-color: var(--cmt-primary-light);
+    }
+}

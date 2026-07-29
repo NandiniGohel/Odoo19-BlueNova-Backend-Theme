@@ -1,0 +1,94 @@
+// ============================================================
+// Top navbar (.o_main_navbar)
+//
+// Odoo 19 drives most navbar colours through --NavBar-* custom
+// properties, so we retheme by redefining those rather than
+// fighting the base rules with !important. The bar background
+// itself is set as a plain `background` shorthand upstream, so
+// that one does need an override.
+// ============================================================
+.o_main_navbar {
+    // Entry colours (menu items, systray icons, dropdown togglers)
+    --NavBar-entry-color: var(--cmt-text-muted);
+    --NavBar-entry-color--active: var(--cmt-primary);
+    --NavBar-entry-backgroundColor: transparent;
+    --NavBar-entry-backgroundColor--hover: var(--cmt-primary-light);
+    --NavBar-entry-backgroundColor--focus: var(--cmt-primary-light);
+    --NavBar-entry-backgroundColor--active: var(--cmt-primary-light);
+    --NavBar-brand-color: var(--cmt-primary);
+
+    background: var(--cmt-surface) !important;
+    border-bottom: 1px solid var(--cmt-border);
+    box-shadow: var(--cmt-shadow-sm);
+    color: var(--cmt-text-muted);
+
+    // ── Brand / current app name ─────────────────────────────
+    // The mockup sets this at display-lg (48px); that overflows
+    // Odoo's 46px navbar, so we take the same treatment — bold,
+    // tight tracking, primary colour — at a size that fits.
+    .o_menu_brand {
+        font-family: var(--cmt-font-sans);
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: var(--cmt-primary) !important;
+
+        &:hover, &:focus {
+            color: var(--cmt-primary-dark) !important;
+        }
+    }
+
+    // ── Menu sections (Sales / Reporting / Configuration) ─────
+    .o_menu_sections {
+        > * > a,
+        > * > .dropdown-toggle {
+            font-family: var(--cmt-font-sans);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--cmt-text-muted);
+            border-radius: var(--cmt-radius-md);
+            border-bottom: 2px solid transparent;
+            padding: 4px 10px;
+            transition: color .15s ease, background-color .15s ease;
+
+            &:hover, &:focus {
+                color: var(--cmt-primary);
+                background-color: var(--cmt-primary-light);
+            }
+
+            &.show, &:active {
+                color: var(--cmt-primary);
+                border-bottom-color: var(--cmt-primary);
+            }
+        }
+    }
+
+    // ── Apps grid toggle ─────────────────────────────────────
+    .o_navbar_apps_menu, .o_menu_toggle {
+        color: var(--cmt-text-muted);
+
+        &:hover, &:focus {
+            color: var(--cmt-primary);
+            background-color: var(--cmt-primary-light);
+        }
+    }
+
+    // ── Systray (activities, messaging, user menu) ───────────
+    .o_menu_systray {
+        color: var(--cmt-text-muted);
+
+        > * {
+            color: var(--cmt-text-muted);
+
+            &:hover, &:focus {
+                color: var(--cmt-primary);
+            }
+        }
+
+        // Avatar gets the mockup's faint primary ring.
+        .o_avatar, img.rounded-circle {
+            border: 1px solid rgba(57, 89, 176, 0.2);
+            border-radius: 50%;
+        }
+    }
+}
