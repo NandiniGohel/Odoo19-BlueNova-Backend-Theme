@@ -3,11 +3,24 @@
 // (columns = stages, cards = leads/opportunities).
 // ============================================================
 .o_kanban_view {
-    --Kanban-background: var(--cmt-bg);
-    --KanbanGroup-background: var(--cmt-bg);
-
     background: var(--cmt-bg);
     font-family: var(--cmt-font-sans);
+
+    // Core declares --Kanban-background on .o_kanban_renderer itself
+    // (views/kanban/kanban_controller.scss), so a declaration on the
+    // .o_kanban_view ancestor never reaches the columns: the renderer's
+    // own value shadows it for the whole subtree. It has to be redefined
+    // on the renderer, not above it.
+    //
+    // This is why the To-do / Project boards kept painting their columns
+    // $o-gray-100 while the canvas around them followed the theme. It
+    // went unnoticed on the CRM pipeline because --cmt-bg and gray-100
+    // are the same colour in light mode; in dark mode the columns stayed
+    // light and their titles — themed to --cmt-text — became unreadable.
+    .o_kanban_renderer {
+        --Kanban-background: var(--cmt-bg);
+        --KanbanGroup-background: var(--cmt-bg);
+    }
 
     // ── Columns ──────────────────────────────────────────────
     // Spec: fixed 320px stage columns with a 24px gutter. Odoo

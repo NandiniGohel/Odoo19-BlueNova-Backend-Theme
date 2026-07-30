@@ -447,4 +447,411 @@
     .cmt-app-sidebar__workspace-icon {
         filter: invert(1) brightness(1.15);
     }
+
+    // ── Chromeless icon buttons ──────────────────────────────
+    // Bootstrap emits `.btn { --bs-btn-color: #{$btn-color} }` — a
+    // literal #212529 — and Odoo leans on bare `.btn`s for icon-only
+    // affordances that carry no variant class: the control panel's
+    // Actions cog (search/cog_menu/cog_menu.xml renders it as
+    // `btn lh-sm p-0 border-0`), pager arrows, chatter tools. Those
+    // came out near-black on the dark canvas and only appeared on
+    // hover, where --bs-btn-hover-color takes over.
+    //
+    // The variants are excluded by name rather than caught by a
+    // blanket `.btn` rule: this selector outranks `.btn-primary`
+    // etc. (which declare --bs-btn-color at a single class), so a
+    // blanket rule would strip the fill-appropriate text colour off
+    // every solid button instead.
+    // (kept on one line: libsass passes the contents of :not() through
+    // verbatim, newlines and all, which is valid but needlessly fragile)
+    .btn:not(.btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-warning, .btn-info, .btn-light, .btn-dark, .btn-link, [class*="btn-outline-"]) {
+        --bs-btn-color: var(--cmt-text);
+        --bs-btn-hover-color: var(--cmt-primary);
+        --bs-btn-active-color: var(--cmt-primary);
+        --bs-btn-disabled-color: var(--cmt-outline);
+    }
+
+    // Odoo also paints a few icon affordances through $btn-color
+    // directly rather than the button variable.
+    .o_cp_action_menus .btn,
+    .o_pager_next, .o_pager_previous,
+    .o_optional_columns_dropdown_toggle,
+    .o-mail-DiscussContent-headerActions button,
+    .o_ChatterTopbar_button {
+        color: var(--cmt-text);
+
+        &:hover, &:focus {
+            color: var(--cmt-primary);
+        }
+    }
+
+    // ── Settings form view ───────────────────────────────────
+    // The settings screen is a three-part layout and core paints all
+    // three light: the app rail from --settings__tab-bg (gray-100),
+    // the section title bands from --settings__title-bg (gray-200),
+    // and the scroll pane from `background-color: $o-view-background-color`
+    // — a literal `white`, since $o-view-background-color is a plain
+    // SCSS value, not a custom property.
+    //
+    // The rail was already being filled dark by the raised-surface
+    // block above, but --settings__tab-color still resolved to the
+    // compiled $body-color, so every app name (Events, CRM, Sales…)
+    // rendered near-black on it. Hence the tab colours here as well
+    // as the backgrounds.
+    .o_base_settings_view .o_form_renderer {
+        --settings__tab-bg: var(--cmt-surface);
+        --settings__tab-bg--active: var(--cmt-primary-light);
+        --settings__tab-color: var(--cmt-text-muted);
+        --settings__title-bg: var(--cmt-surface-highest);
+    }
+
+    .o_setting_container {
+        .settings {
+            background-color: var(--cmt-bg) !important;
+            color: var(--cmt-text);
+        }
+
+        .settings_tab .tab {
+            // Core sets `color: $black` on both states, which is the
+            // one colour that cannot work here.
+            &:hover, &.selected {
+                color: var(--cmt-primary) !important;
+            }
+        }
+
+        .settings > .app_settings_block {
+            h2, h3 {
+                color: var(--cmt-text) !important;
+            }
+        }
+
+        .settingSearchHeader {
+            background-color: var(--cmt-surface-highest) !important;
+            color: var(--cmt-text) !important;
+        }
+
+        // Search-match highlight: `background: yellow; color: black`.
+        // Kept as a highlight, retinted to the theme's warning tone.
+        .highlighter {
+            background: var(--cmt-warning) !important;
+            color: #0b1120 !important;
+        }
+    }
+
+    // ── Kanban columns ───────────────────────────────────────
+    // Column fills follow --Kanban-background, which kanban.scss now
+    // redefines on the renderer for both modes. What is left is the
+    // states core hardcodes per-column.
+    .o_kanban_renderer {
+        --KanbanColumn__highlight-background: var(--cmt-primary-light);
+        --KanbanColumn__highlight-border: var(--cmt-primary);
+        --KanbanColumn__highlight-selected: var(--cmt-tertiary-container);
+        --KanbanColumn__highlight-selected-border: var(--cmt-tertiary);
+    }
+
+    .o_kanban_group.o_column_folded {
+        background-color: var(--cmt-surface-dim) !important;
+        color: var(--cmt-text-muted);
+    }
+
+    .o_kanban_quick_create,
+    .o_column_quick_create .o_quick_create_folded,
+    .o_column_quick_create .o_quick_create_unfolded {
+        background-color: var(--cmt-surface) !important;
+        border-color: var(--cmt-border) !important;
+        color: var(--cmt-text);
+    }
+
+    .o_column_progress,
+    .o_kanban_counter .progress {
+        background-color: var(--cmt-surface-highest) !important;
+    }
+
+    // ── Discuss / messaging ──────────────────────────────────
+    // mail/static/src/core/common/core.scss fills the sidebar with
+    // `$white !important`, discuss_content.scss fills the thread pane
+    // with $body-bg and its header with $white. All three are compiled
+    // literals, so the sidebar, the conversation pane and the header
+    // stayed white while the text in them followed the dark tokens —
+    // muted labels ("Channels", "Direct messages") ended up light grey
+    // on white, which is the unreadable combination in the screenshots.
+    .o-mail-discussSidebarBgColor {
+        background-color: var(--cmt-surface) !important;
+    }
+
+    .o-mail-DiscussContent-core,
+    .o-mail-Thread,
+    .o-bg-body {
+        background-color: var(--cmt-bg) !important;
+    }
+
+    .o-mail-DiscussContent-header {
+        background-color: var(--cmt-surface) !important;
+        color: var(--cmt-text);
+    }
+
+    .o-mail-DiscussContent-headerActionsGroup {
+        background-color: var(--cmt-surface-highest) !important;
+        outline-color: var(--cmt-border) !important;
+    }
+
+    .o-mail-DiscussSidebarCategory-title,
+    .o-mail-DiscussSidebarCategory-toggler,
+    .o-mail-DiscussSidebarChannel-itemName {
+        color: var(--cmt-text-muted) !important;
+    }
+
+    // Hover/active fills are mixes of $gray-100/$gray-200 and of
+    // $o-view-background-color with $o-action — all light.
+    .o-mail-DiscussSidebar-item:hover,
+    .o-mail-DiscussSidebarCategory:hover {
+        background-color: var(--cmt-surface-highest) !important;
+        outline-color: var(--cmt-border) !important;
+    }
+
+    .o-mail-DiscussSidebar-item.o-active,
+    .o-mail-DiscussSidebarCategory:active {
+        --mail-DiscussSidebar-itemActiveBgColor: var(--cmt-primary-light);
+        --mail-DiscussSidebar-itemActiveOutlineColor: var(--cmt-primary-soft);
+
+        background-color: var(--cmt-primary-light) !important;
+        outline-color: var(--cmt-primary-soft) !important;
+    }
+
+    .o-mail-DiscussSidebarChannel-container {
+        --mail-DiscussSidebarChannel-borderOpacity: .35;
+        ---mail-DiscussSidebarChannel-borderedBgColor: var(--cmt-border);
+    }
+
+    .o-mail-DiscussSidebarChannel-floatingName,
+    .o-mail-DiscussSidebar-floatingMenu {
+        ---mail-DiscussSidebarChannel-floatingNameBgColor: var(--cmt-surface-highest);
+    }
+
+    .o-mail-DiscussSidebarSubchannel {
+        --mail-DiscussSidebarSubchannel-svgColor: var(--cmt-outline);
+    }
+
+    .o-mail-DiscussSidebar-item {
+        color: var(--cmt-text);
+    }
+
+    // The composer, the messaging dropdown and the message card list all
+    // read $o-view-background-color through a custom property with a
+    // fallback (`var(--mail-Composer-bg, $o-view-background-color)`), so
+    // defining the property is enough — no override needed.
+    .o-mail-Composer-bg {
+        --mail-Composer-bg: var(--cmt-surface);
+    }
+
+    .o-mail-MessagingMenu,
+    .o-mail-MessagingMenu-list {
+        --mail-MessagingMenu-bg: var(--cmt-surface);
+    }
+
+    .o-mail-MessageCardList {
+        --mail-MessageCardList-cardBodyBg: var(--cmt-surface);
+    }
+
+    // These reach $o-view-background-color directly.
+    .o-mail-Message.o-card,
+    .o-mail-Message-bubble.o-muted,
+    .o-mail-MessageReaction.o-selfReacted,
+    .o-mail-NotificationItem {
+        background-color: var(--cmt-surface) !important;
+        color: var(--cmt-text);
+    }
+
+    // The chat bubble tints itself by mixing the accent into
+    // $o-view-background-color, which lands near-white; remixing into the
+    // dark surface keeps the tint without the light fill. The ::before
+    // tails are drawn as glyphs coloured by the same two properties, so
+    // they follow automatically.
+    .o-mail-Message-bubble {
+        --o-message-bubble-bg: var(--cmt-surface-highest);
+        --o-message-bubble-border-color: var(--cmt-border);
+    }
+
+    .o-mail-DiscussSearch-inputContainer {
+        &, & input {
+            background-color: var(--cmt-surface-dim) !important;
+            color: var(--cmt-text) !important;
+        }
+
+        &:has(.o-mail-DiscussSearch-inputClickable:hover) {
+            &, & input {
+                background-color: var(--cmt-surface-highest) !important;
+            }
+        }
+    }
+
+    .o-mail-Message:hover,
+    .o-mail-NotificationItem:hover {
+        background-color: var(--cmt-surface-highest) !important;
+    }
+
+    .o-discuss-text-body {
+        color: var(--cmt-text) !important;
+    }
+
+    // ── Calendar ─────────────────────────────────────────────
+    // .o_calendar_renderer is filled with $o-view-background-color and
+    // the FullCalendar variables Odoo sets on .o_calendar_widget point
+    // at the same literal, so the grid, its sticky day-header row and
+    // the out-of-hours shading were all light while the surrounding
+    // control panel and side panel were dark.
+    .o_calendar_renderer {
+        --o-cw-border-color: var(--cmt-border);
+
+        background-color: var(--cmt-bg) !important;
+        color: var(--cmt-text);
+
+        .o_calendar_widget {
+            --fc-page-bg-color: var(--cmt-bg);
+            --fc-border-color: var(--cmt-border);
+            --fc-neutral-bg-color: rgba(148, 163, 184, 0.12);
+            --fc-neutral-text-color: var(--cmt-text-muted);
+            --fc-today-bg-color: rgba(124, 154, 255, 0.12);
+            --fc-highlight-color: rgba(124, 154, 255, 0.2);
+            --fc-non-business-color: rgba(148, 163, 184, 0.08);
+            --fc-list-event-hover-bg-color: var(--cmt-surface-highest);
+            --fc-more-link-bg-color: var(--cmt-surface-highest);
+            --fc-event-selected-overlay-color: rgba(255, 255, 255, 0.12);
+        }
+
+        // Day-of-week strip, hour gutter and month-cell numbers are
+        // left at $body-color by core.
+        .fc-col-header-cell-cushion,
+        .fc-daygrid-day-number,
+        .fc-timegrid-axis-cushion,
+        .fc-timegrid-slot-label-cushion,
+        .fc-list-day-text,
+        .fc-list-day-side-text {
+            color: var(--cmt-text-muted) !important;
+        }
+
+        // `rgba($gray-200, .5)` — a light wash. Inverted to a dark one
+        // so disabled/out-of-working-hours slots still read as recessed.
+        .o_calendar_disabled {
+            background-color: rgba(11, 17, 32, 0.45) !important;
+        }
+
+        .fc-popover,
+        .fc-list,
+        .fc-list-day-cushion,
+        .fc-popover-header {
+            background-color: var(--cmt-surface) !important;
+            border-color: var(--cmt-border) !important;
+            color: var(--cmt-text);
+        }
+
+        .fc-event {
+            --fc-event-bg-color: var(--cmt-surface-highest);
+            --fc-event-text-color: var(--cmt-text);
+        }
+    }
+
+    // ── Remaining literal-white view surfaces ────────────────
+    // Same root cause across the rest of the backend: a compiled
+    // $o-view-background-color / $body-bg / $white that no token can
+    // reach. Grouped here so a light patch in another app is one
+    // selector away rather than a new investigation.
+    .o_content,
+    .o_field_x2many .o_list_renderer,
+    .o_pivot_view, .o_pivot,
+    .o_activity_view,
+    .o_field_html .note-editable,
+    .o_attachment_preview,
+    .o_field_progressbar .o_progressbar_value {
+        background-color: var(--cmt-bg) !important;
+        color: var(--cmt-text);
+    }
+
+    // Activity view: the filter tints are 5% mixes into
+    // $o-webclient-background-color, so they land as near-white washes
+    // rather than as tints. Remixed against the dark canvas.
+    .o_activity_view {
+        .o_activity_filter_planned {
+            background-color: rgba(52, 211, 153, 0.12) !important;
+        }
+
+        .o_activity_filter_today {
+            background-color: rgba(251, 191, 36, 0.12) !important;
+        }
+
+        .o_activity_filter_overdue {
+            background-color: rgba(248, 113, 113, 0.12) !important;
+        }
+
+        .o_activity_view_table_footer {
+            background-color: var(--cmt-surface-dim) !important;
+        }
+
+        .o_activity_record:hover {
+            background-color: var(--cmt-surface-highest) !important;
+        }
+    }
+
+    // The tab strip sits on the notebook header, which the raised-surface
+    // block above already fills — so it inherits rather than taking a
+    // second, differing fill.
+    .o_notebook > .o_notebook_headers .nav {
+        background-color: transparent !important;
+    }
+
+    // Core reasserts $o-view-background-color on the focused cell of a
+    // selected row so keyboard navigation stays visible. Kept as a
+    // raised fill rather than the canvas colour, which would punch a
+    // hole in the row's own --table-bg highlight.
+    .o_selected_row th:focus-within,
+    .o_selected_row td:focus-within {
+        background-color: var(--cmt-surface-highest) !important;
+    }
+
+    .o_pivot table thead th,
+    .o_pivot_header_cell_closed,
+    .o_pivot_header_cell_opened {
+        background-color: var(--cmt-surface-dim) !important;
+        color: var(--cmt-text) !important;
+    }
+
+    // ── Graph view: deliberately left light ──────────────────
+    // The one surface that must not follow the dark canvas. Odoo draws
+    // the chart's axis ticks, labels and legend onto the canvas from
+    // JS, picking the colour from `cookie.get("color_scheme")`
+    // (views/graph/graph_renderer.js) — and community pins that cookie's
+    // source to "light" server-side (web/models/ir_http.py: color_scheme()
+    // returns "light" unconditionally; only web_enterprise overrides it).
+    //
+    // So the tick labels are #111827 no matter what CSS says. Darkening
+    // the canvas would paint near-black text on a near-black panel, which
+    // is worse than a light patch. Instead the chart is given an explicit
+    // light card — literal values, not the dark tokens — so it reads as an
+    // intentional "chart on paper" panel rather than an unstyled leftover.
+    .o_graph_view,
+    .o_graph_canvas_container {
+        background-color: #f8fafc !important;
+        color: #111827;
+    }
+
+    .o_graph_view .o_graph_canvas_container {
+        border: 1px solid var(--cmt-border);
+        border-radius: var(--cmt-radius-lg);
+        padding: 8px;
+    }
+
+    // `background-color: map-get($grays, '200')` — the neutral status dot.
+    .o_status:not(.o_status_green):not(.o_status_red) {
+        background-color: var(--cmt-outline);
+    }
+
+    // `background: white; color: black` on the kanban selection tooltip.
+    .o_record_selection_tooltip {
+        background: var(--cmt-surface-highest) !important;
+        color: var(--cmt-text) !important;
+    }
+
+    .o_view_nocontent .o_nocontent_help {
+        color: var(--cmt-text-muted);
+    }
 }
