@@ -79,7 +79,13 @@
     // ── Cards ────────────────────────────────────────────────
     // "Interactive Glass": 70% white over a 20px backdrop blur,
     // with a 4px accent spine on the leading edge.
-    .o_kanban_record {
+    //
+    // Ghosts are excluded, as they are throughout core: an ungrouped
+    // kanban emits seven empty .o_kanban_ghost records as flex spacers
+    // to keep the last row aligned. Core collapses them to max-height: 0
+    // and skips them when it paints backgrounds and borders; styling them
+    // here anyway is what drew the row of empty cards after the real ones.
+    .o_kanban_record:not(.o_kanban_ghost) {
         background: var(--cmt-glass-bg);
         backdrop-filter: blur(var(--cmt-glass-blur));
         -webkit-backdrop-filter: blur(var(--cmt-glass-blur));
@@ -102,7 +108,7 @@
         // is emitted by the card template in views/crm_lead_views.xml.
         &:has(.o_cmt_won_marker) {
             border-left-color: var(--cmt-tertiary);
-            background: rgba(224, 242, 254, 0.35);
+            background: var(--cmt-won-tint);
         }
 
         // Top row: title left, priority stars right

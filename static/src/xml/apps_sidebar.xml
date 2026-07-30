@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!--
+        The persistent app rail. Lists the same apps Odoo's dropdown listed
+        (menuService.getApps()), each with its bundled icon from
+        static/src/image/icons, and highlights the one currently open.
+
+        Hidden below the md breakpoint: on small screens Odoo keeps its own
+        slide-in app menu, which we leave untouched.
+    -->
+    <t t-name="crm_modern_theme.AppsSidebar">
+        <nav t-if="sidebar.isOpen" class="cmt-app-sidebar d-none d-md-flex" aria-label="Applications">
+
+            <!-- Workspace header: active company + database -->
+            <div class="cmt-app-sidebar__workspace">
+                <img class="cmt-app-sidebar__workspace-icon" t-att-src="workspaceIcon" alt=""/>
+                <div class="cmt-app-sidebar__workspace-text">
+                    <span class="cmt-app-sidebar__workspace-name" t-esc="workspace.name"/>
+                    <span class="cmt-app-sidebar__workspace-sub" t-esc="workspace.subtitle"/>
+                </div>
+            </div>
+
+            <!-- App list -->
+            <ul class="cmt-app-sidebar__apps">
+                <li t-foreach="apps" t-as="app" t-key="app.id">
+                    <t t-set="icon" t-value="iconFor(app)"/>
+                    <a class="cmt-app-sidebar__app"
+                       t-att-class="{ 'cmt-app-sidebar__app--active': app.id === currentAppId }"
+                       t-att-href="hrefFor(app)"
+                       t-att-title="app.name"
+                       t-att-data-menu-xmlid="app.xmlid"
+                       t-att-data-section="app.id"
+                       t-on-click="(ev) => this.onAppClick(ev, app)">
+                        <img class="cmt-app-sidebar__app-icon"
+                             t-att-class="{ 'cmt-app-sidebar__app-icon--bundled': icon.bundled }"
+                             t-att-src="icon.src"
+                             alt=""/>
+                        <span class="cmt-app-sidebar__app-label" t-esc="app.name"/>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Light / dark switch -->
+            <div class="cmt-app-sidebar__footer">
+                <button type="button"
+                        class="cmt-theme-toggle"
+                        t-att-title="theme.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+                        t-att-aria-label="theme.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+                        t-att-aria-pressed="theme.isDark"
+                        t-on-click="() => this.theme.toggle()">
+                    <i class="cmt-theme-toggle__icon fa"
+                       t-att-class="theme.isDark ? 'fa-sun-o' : 'fa-moon-o'"
+                       role="img"/>
+                    <span class="cmt-theme-toggle__label"
+                          t-esc="theme.isDark ? 'Light mode' : 'Dark mode'"/>
+                </button>
+            </div>
+        </nav>
+    </t>
+
+    <!--
+        Put the sidebar beside the action manager rather than above it.
+
+        The ActionContainer has to move inside a flex row for that, which
+        breaks Odoo's `.o_web_client > .o_action_manager` layout rule — the
+        only selector in core that depends on it. apps_sidebar.scss restates
+        those properties on .cmt-workspace > .o_action_manager.
+    -->
+    <t t-name="crm_modern_theme.WebClient" t-inherit="web.WebClient" t-inherit-mode="extension">
+        <xpath expr="//ActionContainer" position="replace">
+            <div class="cmt-workspace">
+                <AppsSidebar t-if="!state.fullscreen"/>
+                <ActionContainer/>
+            </div>
+        </xpath>
+    </t>
+
+    <!--
+        Replace the apps dropdown with a plain toggle for the sidebar.
+
+        Only the .o_navbar_apps_menu branch is touched; the `t-else` div that
+        follows it in the original stays put, as does the small-screen branch
+        above (Odoo's own slide-in menu, still the right UI on mobile).
+    -->
+    <t t-name="crm_modern_theme.NavBarAppsMenu" t-inherit="web.NavBar.AppsMenu" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_navbar_apps_menu')]" position="replace">
+            <div t-if="!isScopedApp" class="o_navbar_apps_menu">
+                <button type="button"
+                        class="cmt-apps-toggle"
+                        data-hotkey="h"
+                        title="Applications"
+                        aria-label="Toggle applications sidebar"
+                        t-att-aria-expanded="appsSidebar.isOpen"
+                        t-on-click="() => this.appsSidebar.toggle()">
+                    <i class="oi oi-apps"/>
+                </button>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

@@ -1,0 +1,338 @@
+// ============================================================
+// Dark mode
+//
+// Driven by data-cmt-theme="dark" on <html>, set by js/theme_mode.js
+// and flipped from the sidebar footer switch. Putting it on the
+// document element (not .o_web_client) also covers dialogs, popovers
+// and tooltips, which Odoo portals out to <body>.
+//
+// Two layers:
+//   1. the --cmt-* tokens, which carry everything this theme styles
+//   2. explicit overrides for surfaces Odoo compiles into SCSS, and
+//      so cannot be reached by redefining a custom property
+//
+// Odoo 19 community sets $enable-dark-mode: false in
+// bootstrap_overridden.scss, so Bootstrap's own [data-bs-theme=dark]
+// block is never compiled — hence layer 2 rather than an attribute
+// swap. Bootstrap declares its component variables on the components
+// themselves (`.dropdown-menu { --bs-dropdown-bg: … }`), so those
+// overrides have to be scoped to the same elements; a :root
+// declaration would lose to the local one.
+// ============================================================
+:root[data-cmt-theme="dark"] {
+    color-scheme: dark;
+
+    // ── Layer 1: design tokens ───────────────────────────────
+    // ── Brand ────────────────────────────────────────────────
+    // Lifted well above the light-mode indigo: #3959b0 against a
+    // near-black canvas falls below the 4.5:1 text contrast floor.
+    --cmt-primary: #7c9aff;
+    --cmt-primary-dark: #a5b8ff;
+    --cmt-primary-light: rgba(124, 154, 255, 0.16);
+    --cmt-primary-soft: rgba(124, 154, 255, 0.45);
+    --cmt-on-primary-container: #c7d5ff;
+
+    --cmt-tertiary: #38bdf8;
+    --cmt-tertiary-container: rgba(56, 189, 248, 0.16);
+    --cmt-on-tertiary-container: #7dd3fc;
+    --cmt-won-tint: rgba(56, 189, 248, 0.1);
+
+    // ── Surfaces ─────────────────────────────────────────────
+    --cmt-bg: #0b1120;
+    --cmt-surface: #131c31;
+    --cmt-surface-dim: #0f1728;
+    --cmt-surface-highest: #1e293b;
+
+    --cmt-border: #243149;
+    --cmt-outline: #64748b;
+    --cmt-scrollbar-thumb: #334155;
+
+    // ── Text ─────────────────────────────────────────────────
+    --cmt-text: #e2e8f0;
+    --cmt-text-muted: #94a3b8;
+
+    // ── Status ───────────────────────────────────────────────
+    --cmt-success: #34d399;
+    --cmt-warning: #fbbf24;
+    --cmt-danger: #f87171;
+
+    // ── Elevation ────────────────────────────────────────────
+    // Shadows have to be far heavier to register at all on a dark
+    // canvas; the white inset reflection becomes a faint one.
+    --cmt-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --cmt-shadow-md: 0 4px 15px rgba(0, 0, 0, 0.35);
+    --cmt-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.45);
+
+    --cmt-chrome-border: 1px solid rgba(255, 255, 255, 0.08);
+    --cmt-chrome-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+    --cmt-glass-bg: rgba(30, 41, 59, 0.72);
+    --cmt-glass-border: 1px solid rgba(255, 255, 255, 0.08);
+
+    // ── Layer 2a: Bootstrap document-level variables ─────────
+    // These are declared at :root, so they can be overridden here
+    // and cascade to everything reading them.
+    --bs-body-bg: var(--cmt-bg);
+    --bs-body-bg-rgb: 11, 17, 32;
+    --bs-body-color: var(--cmt-text);
+    --bs-body-color-rgb: 226, 232, 240;
+    --bs-emphasis-color: var(--cmt-text);
+    --bs-heading-color: var(--cmt-text);
+    --bs-secondary-color: var(--cmt-text-muted);
+    --bs-secondary-bg: var(--cmt-surface-dim);
+    --bs-tertiary-color: var(--cmt-outline);
+    --bs-tertiary-bg: var(--cmt-surface-highest);
+    --bs-border-color: var(--cmt-border);
+    --bs-border-color-translucent: rgba(255, 255, 255, 0.1);
+    --bs-link-color: var(--cmt-primary);
+    --bs-link-hover-color: var(--cmt-primary-dark);
+    --bs-code-color: #f9a8d4;
+    --bs-highlight-bg: rgba(251, 191, 36, 0.25);
+
+    // ── Layer 2b: Bootstrap component variables ──────────────
+    .dropdown-menu {
+        --bs-dropdown-bg: var(--cmt-surface);
+        --bs-dropdown-color: var(--cmt-text);
+        --bs-dropdown-border-color: var(--cmt-border);
+        --bs-dropdown-divider-bg: var(--cmt-border);
+        --bs-dropdown-header-color: var(--cmt-text-muted);
+        --bs-dropdown-link-color: var(--cmt-text);
+        --bs-dropdown-link-hover-color: var(--cmt-text);
+        --bs-dropdown-link-hover-bg: var(--cmt-surface-highest);
+        --bs-dropdown-link-active-color: var(--cmt-primary);
+        --bs-dropdown-link-active-bg: var(--cmt-primary-light);
+        --bs-dropdown-link-disabled-color: var(--cmt-outline);
+    }
+
+    .modal {
+        --bs-modal-bg: var(--cmt-surface);
+        --bs-modal-color: var(--cmt-text);
+        --bs-modal-border-color: var(--cmt-border);
+        --bs-modal-header-border-color: var(--cmt-border);
+        --bs-modal-footer-border-color: var(--cmt-border);
+    }
+
+    .card {
+        --bs-card-bg: var(--cmt-surface);
+        --bs-card-color: var(--cmt-text);
+        --bs-card-border-color: var(--cmt-border);
+        --bs-card-cap-bg: var(--cmt-surface-dim);
+    }
+
+    .list-group {
+        --bs-list-group-bg: var(--cmt-surface);
+        --bs-list-group-color: var(--cmt-text);
+        --bs-list-group-border-color: var(--cmt-border);
+        --bs-list-group-action-hover-bg: var(--cmt-surface-highest);
+        --bs-list-group-action-hover-color: var(--cmt-text);
+    }
+
+    .popover {
+        --bs-popover-bg: var(--cmt-surface);
+        --bs-popover-body-color: var(--cmt-text);
+        --bs-popover-header-bg: var(--cmt-surface-highest);
+        --bs-popover-header-color: var(--cmt-text);
+        --bs-popover-border-color: var(--cmt-border);
+    }
+
+    .tooltip {
+        --bs-tooltip-bg: var(--cmt-surface-highest);
+        --bs-tooltip-color: var(--cmt-text);
+    }
+
+    .offcanvas, .offcanvas-start, .offcanvas-end, .offcanvas-top, .offcanvas-bottom {
+        --bs-offcanvas-bg: var(--cmt-surface);
+        --bs-offcanvas-color: var(--cmt-text);
+        --bs-offcanvas-border-color: var(--cmt-border);
+    }
+
+    .accordion {
+        --bs-accordion-bg: var(--cmt-surface);
+        --bs-accordion-color: var(--cmt-text);
+        --bs-accordion-border-color: var(--cmt-border);
+        --bs-accordion-btn-color: var(--cmt-text);
+        --bs-accordion-active-bg: var(--cmt-primary-light);
+        --bs-accordion-active-color: var(--cmt-primary);
+    }
+
+    .nav, .nav-tabs {
+        --bs-nav-link-color: var(--cmt-text-muted);
+        --bs-nav-link-hover-color: var(--cmt-primary);
+        --bs-nav-tabs-border-color: var(--cmt-border);
+        --bs-nav-tabs-link-hover-border-color: var(--cmt-border);
+        --bs-nav-tabs-link-active-color: var(--cmt-text);
+        --bs-nav-tabs-link-active-bg: var(--cmt-surface);
+        --bs-nav-tabs-link-active-border-color: var(--cmt-border);
+    }
+
+    .table {
+        --bs-table-bg: var(--cmt-surface);
+        --bs-table-color: var(--cmt-text);
+        --bs-table-border-color: var(--cmt-border);
+        --bs-table-striped-bg: rgba(255, 255, 255, 0.02);
+        --bs-table-striped-color: var(--cmt-text);
+        --bs-table-hover-bg: rgba(124, 154, 255, 0.08);
+        --bs-table-hover-color: var(--cmt-text);
+        --bs-table-active-bg: var(--cmt-primary-light);
+        --bs-table-active-color: var(--cmt-text);
+    }
+
+    // ── Layer 2c: Odoo surfaces compiled from SCSS ───────────
+    body,
+    .o_web_client {
+        background-color: var(--cmt-bg);
+        color: var(--cmt-text);
+    }
+
+    // View chrome. .o_content stays transparent so each view controls
+    // its own surface — a form sheet is raised, a list is flush.
+    .o_action_manager,
+    .o_view_controller,
+    .o_list_view,
+    .o_kanban_view,
+    .o_form_view .o_form_sheet_bg,
+    .o_form_view_container {
+        background-color: var(--cmt-bg);
+    }
+
+    // ── List view ────────────────────────────────────────────
+    .o_list_renderer .o_list_table {
+        --table-bg: var(--cmt-surface);
+        --ListRenderer-thead-bg-color: var(--cmt-surface-dim);
+        --ListRenderer-tfoot-bg-color: var(--cmt-surface-dim);
+
+        color: var(--cmt-text);
+
+        thead > tr > th {
+            background-color: var(--cmt-surface-dim);
+            color: var(--cmt-text-muted);
+            border-color: var(--cmt-border);
+        }
+
+        tbody > tr > td,
+        tbody > tr > th,
+        tfoot > tr > td {
+            border-color: var(--cmt-border);
+        }
+
+        tbody > tr.o_group_header {
+            --table-bg: var(--cmt-surface-highest);
+            color: var(--cmt-text);
+        }
+
+        .o_data_row.o_data_row_selected,
+        .o_selected_row {
+            --table-bg: var(--cmt-surface-highest);
+        }
+    }
+
+    // ── Form view ────────────────────────────────────────────
+    .o_form_view {
+        .o_form_sheet,
+        .o_form_statusbar,
+        .o_notebook > .o_notebook_headers,
+        .o_field_x2many .o_list_renderer {
+            background-color: var(--cmt-surface);
+            border-color: var(--cmt-border);
+        }
+
+        .o_horizontal_separator,
+        .o_form_label {
+            color: var(--cmt-text-muted);
+        }
+
+        .o_field_widget input:not([type="checkbox"]):not([type="radio"]),
+        .o_field_widget textarea,
+        .o_field_widget select {
+            background-color: var(--cmt-surface-dim);
+            color: var(--cmt-text);
+            border-color: var(--cmt-border);
+        }
+
+        // Odoo underlines editable fields with a bottom border only.
+        .o_field_widget .o_input {
+            color: var(--cmt-text);
+        }
+    }
+
+    // Generic form controls anywhere (dialogs, settings, search panel).
+    .form-control,
+    .form-select,
+    .input-group-text,
+    .o_input {
+        background-color: var(--cmt-surface-dim);
+        color: var(--cmt-text);
+        border-color: var(--cmt-border);
+
+        &::placeholder {
+            color: var(--cmt-outline);
+        }
+    }
+
+    // ── Chrome that Odoo paints white outright ───────────────
+    .modal-content,
+    .o_dialog .modal-content,
+    .o_popover,
+    .o_notification,
+    .o_search_panel,
+    .o_cp_pager,
+    .o_settings_container .settings_tab,
+    .o_setting_box {
+        background-color: var(--cmt-surface);
+        color: var(--cmt-text);
+        border-color: var(--cmt-border);
+    }
+
+    .o_searchview_facet {
+        background-color: var(--cmt-surface-highest);
+        color: var(--cmt-text);
+        border-color: var(--cmt-border);
+
+        .o_searchview_facet_label {
+            background-color: var(--cmt-primary);
+            color: #ffffff;
+        }
+    }
+
+    // Secondary/neutral buttons ship as white pills; the primary
+    // button keeps its brand fill and needs no help.
+    .btn-secondary,
+    .btn-light,
+    .btn-outline-secondary {
+        background-color: var(--cmt-surface-highest);
+        color: var(--cmt-text);
+        border-color: var(--cmt-border);
+
+        &:hover, &:focus {
+            background-color: var(--cmt-border);
+            color: var(--cmt-text);
+        }
+    }
+
+    // Odoo's greyscale text utilities resolve to near-black.
+    .text-900, .text-800, .text-700, .text-dark, .text-black {
+        color: var(--cmt-text) !important;
+    }
+
+    .text-600, .text-500, .text-muted {
+        color: var(--cmt-text-muted) !important;
+    }
+
+    // …and the matching background utilities to near-white.
+    .bg-white, .bg-view, .bg-100, .bg-light {
+        background-color: var(--cmt-surface) !important;
+    }
+
+    .bg-200, .bg-300 {
+        background-color: var(--cmt-surface-highest) !important;
+    }
+
+    // The bundled icons are dark line art on transparent, so they
+    // vanish against the dark rail — invert them. Only the bundled
+    // ones: an app falling back to its own Odoo icon gets full-colour
+    // artwork, which inverting would wreck.
+    .cmt-app-sidebar__app-icon--bundled,
+    .cmt-app-sidebar__workspace-icon {
+        filter: invert(1) brightness(1.15);
+    }
+}

@@ -1,0 +1,225 @@
+// ============================================================
+// Apps sidebar (.cmt-app-sidebar)
+//
+// Replaces Odoo's apps dropdown with a persistent rail down the
+// left edge, below the navbar. Toggled by the navbar's grid
+// button; see js/apps_sidebar.js.
+// ============================================================
+
+// ── Layout ───────────────────────────────────────────────────
+// The inherited web.WebClient template wraps the sidebar and the
+// action manager in this row. That wrapper takes over the flex
+// role .o_action_manager used to have as a direct child of
+// .o_web_client, so its own rule (webclient_layout.scss) no
+// longer applies and is restated here.
+.o_web_client > .cmt-workspace {
+    flex: 1 1 auto;
+    display: flex;
+    flex-flow: row nowrap;
+    min-height: 0;
+    overflow: hidden;
+
+    > .o_action_manager {
+        direction: ltr;
+        flex: 1 1 auto;
+        min-width: 0;
+        height: 100%;
+        overflow: hidden;
+    }
+}
+
+.cmt-app-sidebar {
+    flex: 0 0 auto;
+    width: 208px;
+    display: flex;
+    flex-flow: column nowrap;
+    min-height: 0;
+    padding: 12px 10px;
+    background-color: var(--cmt-surface);
+    border-right: 1px solid var(--cmt-border);
+    font-family: var(--cmt-font-sans);
+
+    // ── Workspace header ─────────────────────────────────────
+    .cmt-app-sidebar__workspace {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        margin-bottom: 12px;
+        border-radius: var(--cmt-radius-md);
+        background-color: var(--cmt-primary-light);
+        overflow: hidden;
+    }
+
+    .cmt-app-sidebar__workspace-icon {
+        flex: 0 0 auto;
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+    }
+
+    .cmt-app-sidebar__workspace-text {
+        display: flex;
+        flex-flow: column nowrap;
+        min-width: 0;
+    }
+
+    .cmt-app-sidebar__workspace-name {
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.3;
+        color: var(--cmt-on-primary-container);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cmt-app-sidebar__workspace-sub {
+        font-family: var(--cmt-font-label);
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: var(--cmt-tracking-label);
+        text-transform: uppercase;
+        line-height: 1.4;
+        color: var(--cmt-outline);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    // ── App list ─────────────────────────────────────────────
+    // Long app lists scroll on their own; the header and the
+    // status footer stay pinned.
+    .cmt-app-sidebar__apps {
+        flex: 1 1 auto;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+    }
+
+    .cmt-app-sidebar__app {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 10px;
+        margin-bottom: 2px;
+        border-radius: var(--cmt-radius-md);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--cmt-text-muted);
+        text-decoration: none;
+        transition: color .15s ease, background-color .15s ease;
+
+        &:hover, &:focus {
+            color: var(--cmt-text);
+            background-color: var(--cmt-surface-highest);
+            text-decoration: none;
+        }
+    }
+
+    // Current app: filled row plus the accent spine used on kanban cards.
+    .cmt-app-sidebar__app--active {
+        color: var(--cmt-primary);
+        font-weight: 600;
+        background-color: var(--cmt-primary-light);
+
+        &:hover, &:focus {
+            color: var(--cmt-primary);
+            background-color: var(--cmt-primary-light);
+        }
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 6px;
+            bottom: 6px;
+            width: 3px;
+            border-radius: 0 3px 3px 0;
+            background-color: var(--cmt-primary);
+        }
+    }
+
+    .cmt-app-sidebar__app-icon {
+        flex: 0 0 auto;
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+    }
+
+    .cmt-app-sidebar__app-label {
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    // ── Footer: light / dark switch ──────────────────────────
+    .cmt-app-sidebar__footer {
+        flex: 0 0 auto;
+        padding-top: 8px;
+        margin-top: 8px;
+        border-top: 1px solid var(--cmt-border);
+    }
+
+    .cmt-theme-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 7px 10px;
+        border: 0;
+        border-radius: var(--cmt-radius-md);
+        background: transparent;
+        font-family: var(--cmt-font-sans);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--cmt-text-muted);
+        text-align: left;
+        transition: color .15s ease, background-color .15s ease;
+
+        &:hover, &:focus {
+            color: var(--cmt-primary);
+            background-color: var(--cmt-primary-light);
+        }
+    }
+
+    // Sized to line up with the app icons above it.
+    .cmt-theme-toggle__icon {
+        flex: 0 0 auto;
+        width: 18px;
+        font-size: 15px;
+        text-align: center;
+    }
+}
+
+// ── Navbar toggle ────────────────────────────────────────────
+// Stands in for the dropdown toggle Odoo rendered here, so it has
+// to reproduce the entry sizing that %-main-navbar-entry-base gave
+// that button.
+.o_main_navbar .cmt-apps-toggle {
+    display: flex;
+    align-items: center;
+    height: var(--o-navbar-height);
+    padding: 0 12px;
+    border: 0;
+    background: transparent;
+    font-size: 1.2em;
+    line-height: 1;
+    color: var(--cmt-text-muted);
+    transition: color .15s ease, background-color .15s ease;
+
+    &:hover, &:focus {
+        color: var(--cmt-primary);
+        background-color: var(--cmt-primary-light);
+    }
+
+    &[aria-expanded="true"] {
+        color: var(--cmt-primary);
+    }
+}

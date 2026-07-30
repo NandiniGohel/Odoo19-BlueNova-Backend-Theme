@@ -15,6 +15,13 @@
 }
 
 @media (max-width: 991.98px) {
+    // Tablets: keep the app rail, but give the width back to the board.
+    // Below md it disappears entirely (d-none) in favour of Odoo's own
+    // slide-in app menu — see xml/apps_sidebar.xml.
+    .cmt-app-sidebar {
+        width: 176px;
+    }
+
     .o_control_panel {
         flex-wrap: wrap;
         row-gap: 8px;
