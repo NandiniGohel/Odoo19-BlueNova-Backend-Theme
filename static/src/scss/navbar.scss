@@ -9,12 +9,20 @@
 // ============================================================
 .o_main_navbar {
     // Entry colours (menu items, systray icons, dropdown togglers)
+    //
+    // --NavBar-entry-color--hover matters as much as the rest:
+    // Odoo's %-main-navbar-entry-base feeds it to o-hover-text-color
+    // and falls back to $o-navbar-entry-color--hover ($o-white) when
+    // it is left undefined. White reads fine on the stock dark
+    // navbar; on ours it turned every hovered/clicked menu entry
+    // into white text on a pale fill — invisible.
     --NavBar-entry-color: var(--cmt-text-muted);
+    --NavBar-entry-color--hover: var(--cmt-primary);
     --NavBar-entry-color--active: var(--cmt-primary);
     --NavBar-entry-backgroundColor: transparent;
-    --NavBar-entry-backgroundColor--hover: var(--cmt-primary-light);
-    --NavBar-entry-backgroundColor--focus: var(--cmt-primary-light);
-    --NavBar-entry-backgroundColor--active: var(--cmt-primary-light);
+    --NavBar-entry-backgroundColor--hover: transparent;
+    --NavBar-entry-backgroundColor--focus: transparent;
+    --NavBar-entry-backgroundColor--active: transparent;
     --NavBar-brand-color: var(--cmt-primary);
 
     // Systray counter badges (unread messages, pending activities).
@@ -45,26 +53,59 @@
     }
 
     // ── Menu sections (Sales / Reporting / Configuration) ─────
+    //
+    // The entries sit as *direct* children of .o_menu_sections —
+    // an <a class="o_nav_entry"> for a leaf section, a <button
+    // class="dropdown-toggle"> for one with a submenu — so they
+    // have to be matched as such, not through a wrapper.
+    //
+    // Selection reads as an underline rather than a filled pill:
+    // the fills stay transparent and the marker is an ::after
+    // inset to the entry's own horizontal padding, which keeps it
+    // under the label instead of spanning the whole hit area.
     .o_menu_sections {
-        > * > a,
-        > * > .dropdown-toggle {
+        .o_nav_entry,
+        .dropdown-toggle {
             font-family: var(--cmt-font-sans);
             font-size: 15px;
             font-weight: 600;
             color: var(--cmt-text-muted);
-            border-radius: var(--cmt-radius-md);
-            border-bottom: 2px solid transparent;
-            padding: 4px 10px;
-            transition: color .15s ease, background-color .15s ease;
+            transition: color .15s ease;
 
-            &:hover, &:focus {
-                color: var(--cmt-primary);
-                background-color: var(--cmt-primary-light);
+            // %-main-navbar-entry-base already sets position: relative.
+            &::after {
+                content: "";
+                position: absolute;
+                left: .63em;   // = $o-navbar-entry-padding-h
+                right: .63em;
+                bottom: 7px;
+                height: 2px;
+                border-radius: 2px;
+                background-color: transparent;
+                transition: background-color .15s ease;
             }
 
-            &.show, &:active {
+            // Odoo paints these backgrounds per state; neutralise
+            // them all so only the underline marks the state.
+            &, &:hover, &:focus, &.focus, &:active, &.show {
+                background: transparent;
+            }
+
+            &:hover, &:focus, &.focus {
                 color: var(--cmt-primary);
-                border-bottom-color: var(--cmt-primary);
+
+                &::after {
+                    background-color: var(--cmt-primary-soft);
+                }
+            }
+
+            // Open dropdown / current section: full-strength underline.
+            &.show, &.active, &[aria-expanded="true"] {
+                color: var(--cmt-primary);
+
+                &::after {
+                    background-color: var(--cmt-primary);
+                }
             }
         }
     }
