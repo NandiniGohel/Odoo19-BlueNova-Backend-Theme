@@ -7,24 +7,46 @@
 // ============================================================
 
 // ── Layout ───────────────────────────────────────────────────
-// The inherited web.WebClient template wraps the sidebar and the
-// action manager in this row. That wrapper takes over the flex
-// role .o_action_manager used to have as a direct child of
-// .o_web_client, so its own rule (webclient_layout.scss) no
-// longer applies and is restated here.
-.o_web_client > .cmt-workspace {
-    flex: 1 1 auto;
-    display: flex;
-    flex-flow: row nowrap;
-    min-height: 0;
-    overflow: hidden;
+// The sidebar is injected as a sibling of the action manager, so
+// .o_web_client goes from a flex column to a two-column grid:
+// navbar across the top, sidebar and action manager side by side
+// beneath it.
+//
+// Grid rather than a wrapper element on purpose. Odoo's entire
+// scroll model is written as `.o_web_client > .o_action_manager >
+// .o_action`, ending in `.o_content { overflow: auto; height: 100% }`
+// (webclient_layout.scss). Nesting the action manager inside a flex
+// row would drop that whole chain and views would stop scrolling.
+// Keeping every part a direct child leaves core's rules intact.
+//
+// `:has()` scopes this to when the sidebar is actually in the DOM;
+// toggled off, the layout falls back to core's flex column. Beaten
+// out of `html .o_web_client` (0,1,1) on class count.
+html .o_web_client:has(> .cmt-app-sidebar) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+
+    > .o_navbar {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+
+    > .cmt-app-sidebar {
+        grid-column: 1;
+        grid-row: 2;
+    }
 
     > .o_action_manager {
-        direction: ltr;
-        flex: 1 1 auto;
-        min-width: 0;
-        height: 100%;
-        overflow: hidden;
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    // Dialogs, notifications and the like: fixed-position children,
+    // so this row collapses to nothing.
+    > .o-main-components-container {
+        grid-column: 1 / -1;
+        grid-row: 3;
     }
 }
 

@@ -62,17 +62,17 @@
     <!--
         Put the sidebar beside the action manager rather than above it.
 
-        The ActionContainer has to move inside a flex row for that, which
-        breaks Odoo's `.o_web_client > .o_action_manager` layout rule — the
-        only selector in core that depends on it. apps_sidebar.scss restates
-        those properties on .cmt-workspace > .o_action_manager.
+        It goes in as a plain sibling — no wrapper. Odoo's whole scroll
+        layout hangs off `.o_web_client > .o_action_manager > .o_action`
+        (webclient_layout.scss), so nesting the action manager one level
+        deeper silently kills `.o_content { overflow: auto }` and the view
+        stops scrolling. apps_sidebar.scss turns .o_web_client into a grid
+        instead, which places the sidebar beside the action manager while
+        leaving both as direct children.
     -->
     <t t-name="crm_modern_theme.WebClient" t-inherit="web.WebClient" t-inherit-mode="extension">
-        <xpath expr="//ActionContainer" position="replace">
-            <div class="cmt-workspace">
-                <AppsSidebar t-if="!state.fullscreen"/>
-                <ActionContainer/>
-            </div>
+        <xpath expr="//ActionContainer" position="before">
+            <AppsSidebar t-if="!state.fullscreen"/>
         </xpath>
     </t>
 
