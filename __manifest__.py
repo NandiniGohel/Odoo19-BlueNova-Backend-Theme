@@ -1,6 +1,6 @@
 {
     'name': 'Modern CRM Backend Theme',
-    'version': '19.0.1.5.0',
+    'version': '19.0.1.9.0',
     'category': 'Sales/CRM',
     'summary': 'Modern, responsive visual reskin of the Odoo backend (navbar, control panel, kanban cards) for CRM',
     'description': """
