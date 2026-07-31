@@ -31,6 +31,18 @@
     // it, so simply defining it here cascades down to every badge.
     --o-navbar-badge-bg: var(--cmt-primary);
 
+    // The matching text colour has to be set too. Odoo's default is
+    // `$o-navbar-badge-color: inherit` (navbar.variables.scss), so the
+    // digit takes the systray entry colour — the muted grey set below —
+    // and lands on the badge's primary fill at roughly 1.5:1. It is
+    // unreadable in both modes, and worst in dark, where the fill is
+    // the lifted #7c9aff. Pinning it to the canvas colour keeps the
+    // pill legible against whatever --cmt-primary currently is; the
+    // dark drop shadow that Odoo adds for its green badge only muddies
+    // a flat one, so it goes.
+    --o-navbar-badge-color: var(--cmt-surface);
+    --o-navbar-badge-text-shadow: none;
+
     background: var(--cmt-surface) !important;
     border-bottom: 1px solid var(--cmt-border);
     box-shadow: var(--cmt-shadow-sm);

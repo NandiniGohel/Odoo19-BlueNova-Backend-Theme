@@ -32,6 +32,30 @@
     font-variant-numeric: tabular-nums;
 }
 
+// ── Bootstrap runtime variables ──────────────────────────────
+// Odoo's backend bundle compiles Bootstrap with
+// `$variable-prefix: ''` (web/static/src/scss/bootstrap_overridden.scss
+// line 51), so every Bootstrap custom property in web.assets_backend
+// is emitted *unprefixed*: --body-bg, --heading-color,
+// --nav-tabs-link-active-bg, --dropdown-bg, --btn-color… There is no
+// --bs-* anywhere in the compiled backend CSS.
+//
+// This is easy to get wrong from the outside — every Bootstrap doc and
+// every other Odoo asset bundle uses the --bs- prefix — and a theme
+// that writes --bs-body-bg here simply declares an unread property and
+// silently loses. That is what left whole surfaces (the notebook's
+// active tab, the breadcrumb strip, every <h1>-<h6>) painting their
+// compiled light values in dark mode.
+//
+// Both spellings are emitted so the theme keeps working if Odoo ever
+// restores the prefix; the unprefixed one is what actually lands today.
+@mixin cmt-bs-vars($-vars) {
+    @each $-name, $-value in $-vars {
+        --#{$-name}: #{$-value};
+        --bs-#{$-name}: #{$-value};
+    }
+}
+
 // ── Onboarding tour pointer ──────────────────────────────────
 // The bouncing teardrop that Odoo's tours park next to a target
 // (border-radius: 0 50% 50% 50%). It ships in Odoo's enterprise

@@ -83,124 +83,177 @@
     // ════ Layer 2a: Bootstrap document variables ═════════════
     // Declared at :root, so overriding them here cascades to
     // everything that reads them.
-    --bs-body-bg: #0b1120;
-    --bs-body-bg-rgb: 11, 17, 32;
-    --bs-body-color: #e2e8f0;
-    --bs-body-color-rgb: 226, 232, 240;
-    --bs-emphasis-color: #e2e8f0;
-    --bs-emphasis-color-rgb: 226, 232, 240;
-    --bs-heading-color: #e2e8f0;
-    --bs-secondary-color: #94a3b8;
-    --bs-secondary-bg: #0f1728;
-    --bs-tertiary-color: #64748b;
-    --bs-tertiary-bg: #1e293b;
-    --bs-border-color: #243149;
-    --bs-border-color-translucent: rgba(255, 255, 255, 0.1);
-    --bs-link-color: #7c9aff;
-    --bs-link-color-rgb: 124, 154, 255;
-    --bs-link-hover-color: #a5b8ff;
-    --bs-code-color: #f9a8d4;
-    --bs-highlight-bg: #3f3213;
+    //
+    // Emitted through cmt-bs-vars (base.scss) because the backend
+    // bundle compiles Bootstrap with an *empty* variable prefix — see
+    // the mixin's comment. Writing --bs-* alone here does nothing.
+    @include cmt-bs-vars((
+        body-bg: #0b1120,
+        body-bg-rgb: "11, 17, 32",
+        body-color: #e2e8f0,
+        body-color-rgb: "226, 232, 240",
+        emphasis-color: #e2e8f0,
+        emphasis-color-rgb: "226, 232, 240",
+        secondary-color: #94a3b8,
+        secondary-bg: #0f1728,
+        tertiary-color: #64748b,
+        tertiary-bg: #1e293b,
+        border-color: #243149,
+        border-color-translucent: rgba(255, 255, 255, 0.1),
+        link-color: #7c9aff,
+        link-color-rgb: "124, 154, 255",
+        link-hover-color: #a5b8ff,
+        code-color: #f9a8d4,
+        highlight-bg: #3f3213,
 
-    // Odoo's own generated utilities read this unprefixed property
+        // Reboot compiles `h1…h6 { color: var(--heading-color) }` and
+        // :root seeds it from $headings-color, which Odoo pins to
+        // $o-black — a literal #000. Every heading in the backend was
+        // therefore pure black on the dark canvas: the form view's
+        // record title, the calendar's "July - August 2026" / "2026",
+        // the settings section titles. One property covers all of them.
+        heading-color: #e2e8f0,
+    ));
+
+    // Odoo's own generated utilities read this property, which is
+    // Odoo's rather than Bootstrap's and so has never been prefixed
     // (see o-print-color in scss/functions.scss).
     --o-view-background-color: #131c31;
 
     // ════ Layer 2b: Bootstrap component variables ════════════
     // Bootstrap declares these on the components themselves, so a
     // :root declaration would lose to the local one.
-    .dropdown-menu, .o-dropdown--menu {
-        --bs-dropdown-bg: #131c31;
-        --bs-dropdown-color: #e2e8f0;
-        --bs-dropdown-border-color: #243149;
-        --bs-dropdown-divider-bg: #243149;
-        --bs-dropdown-header-color: #94a3b8;
-        --bs-dropdown-link-color: #e2e8f0;
-        --bs-dropdown-link-hover-color: #e2e8f0;
-        --bs-dropdown-link-hover-bg: #1e293b;
-        --bs-dropdown-link-active-color: #7c9aff;
-        --bs-dropdown-link-active-bg: #1c2949;
-        --bs-dropdown-link-disabled-color: #64748b;
+    // .o-autocomplete--dropdown-menu is the suggestions list under a
+    // many2one/tag input (core/autocomplete/autocomplete.xml) — it does
+    // not carry .dropdown-menu or .o-dropdown--menu, so without it here
+    // its items read $dropdown-link-hover-color/-bg through the same
+    // --dropdown-* custom properties, but with nothing setting them on
+    // an ancestor: light text landed on the untouched white default.
+    .dropdown-menu, .o-dropdown--menu, .o-autocomplete--dropdown-menu {
+        @include cmt-bs-vars((
+            dropdown-bg: #131c31,
+            dropdown-color: #e2e8f0,
+            dropdown-border-color: #243149,
+            dropdown-divider-bg: #243149,
+            dropdown-header-color: #94a3b8,
+            dropdown-link-color: #e2e8f0,
+            dropdown-link-hover-color: #e2e8f0,
+            dropdown-link-hover-bg: #1e293b,
+            dropdown-link-active-color: #7c9aff,
+            dropdown-link-active-bg: #1c2949,
+            dropdown-link-disabled-color: #64748b,
+        ));
     }
 
     .modal {
-        --bs-modal-bg: #131c31;
-        --bs-modal-color: #e2e8f0;
-        --bs-modal-border-color: #243149;
-        --bs-modal-header-border-color: #243149;
-        --bs-modal-footer-border-color: #243149;
+        @include cmt-bs-vars((
+            modal-bg: #131c31,
+            modal-color: #e2e8f0,
+            modal-border-color: #243149,
+            modal-header-border-color: #243149,
+            modal-footer-border-color: #243149,
+        ));
     }
 
     .card {
-        --bs-card-bg: #131c31;
-        --bs-card-color: #e2e8f0;
-        --bs-card-border-color: #243149;
-        --bs-card-cap-bg: #0f1728;
+        @include cmt-bs-vars((
+            card-bg: #131c31,
+            card-color: #e2e8f0,
+            card-border-color: #243149,
+            card-cap-bg: #0f1728,
+        ));
     }
 
     .list-group {
-        --bs-list-group-bg: #131c31;
-        --bs-list-group-color: #e2e8f0;
-        --bs-list-group-border-color: #243149;
-        --bs-list-group-action-color: #e2e8f0;
-        --bs-list-group-action-hover-bg: #1e293b;
-        --bs-list-group-action-hover-color: #e2e8f0;
-        --bs-list-group-active-bg: #1c2949;
-        --bs-list-group-active-color: #7c9aff;
-        --bs-list-group-active-border-color: #243149;
+        @include cmt-bs-vars((
+            list-group-bg: #131c31,
+            list-group-color: #e2e8f0,
+            list-group-border-color: #243149,
+            list-group-action-color: #e2e8f0,
+            list-group-action-hover-bg: #1e293b,
+            list-group-action-hover-color: #e2e8f0,
+            list-group-active-bg: #1c2949,
+            list-group-active-color: #7c9aff,
+            list-group-active-border-color: #243149,
+        ));
     }
 
     .popover {
-        --bs-popover-bg: #131c31;
-        --bs-popover-body-color: #e2e8f0;
-        --bs-popover-header-bg: #1e293b;
-        --bs-popover-header-color: #e2e8f0;
-        --bs-popover-border-color: #243149;
+        @include cmt-bs-vars((
+            popover-bg: #131c31,
+            popover-body-color: #e2e8f0,
+            popover-header-bg: #1e293b,
+            popover-header-color: #e2e8f0,
+            popover-border-color: #243149,
+        ));
     }
 
     .tooltip {
-        --bs-tooltip-bg: #1e293b;
-        --bs-tooltip-color: #e2e8f0;
-        --bs-tooltip-opacity: 1;
+        @include cmt-bs-vars((
+            tooltip-bg: #1e293b,
+            tooltip-color: #e2e8f0,
+            tooltip-opacity: 1,
+        ));
     }
 
     .offcanvas, .offcanvas-start, .offcanvas-end,
     .offcanvas-top, .offcanvas-bottom {
-        --bs-offcanvas-bg: #131c31;
-        --bs-offcanvas-color: #e2e8f0;
-        --bs-offcanvas-border-color: #243149;
+        @include cmt-bs-vars((
+            offcanvas-bg: #131c31,
+            offcanvas-color: #e2e8f0,
+            offcanvas-border-color: #243149,
+        ));
     }
 
     .accordion {
-        --bs-accordion-bg: #131c31;
-        --bs-accordion-color: #e2e8f0;
-        --bs-accordion-border-color: #243149;
-        --bs-accordion-btn-color: #e2e8f0;
-        --bs-accordion-active-bg: #1c2949;
-        --bs-accordion-active-color: #7c9aff;
+        @include cmt-bs-vars((
+            accordion-bg: #131c31,
+            accordion-color: #e2e8f0,
+            accordion-border-color: #243149,
+            accordion-btn-color: #e2e8f0,
+            accordion-active-bg: #1c2949,
+            accordion-active-color: #7c9aff,
+        ));
     }
 
+    // nav-tabs-link-active-bg is what painted the form notebook's
+    // selected tab ("Invoice Lines") white: Odoo sets it to $white.
     .nav, .nav-tabs {
-        --bs-nav-link-color: #94a3b8;
-        --bs-nav-link-hover-color: #7c9aff;
-        --bs-nav-tabs-border-color: #243149;
-        --bs-nav-tabs-link-hover-border-color: #243149;
-        --bs-nav-tabs-link-active-color: #e2e8f0;
-        --bs-nav-tabs-link-active-bg: #131c31;
-        --bs-nav-tabs-link-active-border-color: #243149;
+        @include cmt-bs-vars((
+            nav-link-color: #94a3b8,
+            nav-link-hover-color: #7c9aff,
+            nav-tabs-border-color: #243149,
+            nav-tabs-link-hover-border-color: #243149,
+            nav-tabs-link-active-color: #e2e8f0,
+            nav-tabs-link-active-bg: #131c31,
+            nav-tabs-link-active-border-color: #243149,
+        ));
+    }
+
+    // Odoo sets $breadcrumb-bg to the (white) control-panel background,
+    // which drew a white strip behind the parent crumbs above every
+    // record title.
+    .breadcrumb {
+        @include cmt-bs-vars((
+            breadcrumb-bg: transparent,
+            breadcrumb-divider-color: #64748b,
+            breadcrumb-item-active-color: #94a3b8,
+        ));
     }
 
     .table {
-        --bs-table-bg: #131c31;
-        --bs-table-color: #e2e8f0;
-        --bs-table-border-color: #243149;
-        --bs-table-striped-bg: #172038;
-        --bs-table-striped-color: #e2e8f0;
-        --bs-table-hover-bg: #1c2949;
-        --bs-table-hover-color: #e2e8f0;
-        --bs-table-active-bg: #1c2949;
-        --bs-table-active-color: #e2e8f0;
-        --bs-table-accent-bg: transparent;
+        @include cmt-bs-vars((
+            table-bg: #131c31,
+            table-color: #e2e8f0,
+            table-border-color: #243149,
+            table-striped-bg: #172038,
+            table-striped-color: #e2e8f0,
+            table-hover-bg: #1c2949,
+            table-hover-color: #e2e8f0,
+            table-active-bg: #1c2949,
+            table-active-color: #e2e8f0,
+            table-accent-bg: transparent,
+        ));
     }
 
     // ════ Layer 3: direct overrides ══════════════════════════
@@ -238,7 +291,8 @@
     .dropdown-menu,
     .o-dropdown--menu,
     .o_datetime_picker,
-    .o_technical_modal .modal-content {
+    .o_technical_modal .modal-content,
+    .o-autocomplete--dropdown-menu {
         background-color: var(--cmt-surface) !important;
         color: var(--cmt-text);
         border-color: var(--cmt-border);
@@ -363,6 +417,21 @@
         }
     }
 
+    // Chrome/Edge repaint autofill-eligible inputs with a forced light
+    // UA background+text that a plain `background-color` declaration
+    // cannot touch — only the `-webkit-autofill` pseudo-class can. This
+    // is exactly the field shape the CRM kanban quick-create form and
+    // mail's "To-do" activity dialog collect (name, email, phone), so
+    // they are the surfaces where this shows up.
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus {
+        -webkit-text-fill-color: var(--cmt-text) !important;
+        -webkit-box-shadow: 0 0 0 1000px var(--cmt-surface-dim) inset !important;
+        box-shadow: 0 0 0 1000px var(--cmt-surface-dim) inset !important;
+        caret-color: var(--cmt-text);
+    }
+
     .o_form_label,
     .o_horizontal_separator,
     .o_form_view .o_field_widget .o_form_label {
@@ -465,10 +534,12 @@
     // (kept on one line: libsass passes the contents of :not() through
     // verbatim, newlines and all, which is valid but needlessly fragile)
     .btn:not(.btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-warning, .btn-info, .btn-light, .btn-dark, .btn-link, [class*="btn-outline-"]) {
-        --bs-btn-color: var(--cmt-text);
-        --bs-btn-hover-color: var(--cmt-primary);
-        --bs-btn-active-color: var(--cmt-primary);
-        --bs-btn-disabled-color: var(--cmt-outline);
+        @include cmt-bs-vars((
+            btn-color: var(--cmt-text),
+            btn-hover-color: var(--cmt-primary),
+            btn-active-color: var(--cmt-primary),
+            btn-disabled-color: var(--cmt-outline),
+        ));
     }
 
     // Odoo also paints a few icon affordances through $btn-color
@@ -694,6 +765,64 @@
         color: var(--cmt-text) !important;
     }
 
+    // ── Avatar card popover ───────────────────────────────────
+    // Clicking/hovering any avatar (a chatter message, a sidebar
+    // conversation, an assignee) opens this small `.card`-based
+    // popover with just the person's name, and email/phone if set —
+    // OdooBot has neither, so its card is just the name. `.card-body`
+    // is meant to fall back to the ambient `.card` colour this theme
+    // already retints, but the name still rendered black, so it is
+    // pinned directly rather than left to that fallback.
+    .o_avatar_card {
+        color: var(--cmt-text);
+
+        .o-mail-avatar-card-name {
+            color: var(--cmt-text) !important;
+        }
+
+        a {
+            color: var(--cmt-primary) !important;
+        }
+    }
+
+    // ── Chatter (the panel beside a form view) ───────────────
+    // chatter/web_portal/chatter.scss fills .o-mail-Chatter-top with
+    // $o-webclient-background-color and, once the strip sticks on
+    // scroll, paints a $o-view-background-color gradient over it.
+    // Both are compiled light literals, which is what left a white
+    // band behind Send message / Log note / Activity while the thread
+    // below it followed the dark canvas.
+    .o-mail-Chatter-top {
+        background-color: var(--cmt-surface) !important;
+
+        &.shadow-sm {
+            background-image: linear-gradient(
+                90deg,
+                transparent,
+                var(--cmt-surface),
+                transparent
+            );
+        }
+    }
+
+    // `color: $black !important` and `background-color: $gray-200`.
+    .btn.o-mail-Chatter-follow:hover {
+        color: var(--cmt-text) !important;
+    }
+
+    .o-mail-Followers-button:focus {
+        background-color: var(--cmt-surface-highest);
+    }
+
+    // OdooBot's welcome message wraps its `:)` hint in
+    // `.o_odoobot_command`, filled $gray-200 by mail_bot — a light chip
+    // with the message's light text on it, inside an otherwise dark
+    // bubble.
+    .o_odoobot_command {
+        background-color: var(--cmt-surface-highest) !important;
+        color: var(--cmt-text);
+    }
+
     // ── Calendar ─────────────────────────────────────────────
     // .o_calendar_renderer is filled with $o-view-background-color and
     // the FullCalendar variables Odoo sets on .o_calendar_widget point
@@ -751,6 +880,17 @@
         }
     }
 
+    // The "Week 31" pill next to the week-view heading
+    // (calendar_controller.xml: <span class="o_current_week badge
+    // bg-100 ...">) relies on Bootstrap's `$badge-color: inherit` to
+    // pick up its parent heading's colour rather than setting one of
+    // its own. That chain still rendered the number in black next to
+    // an otherwise-light "July - August 2026" heading, so it is pinned
+    // directly instead of left to fall through.
+    .o_calendar_header .badge {
+        color: var(--cmt-text-muted) !important;
+    }
+
     // ── Remaining literal-white view surfaces ────────────────
     // Same root cause across the rest of the backend: a compiled
     // $o-view-background-color / $body-bg / $white that no token can
@@ -792,11 +932,47 @@
         }
     }
 
+    // ── Notebook (form view tab strip) ───────────────────────
     // The tab strip sits on the notebook header, which the raised-surface
     // block above already fills — so it inherits rather than taking a
     // second, differing fill.
     .o_notebook > .o_notebook_headers .nav {
         background-color: transparent !important;
+    }
+
+    // Core's own tab borders: the two --Notebook__* properties resolve
+    // to $border-color and $gray-200, and the active tab's *bottom*
+    // border is set straight to $o-view-background-color so the tab
+    // reads as merging into the panel below it. On a dark strip that
+    // last one drew a bright hairline under the selected tab, so it is
+    // repointed at the same surface the header and tab now share.
+    .o_notebook {
+        --Notebook__link-border-color--active: var(--cmt-border);
+        --Notebook__link-border-color--hover: var(--cmt-surface-highest);
+        --Notebook__link-border-top-color--active: var(--cmt-border);
+
+        .nav-link.active {
+            &, &:hover, &:focus, &:active {
+                border-bottom-color: var(--cmt-surface);
+            }
+        }
+
+        > .tab-content {
+            border-bottom-color: var(--cmt-border);
+        }
+    }
+
+    // ── Breadcrumb ───────────────────────────────────────────
+    // The strip's own fill is zeroed through --breadcrumb-bg above.
+    // The crumb links are the other half: they carry .fw-bold and take
+    // the default link colour rather than the breadcrumb's, so they are
+    // pinned to the muted token to match control_panel.scss.
+    .o_control_panel .breadcrumb a {
+        color: var(--cmt-text-muted);
+
+        &:hover, &:focus {
+            color: var(--cmt-primary);
+        }
     }
 
     // Core reasserts $o-view-background-color on the focused cell of a
@@ -832,6 +1008,10 @@
     .o_graph_canvas_container {
         background-color: #f8fafc !important;
         color: #111827;
+
+        // --heading-color is flipped to a light tone at the document
+        // root above; this panel is the one place that must not follow.
+        @include cmt-bs-vars((heading-color: #111827));
     }
 
     .o_graph_view .o_graph_canvas_container {
@@ -851,7 +1031,84 @@
         color: var(--cmt-text) !important;
     }
 
+    // The "empty pipeline" / "no records" helper (crm's "Create an
+    // opportunity to start playing with your pipeline.", and every
+    // other view's equivalent). o-nocontent-empty (scss/utils.scss)
+    // sets the body text from $body-color, which the dark root already
+    // reaches — but it also promotes the first paragraph with
+    // `color: $headings-color`, a literal compiled straight to
+    // #000. That headline is what was unreadable: black text sitting
+    // on the dark canvas behind it (the sample-data ghost cards, at
+    // 6% opacity by design, are unrelated and unaffected here).
     .o_view_nocontent .o_nocontent_help {
         color: var(--cmt-text-muted);
+
+        > p:first-of-type {
+            color: var(--cmt-text) !important;
+        }
+    }
+
+    // ── Time Off dashboard ───────────────────────────────────
+    // hr_holidays pins the sticky banner above the leave calendar to
+    // $o-webclient-background-color, so it stayed a white slab while
+    // its contents had already followed the dark tokens: the counter
+    // inherited --cmt-text (light on white) and each card carries
+    // .text-primary, which resolves to the lifted dark-mode indigo —
+    // both effectively invisible. Darkening the slab resolves the
+    // contents; the two labels below are compiled literals and need
+    // their own overrides.
+    .o_timeoff_dashboard {
+        background-color: var(--cmt-surface) !important;
+        box-shadow: inset 0 -1px 0 var(--cmt-border);
+        color: var(--cmt-text);
+    }
+
+    .o_timeoff_card {
+        border-right-color: var(--cmt-border);
+
+        // `color: $body-color` — the leave-type name and "Pending
+        // Requests".
+        .o_timeoff_name {
+            color: var(--cmt-text) !important;
+
+            &.btn-link:hover {
+                color: var(--cmt-primary) !important;
+            }
+        }
+    }
+
+    // `background-color: rgba(0, 0, 0, .1)` — invisible on a dark slab.
+    .o_timeoff_today_button:hover {
+        background-color: var(--cmt-surface-highest) !important;
+    }
+
+    // ── Live Chat channel kanban ─────────────────────────────
+    // im_livechat paints the whole card body $o-component-active-bg
+    // (a light lavender) with !important whenever the channel has
+    // operators online, which covered the themed kanban card — its
+    // glass fill, its 12px radius and its accent spine — with an
+    // opaque light slab carrying near-black text.
+    //
+    // The signal itself is dropped rather than re-themed: an earlier
+    // pass gave the card a primary-tinted background plus a primary
+    // left spine, but that spine reads as the kanban board's own hover/
+    // selected-state affordance (kanban.scss puts the same treatment on
+    // :hover and on "Won" cards), so a permanently-online channel looked
+    // permanently hovered. The reference is a plain card — uniform
+    // border on all four sides, same glass fill as any other kanban
+    // card, no accent — so the highlight now just gets out of the way
+    // and every operator-online channel looks like every other card.
+    //
+    // Scoped to the card on purpose. im_livechat puts the same class on
+    // the record's dropdown menu too (livechat_channel_kanban_menu.xml),
+    // and a bare selector here would out-order the raised-surface block
+    // above and leave that menu transparent.
+    .o_kanban_record .o-livechat-ChannelKanban-highlighted {
+        background-color: transparent !important;
+        color: var(--cmt-text);
+
+        &::before {
+            background-color: transparent !important;
+        }
     }
 }
