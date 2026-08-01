@@ -198,7 +198,10 @@
             width: 24px;
             height: 24px;
             border-radius: 50%;
-            border: 1px solid var(--cmt-border);
+            object-fit: cover;
+            border: 1px solid var(--cmt-outline);
+            background-color: var(--cmt-surface-highest);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
         }
 
         // Tag pills

@@ -149,5 +149,26 @@
             border: 1px solid rgba(57, 89, 176, 0.2);
             border-radius: 50%;
         }
+
+        // ── Database chip ────────────────────────────────────
+        // With developer mode on, the user menu toggle prints the
+        // database name under the user name wrapped in a <mark>
+        // (webclient/user_menu/user_menu.xml). Reboot paints every
+        // <mark> from --highlight-bg / --highlight-color, so the chip
+        // arrives as Bootstrap's yellow highlighter: off-palette beside
+        // the navbar in light mode, and unreadable in dark, where
+        // --highlight-bg is retinted to a deep amber but the text stays
+        // at the compiled $mark-color (#212529) — near-black on
+        // near-black, which is what the screenshot shows.
+        //
+        // Retinted here rather than through --highlight-* so a genuine
+        // search-match <mark> elsewhere keeps its highlighter meaning.
+        // Both values are --cmt-* tokens, so the chip follows whichever
+        // mode is active with no dark-mode counterpart rule.
+        .oe_topbar_name mark {
+            background-color: var(--cmt-surface-highest);
+            color: var(--cmt-text-muted);
+            border-radius: var(--cmt-radius-sm);
+        }
     }
 }

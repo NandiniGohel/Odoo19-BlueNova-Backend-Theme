@@ -104,7 +104,14 @@
         link-color-rgb: "124, 154, 255",
         link-hover-color: #a5b8ff,
         code-color: #f9a8d4,
+
+        // <mark>. Reboot reads the pair, but Bootstrap seeds
+        // --highlight-color from $mark-color — which is $body-color, a
+        // literal compiled to #212529. Retinting only the fill therefore
+        // left near-black text on the deep amber below; both halves have
+        // to move together.
         highlight-bg: #3f3213,
+        highlight-color: #fde68a,
 
         // Reboot compiles `h1…h6 { color: var(--heading-color) }` and
         // :root seeds it from $headings-color, which Odoo pins to
@@ -188,12 +195,38 @@
         ));
     }
 
-    .tooltip {
+    // Odoo's backend tooltip is not Bootstrap's `.tooltip` wrapper. The
+    // Tooltip component (core/tooltip/tooltip.xml) renders a bare
+    // `.o-tooltip.tooltip-inner` inside a popover shell, and
+    // core/tooltip/tooltip.scss redeclares the --tooltip-* properties on
+    // that element itself — so a `.tooltip` rule never reached it and it
+    // fell through to core's own values.
+    //
+    // Those two values disagree in dark mode: Bootstrap 5.3 defines
+    // `$tooltip-bg: var(--emphasis-color)`, while Odoo's
+    // bootstrap_overridden.scss pins `$tooltip-color: $o-gray-200` — a
+    // compiled light literal. Lifting --emphasis-color to a light tone at
+    // the document root (Layer 2a) therefore flipped the bubble light
+    // while its text stayed light, so "Discard all changes" and every
+    // other tooltip rendered near-white on near-white.
+    //
+    // The declarations must land on .o-tooltip itself rather than an
+    // ancestor, to outrank the component's own defaults on that element.
+    .tooltip, .o-tooltip {
         @include cmt-bs-vars((
             tooltip-bg: #1e293b,
             tooltip-color: #e2e8f0,
             tooltip-opacity: 1,
         ));
+    }
+
+    // The caret is a sibling element, not part of the bubble, and is
+    // drawn through --popover-bg seeded from that same $tooltip-bg —
+    // redeclared on the arrow itself, so the .popover block above (which
+    // the shell does carry) loses to it. Repointed here or the bubble
+    // goes dark and leaves a light triangle behind.
+    .o-tooltip + .popover-arrow {
+        @include cmt-bs-vars((popover-bg: #1e293b));
     }
 
     .offcanvas, .offcanvas-start, .offcanvas-end,
@@ -268,6 +301,18 @@
         color: var(--cmt-text);
     }
 
+    // webclient.scss declares `color-scheme: bright` on .o_web_client.
+    // `bright` is not a color-scheme keyword, so it computes to `normal`
+    // and — because the declaration sits on a descendant — it cancels the
+    // `color-scheme: dark` set on :root at the top of this file for the
+    // whole backend. Every UA-painted control inside the web client
+    // therefore kept resolving `fieldtext` to black and `field` to white:
+    // bare <input>s that declare no colour of their own, native selects,
+    // scrollbars. Restated here so the root declaration actually holds.
+    .o_web_client {
+        color-scheme: dark;
+    }
+
     // ── Raised surfaces ──────────────────────────────────────
     // Everything Odoo paints with $o-view-background-color, plus
     // the Bootstrap components whose backgrounds are set directly
@@ -296,6 +341,22 @@
         background-color: var(--cmt-surface) !important;
         color: var(--cmt-text);
         border-color: var(--cmt-border);
+    }
+
+    // A form declared without a <sheet> — the To-do kanban quick-create,
+    // most wizard dialogs — gets .o_form_nosheet on its renderer instead
+    // (form_compiler.js), and since 16.3 that class acts as the sheet:
+    // form_controller.scss gives it the same
+    // `background-color: $o-view-background-color` literal. Same white,
+    // different class from .o_form_sheet above, so it was missed — the
+    // quick-create card kept its dark fill and its inputs followed the
+    // dark tokens, but the block holding them stayed white, which is what
+    // left "To-do Title" and "Deadline" as muted grey labels on white
+    // bands between two correctly-dark inputs.
+    .o_form_view.o_form_nosheet,
+    .o_form_view .o_form_nosheet {
+        background-color: var(--cmt-surface) !important;
+        color: var(--cmt-text);
     }
 
     // Selected entries — a search-panel category, a filter — are
@@ -436,6 +497,18 @@
     .o_horizontal_separator,
     .o_form_view .o_field_widget .o_form_label {
         color: var(--cmt-text-muted);
+    }
+
+    // The empty half of a priority widget is `$o-main-color-muted`
+    // (priority_field.scss), which is `rgba($o-gray-700, .76)` — an
+    // alpha, not a colour. Over white it composites to a light grey that
+    // reads as an unset star; over a dark surface it composites to about
+    // #3c444e, roughly 1.7:1 against the panel, so the stars simply
+    // disappear. kanban.scss already repoints them to --cmt-outline
+    // inside a card; this is the same swap everywhere else, and the
+    // CRM quick-create's rating row is where it shows first.
+    .o_priority > .o_priority_star.fa-star-o {
+        color: var(--cmt-outline);
     }
 
     // ── Search facets ────────────────────────────────────────
@@ -664,6 +737,41 @@
     .o-mail-DiscussContent-headerActionsGroup {
         background-color: var(--cmt-surface-highest) !important;
         outline-color: var(--cmt-border) !important;
+    }
+
+    // The channel name and its description in that header are two
+    // AutoresizeInput components — bare <input>s carrying neither
+    // .o_input nor .form-control and sitting outside .o_field_widget, so
+    // the forms-and-inputs block above never reached them. Their fill is
+    // $o-input-bg (transparent), so they sit straight on the dark header
+    // while their text stayed dark, each for a different reason:
+    //
+    //   * the name is disabled on a channel the user cannot rename, and
+    //     autoresize_input.scss gives `[disabled]` a literal
+    //     `color: $body-color` — #212529;
+    //   * the description declares no colour at all and fell to the UA's
+    //     `fieldtext`, which is what the .o_web_client color-scheme fix
+    //     above corrects — pinned here too rather than left to the UA,
+    //     since the component's own :focus rule reasserts $body-color
+    //     with !important the moment the field is clicked.
+    .o-mail-AutoresizeInput {
+        color: var(--cmt-text) !important;
+
+        &::placeholder {
+            color: var(--cmt-outline) !important;
+        }
+
+        // Both border tints are compiled light literals ($border-color
+        // and $o-component-active-border) drawn on a dark header.
+        &:not([disabled]) {
+            &:hover {
+                --o-input-border-color: var(--cmt-border);
+            }
+
+            &:focus {
+                --o-input-border-color: var(--cmt-primary);
+            }
+        }
     }
 
     .o-mail-DiscussSidebarCategory-title,
