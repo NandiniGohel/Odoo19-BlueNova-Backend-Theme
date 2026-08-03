@@ -1,6 +1,6 @@
 {
     'name': 'Modern CRM Backend Theme',
-    'version': '19.0.1.9.0',
+    'version': '19.0.1.11.0',
     'category': 'Sales/CRM',
     'summary': 'Modern, responsive visual reskin of the Odoo backend (navbar, control panel, kanban cards) for CRM',
     'description': """
@@ -16,6 +16,8 @@ What it changes:
 - Typography: Inter and Poppins, bundled in-module (no CDN request)
 - Top navbar colors/typography
 - Left app sidebar replacing Odoo's apps dropdown, with bundled app icons
+  painted through a CSS mask: grey at rest, blue on hover, a stronger blue
+  for the app you are in — the same three colours in light and dark mode
 - Light/dark mode, switched from the sidebar footer and remembered per browser
 - Control panel styled as a page header (headline-lg title)
 - Kanban board: 320px stage columns, glassmorphic cards with an accent spine
