@@ -6,6 +6,24 @@
 // button; see js/apps_sidebar.js.
 // ============================================================
 
+// Paint a single-colour icon: the artwork supplies the shape through a
+// mask, `background-color` supplies the colour. The shape comes from
+// `--cmt-icon-url`, set per row as an inline style by the template.
+//
+// Longhands rather than the `mask:` shorthand on purpose — the `/` in
+// `center / contain` is ambiguous to a SCSS compiler, and this way there
+// is nothing for it to misread.
+@mixin cmt-masked-icon {
+    -webkit-mask-image: var(--cmt-icon-url);
+    mask-image: var(--cmt-icon-url);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
 // ── Layout ───────────────────────────────────────────────────
 // The sidebar is injected as a sibling of the action manager, so
 // .o_web_client goes from a flex column to a two-column grid:
@@ -73,11 +91,14 @@ html .o_web_client:has(> .cmt-app-sidebar) {
         overflow: hidden;
     }
 
+    // Masked like the app icons below, so it takes the container's own
+    // text colour in both themes rather than needing a dark-mode invert.
     .cmt-app-sidebar__workspace-icon {
         flex: 0 0 auto;
         width: 20px;
         height: 20px;
-        object-fit: contain;
+        background-color: var(--cmt-on-primary-container);
+        @include cmt-masked-icon;
     }
 
     .cmt-app-sidebar__workspace-text {
@@ -141,6 +162,10 @@ html .o_web_client:has(> .cmt-app-sidebar) {
             color: var(--cmt-text);
             background-color: var(--cmt-surface-highest);
             text-decoration: none;
+
+            .cmt-app-sidebar__app-icon--bundled {
+                background-color: var(--cmt-app-icon-hover);
+            }
         }
     }
 
@@ -149,6 +174,17 @@ html .o_web_client:has(> .cmt-app-sidebar) {
         color: var(--cmt-primary);
         font-weight: 600;
         background-color: var(--cmt-primary-light);
+
+        // Hovering the app you are already in keeps the "current" colour,
+        // matching the label. This has to restate :hover/:focus rather than
+        // rely on the base rule: `.app:hover .icon--bundled` above scores
+        // the same as a bare `.app--active .icon--bundled`, so only the
+        // equally-specific selector, declared later, reliably wins.
+        &, &:hover, &:focus {
+            .cmt-app-sidebar__app-icon--bundled {
+                background-color: var(--cmt-app-icon-active);
+            }
+        }
 
         &:hover, &:focus {
             color: var(--cmt-primary);
@@ -171,6 +207,23 @@ html .o_web_client:has(> .cmt-app-sidebar) {
         flex: 0 0 auto;
         width: 18px;
         height: 18px;
+    }
+
+    // Bundled artwork is a single-colour silhouette on transparent, so it
+    // is painted rather than drawn: the mask supplies the shape and
+    // background-color supplies the colour. That is what lets one icon set
+    // carry resting / hover / current-app states, and it reads identically
+    // in light and dark — no invert filter, unlike the old <img> version.
+    .cmt-app-sidebar__app-icon--bundled {
+        display: block;
+        background-color: var(--cmt-app-icon);
+        @include cmt-masked-icon;
+        transition: background-color .15s ease;
+    }
+
+    // Apps we have no artwork for keep Odoo's own full-colour icon, which
+    // must be drawn as-is — masking it would flatten it to a blob.
+    .cmt-app-sidebar__app-icon--native {
         object-fit: contain;
     }
 

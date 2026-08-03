@@ -14,7 +14,8 @@
 
             <!-- Workspace header: active company + database -->
             <div class="cmt-app-sidebar__workspace">
-                <img class="cmt-app-sidebar__workspace-icon" t-att-src="workspaceIcon" alt=""/>
+                <span class="cmt-app-sidebar__workspace-icon"
+                      t-attf-style="--cmt-icon-url: url('{{ workspaceIcon }}')"/>
                 <div class="cmt-app-sidebar__workspace-text">
                     <span class="cmt-app-sidebar__workspace-name" t-esc="workspace.name"/>
                     <span class="cmt-app-sidebar__workspace-sub" t-esc="workspace.subtitle"/>
@@ -32,8 +33,18 @@
                        t-att-data-menu-xmlid="app.xmlid"
                        t-att-data-section="app.id"
                        t-on-click="(ev) => this.onAppClick(ev, app)">
-                        <img class="cmt-app-sidebar__app-icon"
-                             t-att-class="{ 'cmt-app-sidebar__app-icon--bundled': icon.bundled }"
+                        <!--
+                            Bundled artwork is single-colour, so it is painted
+                            through a CSS mask: the colour then lives in the
+                            stylesheet and can follow hover / active state.
+                            Anything falling back to Odoo's own icon is
+                            full-colour and has to be drawn as a plain image.
+                        -->
+                        <span t-if="icon.bundled"
+                              class="cmt-app-sidebar__app-icon cmt-app-sidebar__app-icon--bundled"
+                              t-attf-style="--cmt-icon-url: url('{{ icon.src }}')"/>
+                        <img t-else=""
+                             class="cmt-app-sidebar__app-icon cmt-app-sidebar__app-icon--native"
                              t-att-src="icon.src"
                              alt=""/>
                         <span class="cmt-app-sidebar__app-label" t-esc="app.name"/>

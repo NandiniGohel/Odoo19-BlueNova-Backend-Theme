@@ -18,6 +18,17 @@
     --cmt-on-tertiary-container: #0369a1;
     --cmt-won-tint: rgba(224, 242, 254, 0.35);  // won-opportunity card wash
 
+    // ── App icons ────────────────────────────────────────────
+    // The sidebar's app artwork is single-colour and painted through a
+    // CSS mask, so these three carry the whole icon rail: resting, hover,
+    // and the app you are currently in.
+    //
+    // Not overridden in dark mode on purpose — the rail reads the same in
+    // both themes, so dark_mode.scss leaves this trio alone.
+    --cmt-app-icon: #6b7280;         // resting
+    --cmt-app-icon-hover: #3b82f6;   // hovered / focused row
+    --cmt-app-icon-active: #2563eb;  // the app currently open
+
     // ── Surfaces ─────────────────────────────────────────────
     --cmt-bg: #f8f9fa;               // background — the main canvas
     --cmt-surface: #ffffff;          // surface-bright — cards, navbar, panels

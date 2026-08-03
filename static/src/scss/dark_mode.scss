@@ -581,13 +581,36 @@
     }
 
     // ── Sidebar icons ────────────────────────────────────────
-    // The bundled icons are dark line art on transparent, so they
-    // vanish against the dark rail — invert them. Only the bundled
-    // ones: an app falling back to its own Odoo icon gets full-colour
-    // artwork, which inverting would wreck.
-    .cmt-app-sidebar__app-icon--bundled,
-    .cmt-app-sidebar__workspace-icon {
-        filter: invert(1) brightness(1.15);
+    // Nothing to do here any more. The bundled icons used to be dark
+    // line art drawn as <img>, which vanished against the dark rail and
+    // had to be inverted; they are now painted through a CSS mask, so
+    // their colour comes from --cmt-app-icon* and is the same in both
+    // themes by design. Inverting them here would undo exactly that.
+
+    // ── Dialog / notification close button ───────────────────
+    // Bootstrap draws .btn-close as a background-image, not as a glyph:
+    // an SVG data URI with $btn-close-color (#000) escaped into it at
+    // compile time. Nothing at runtime can recolour that, so the X in a
+    // dialog header came out #090e18 on the #131c31 header — a contrast
+    // ratio of about 1.2:1, i.e. invisible. The expand button beside it
+    // is a font icon taking `color`, which is why only the X vanished.
+    //
+    // Bootstrap's own answer is a filter, and it already ships the rule
+    // in _close.scss:
+    //     @if $enable-dark-mode { @include color-mode(dark) {
+    //         .btn-close { filter: var(--bs-btn-close-white-filter); } } }
+    // Odoo never compiles it, because bootstrap_overridden.scss sets
+    // $enable-dark-mode: false. So reinstate exactly that, reusing
+    // Bootstrap's own variable rather than inventing a colour.
+    //
+    // .btn-close-white already carries that filter, and inverting an
+    // inverted icon would put it straight back to black — hence :not().
+    //
+    // Safe to apply wherever .btn-close appears: the dialog header
+    // (core/dialog/dialog.xml), notification toasts and the PWA prompt
+    // all sit on surfaces darkened by the block above.
+    .btn-close:not(.btn-close-white) {
+        filter: var(--bs-btn-close-white-filter, invert(1) grayscale(100%) brightness(200%));
     }
 
     // ── Chromeless icon buttons ──────────────────────────────

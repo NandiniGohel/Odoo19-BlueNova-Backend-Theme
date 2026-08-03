@@ -1,0 +1,10 @@
+<!--
+    Last-resort placeholder: an app we have no artwork for and that Odoo
+    handed us no icon for either. Deliberately neutral, so it never reads
+    as another app's icon.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
+     fill="none" stroke="#6B7280" stroke-width="2" stroke-linejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="4.5"/>
+    <circle cx="12" cy="12" r="3.2" fill="#6B7280" stroke="none"/>
+</svg>

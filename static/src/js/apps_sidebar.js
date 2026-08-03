@@ -8,17 +8,34 @@ import { themeModeState } from "./theme_mode";
 const ICON_ROOT = "/crm_modern_theme/static/src/image/icons/";
 const STORAGE_KEY = "cmt_apps_sidebar_open";
 
+/** Neutral placeholder, so an app we have no artwork for still gets a row. */
+const ICON_FALLBACK = "generic-app.svg";
+
+/**
+ * Display names that have to be checked before anything else.
+ *
+ * `account.menu_finance` is the app root for both Invoicing and Accounting —
+ * one module, one xmlid, renamed once account_accountant is installed — so
+ * the displayed name is the only thing that tells the two apart. Everything
+ * else is matched on the xmlid or module below, which keeps working in
+ * every language; this map does not, hence the single entry.
+ */
+const ICON_BY_NAME_FIRST = {
+    accounting: "accounting.png",
+};
+
 /**
  * Icon per exact xmlid, checked before the module map below.
  *
- * Needed where one module owns several app menus (`base` has both Apps and
- * Settings), and where Odoo's own icon is unusable: the artwork behind
- * `base,static/description/*.png` is white line art drawn for the dark app
- * drawer, so on a light sidebar it renders as an invisible square.
+ * Only needed where one module owns several app menus and keying on the
+ * module alone would hand both of them the same icon — `base` owns Apps
+ * and Settings. Odoo's own artwork is no help for either: the images
+ * behind `base,static/description/*.png` are white line art drawn for the
+ * dark app drawer, so on a light sidebar they render as an invisible square.
  */
 const ICON_BY_XMLID = {
-    "base.menu_administration": "studio.png",
-    "base.menu_management": "3d-cube.png",
+    "base.menu_administration": "setting.png",
+    "base.menu_management": "apps.svg",
 };
 
 /**
@@ -29,63 +46,70 @@ const ICON_BY_XMLID = {
  * Apps with no entry here fall back to their own Odoo icon — see iconFor().
  */
 const ICON_BY_MODULE = {
-    account: "accounting.png",
+    account: "invoice.png",
     account_accountant: "accounting.png",
-    appointment: "online-conference.png",
+    appointment: "appointment.png",
     barcodes: "barcode.png",
     calendar: "calendar.png",
-    contacts: "contact.png",
+    contacts: "contacts.png",
     crm: "crm.png",
-    discuss: "dicuss.png",
+    data_recycle: "data-recycle.png",
+    discuss: "discuss.png",
     event: "events.png",
-    fleet: "fleet-management.png",
-    helpdesk: "help-desk.png",
-    hr: "employees.png",
+    fleet: "fleet.png",
+    helpdesk: "help desk.png",
+    hr: "employee.png",
     hr_appraisal: "appraisal.png",
-    hr_attendance: "attdences.png",
-    hr_expense: "expenses.png",
-    hr_holidays: "time-out.png",
+    hr_attendance: "attendance.png",
+    hr_expense: "expense.png",
+    hr_holidays: "timeoff.png",
     hr_recruitment: "recruitment.png",
-    hr_skills: "skill mahagement.png",
+    hr_skills: "skil-management.png",
     hr_timesheet: "timesheet.png",
-    im_livechat: "live chat.png",
-    industry_fsm: "field-services.png",
-    knowledge: "knowledge.png",
+    im_livechat: "live-chat.png",
+    industry_fsm: "field services.png",
+    knowledge: "knowladge.png",
     lunch: "lunch.png",
-    mail: "dicuss.png",
+    mail: "discuss.png",
     maintenance: "maintenance.png",
-    marketing_automation: "marketing-automation.png",
+    marketing_automation: "marketing automation.png",
     marketing_card: "marketing-card.png",
-    mass_mailing: "email_marketing.png",
-    mass_mailing_sms: "sms marketing.png",
+    mass_mailing: "email-marketing.png",
+    mass_mailing_sms: "sms-marketing.png",
     mrp: "manufacturing.png",
-    mrp_plm: "product-chain.png",
-    note: "to-do.png",
+    mrp_plm: "plm.png",
+    note: "to-do-list.png",
     planning: "planning.png",
     point_of_sale: "pos.png",
     pos_restaurant: "restaurant.png",
     project: "project.png",
-    project_todo: "to-do.png",
+    project_todo: "to-do-list.png",
     purchase: "purchase.png",
     quality: "quality.png",
     quality_control: "quality.png",
-    repair: "reparis.png",
+    repair: "repair.png",
     sale: "sales.png",
     sale_amazon: "amazon connectio.png",
     sale_management: "sales.png",
-    sale_subscription: "subscription.png",
-    sign: "signature.png",
-    sms: "sms marketing.png",
+    sale_subscription: "subscriptions.png",
+    sign: "sign.png",
+    sms: "sms-marketing.png",
     social: "social marketing.png",
-    spreadsheet_dashboard: "3d-cube.png",
+    spreadsheet_dashboard: "dashboards.svg",
     stock: "inventory.png",
     stock_barcode: "barcode.png",
+    survey: "surveys.png",
     timesheet_grid: "timesheet.png",
+    // Link Tracker's app root is utm.menu_link_tracker_root, not a module
+    // of its own — the obvious `link_tracker` key never matches anything.
+    utm: "link-tracker.svg",
     voip: "phone.png",
+    web_mobile: "android-apple.png",
     web_studio: "studio.png",
     website: "website.png",
+    website_hr_recruitment: "online jobs.png",
     website_sale: "ecommerce.png",
-    website_slides: "elearning.png",
+    website_slides: "e-learning.png",
 };
 
 /**
@@ -94,47 +118,57 @@ const ICON_BY_MODULE = {
  * is `account`, but so is Accounting) and apps installed without an xmlid.
  */
 const ICON_BY_NAME = {
-    accounting: "accounting.png",
+    appointments: "appointment.png",
+    apps: "apps.svg",
+    attendances: "attendance.png",
     calendar: "calendar.png",
-    contacts: "contact.png",
+    contacts: "contacts.png",
     crm: "crm.png",
-    dashboards: "3d-cube.png",
-    discuss: "dicuss.png",
+    dashboards: "dashboards.svg",
+    "data cleaning": "data-recycle.png",
+    discuss: "discuss.png",
     ecommerce: "ecommerce.png",
-    elearning: "elearning.png",
-    employees: "employees.png",
-    "email marketing": "email_marketing.png",
+    elearning: "e-learning.png",
+    "email marketing": "email-marketing.png",
+    employees: "employee.png",
     events: "events.png",
-    expenses: "expenses.png",
-    "field service": "field-services.png",
-    fleet: "fleet-management.png",
-    helpdesk: "help-desk.png",
+    expenses: "expense.png",
+    "field service": "field services.png",
+    fleet: "fleet.png",
+    helpdesk: "help desk.png",
     inventory: "inventory.png",
     invoicing: "invoice.png",
-    knowledge: "knowledge.png",
-    "live chat": "live chat.png",
+    knowledge: "knowladge.png",
+    "link tracker": "link-tracker.svg",
+    "live chat": "live-chat.png",
     lunch: "lunch.png",
     maintenance: "maintenance.png",
     manufacturing: "manufacturing.png",
-    "marketing automation": "marketing-automation.png",
+    "marketing automation": "marketing automation.png",
+    "marketing card": "marketing-card.png",
     mrp: "mrp.png",
     planning: "planning.png",
+    plm: "plm.png",
     "point of sale": "pos.png",
     pos: "pos.png",
     project: "project.png",
     purchase: "purchase.png",
     quality: "quality.png",
     recruitment: "recruitment.png",
-    repairs: "reparis.png",
+    repairs: "repair.png",
+    restaurant: "restaurant.png",
     sales: "sales.png",
-    sign: "signature.png",
-    "sms marketing": "sms marketing.png",
+    settings: "setting.png",
+    sign: "sign.png",
+    skills: "skil-management.png",
+    "sms marketing": "sms-marketing.png",
     "social marketing": "social marketing.png",
     studio: "studio.png",
-    subscriptions: "subscription.png",
+    subscriptions: "subscriptions.png",
+    surveys: "surveys.png",
     timesheets: "timesheet.png",
-    "time off": "time-out.png",
-    "to-do": "to-do.png",
+    "time off": "timeoff.png",
+    "to-do": "to-do-list.png",
     website: "website.png",
 };
 
@@ -198,26 +232,30 @@ export class AppsSidebar extends Component {
     }
 
     get workspaceIcon() {
-        return ICON_ROOT + "employees.png";
+        return ICON_ROOT + "employee.png";
     }
 
     /**
-     * Icon for an app: bundled icon first, then the app's own Odoo icon
-     * (base64 from the menu payload), then the generic placeholder — so an
-     * app we have no artwork for still renders a row rather than a gap.
+     * Icon for an app: bundled artwork first, then the app's own Odoo icon
+     * (base64 from the menu payload), then the neutral placeholder — so an
+     * app we have no artwork for still renders a row rather than a gap, and
+     * never borrows another app's icon.
      *
      * `bundled` tells the template which of the two it got. The bundled set
-     * is dark line art on transparent and has to be inverted in dark mode;
-     * Odoo's own icons must not be, so the two cannot share a class.
+     * is single-colour, so the template paints it through a CSS mask and the
+     * colour follows hover/active state; Odoo's own icons are full-colour
+     * artwork that has to be drawn as-is. The two cannot share a class.
      */
     iconFor(app) {
+        const name = (app.name || "").toLowerCase().trim();
         const module = (app.xmlid || "").split(".")[0];
         const file =
+            ICON_BY_NAME_FIRST[name] ||
             ICON_BY_XMLID[app.xmlid] ||
             ICON_BY_MODULE[module] ||
-            ICON_BY_NAME[(app.name || "").toLowerCase().trim()];
+            ICON_BY_NAME[name];
         if (file) {
-            // Several filenames contain spaces and "&".
+            // Several filenames contain spaces.
             return { src: ICON_ROOT + encodeURIComponent(file), bundled: true };
         }
         if (app.webIconData) {
@@ -230,7 +268,7 @@ export class AppsSidebar extends Component {
                 : "data:image/png;base64,";
             return { src: prefix + app.webIconData.replace(/\s/g, ""), bundled: false };
         }
-        return { src: ICON_ROOT + "3d-cube.png", bundled: true };
+        return { src: ICON_ROOT + ICON_FALLBACK, bundled: true };
     }
 
     /** Real href, so middle-click and ctrl-click open the app in a new tab. */
