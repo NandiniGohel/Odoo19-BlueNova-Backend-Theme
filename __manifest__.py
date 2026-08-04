@@ -1,11 +1,11 @@
 {
-    'name': 'ChromeBlue Elite Backend Theme',
+    'name': 'BlueNova Backend Theme',
     'version': '19.0.1.0.0',
     'category': 'Themes/Backend',
     'summary': 'Premium glossy metallic backend theme with deep royal blue, electric blue accents, silver chrome finishes and modern glassmorphic effects',
     'description': """
-ChromeBlue Elite Backend Theme
-==============================
+BlueNova Backend Theme
+======================
 
 A luxurious, modern visual reskin of the Odoo backend.
 

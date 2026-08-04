@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="static/description/banner.png" alt="ChromeBlue Elite Backend Theme" width="100%">
+  <img src="static/description/banner.png" alt="BlueNova Backend Theme" width="100%">
 </p>
 
-<h1 align="center">ChromeBlue Elite — Odoo 19 Backend Theme</h1>
+<h1 align="center">BlueNova — Odoo 19 Backend Theme</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Odoo-19.0-714B67" alt="Odoo 19.0">
@@ -20,7 +20,7 @@
 
 ## What it is
 
-ChromeBlue Elite restyles the entire Odoo web client from the asset bundle alone. It ships **no
+BlueNova restyles the entire Odoo web client from the asset bundle alone. It ships **no
 Python models, no controllers, no security rules and no data migrations** — everything it adds
 lives in `web.assets_backend`. Activate it and the look changes; uninstall it and Odoo returns to
 stock. Nothing in your database is touched either way.
@@ -81,7 +81,7 @@ git clone https://github.com/NandiniGohel/odoo_theme_backend.git bluegray_modern
 > **Note** — the directory name must be `bluegray_modern_theme`; that is the module's technical
 > name and the asset paths are absolute references to it.
 
-Then in Odoo: **Apps → Update Apps List → search "ChromeBlue Elite" → Activate**.
+Then in Odoo: **Apps → Update Apps List → search "BlueNova" → Activate**.
 
 The module is listed as an application, so it gets its own card under Apps rather than hiding
 behind the "Extra" filter. It never installs itself (`auto_install: False`) — dropping it in the
@@ -215,7 +215,7 @@ in the cascade fight.
 
 ## Uninstall
 
-Apps → ChromeBlue Elite Backend Theme → Uninstall. The backend returns to stock Odoo immediately.
+Apps → BlueNova Backend Theme → Uninstall. The backend returns to stock Odoo immediately.
 Because the module owns no models, fields or records, there is nothing to migrate and nothing to
 lose.
 
