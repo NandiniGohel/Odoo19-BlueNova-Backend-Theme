@@ -16,7 +16,7 @@
 
 @font-face {
     font-family: 'Inter';
-    src: url('/crm_modern_theme/static/src/fonts/Inter-latin.woff2') format('woff2');
+    src: url('/bluegray_modern_theme/static/src/fonts/Inter-latin.woff2') format('woff2');
     font-weight: 100 900;   // variable axis
     font-style: normal;
     font-display: swap;
@@ -32,7 +32,7 @@
 @each $weight in (400, 500, 600, 700) {
     @font-face {
         font-family: 'Poppins';
-        src: url('/crm_modern_theme/static/src/fonts/Poppins-#{$weight}-latin.woff2') format('woff2');
+        src: url('/bluegray_modern_theme/static/src/fonts/Poppins-#{$weight}-latin.woff2') format('woff2');
         font-weight: $weight;
         font-style: normal;
         font-display: swap;

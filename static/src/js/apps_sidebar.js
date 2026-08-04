@@ -5,11 +5,29 @@ import { useService } from "@web/core/utils/hooks";
 import { session } from "@web/session";
 import { themeModeState } from "./theme_mode";
 
-const ICON_ROOT = "/crm_modern_theme/static/src/image/icons/";
+const ICON_ROOT = "/bluegray_modern_theme/static/src/image/icons/";
 const STORAGE_KEY = "cmt_apps_sidebar_open";
 
 /** Neutral placeholder, so an app we have no artwork for still gets a row. */
 const ICON_FALLBACK = "generic-app.svg";
+
+/**
+ * What Odoo puts in `webIconData` when an app has no icon of its own.
+ *
+ * web/models/ir_ui_menu.py builds that field three ways: a full
+ * `data:<mime>;base64,…` URI when the module ships
+ * static/description/icon.png, nothing at all when web_icon names a built
+ * font icon — and, for everything else, this literal *path*. It is a URL,
+ * not image data, so it has to be recognised rather than decoded: read as
+ * base64 it produced `data:image/png;base64,/web/static/…`, which is not
+ * valid base64, and every custom app in the rail rendered as the browser's
+ * broken-image glyph.
+ *
+ * Treated as "this app has no icon" rather than followed, so those apps get
+ * the bundled placeholder — single-colour and mask-painted like the rest of
+ * the rail — instead of Odoo's full-colour default sitting among them.
+ */
+const ODOO_DEFAULT_ICON_PATH = "/web/static/img/default_icon_app.png";
 
 /**
  * Display names that have to be checked before anything else.
@@ -198,13 +216,17 @@ export const appsSidebarState = reactive({
  * currently open. Rendered by the WebClient next to the action manager.
  */
 export class AppsSidebar extends Component {
-    static template = "crm_modern_theme.AppsSidebar";
+    static template = "bluegray_modern_theme.AppsSidebar";
     static props = {};
 
     setup() {
         this.menuService = useService("menu");
         this.sidebar = useState(appsSidebarState);
         this.theme = useState(themeModeState);
+
+        // App ids whose icon failed to load, keyed rather than kept in a Set
+        // so OWL's reactivity picks the write up. See onIconError().
+        this.state = useState({ brokenIcons: {} });
 
         // The menu service has no reactive store; it announces app switches
         // on the bus instead. Re-render on it so the active row follows
@@ -241,6 +263,10 @@ export class AppsSidebar extends Component {
      * app we have no artwork for still renders a row rather than a gap, and
      * never borrows another app's icon.
      *
+     * "The app's own icon" is only the middle branch when Odoo actually has
+     * one. Its stand-in path and any icon that failed to load both drop
+     * straight through to the placeholder — see ODOO_DEFAULT_ICON_PATH.
+     *
      * `bundled` tells the template which of the two it got. The bundled set
      * is single-colour, so the template paints it through a CSS mask and the
      * colour follows hover/active state; Odoo's own icons are full-colour
@@ -258,17 +284,36 @@ export class AppsSidebar extends Component {
             // Several filenames contain spaces.
             return { src: ICON_ROOT + encodeURIComponent(file), bundled: true };
         }
-        if (app.webIconData) {
-            if (app.webIconData.startsWith("data:image")) {
-                return { src: app.webIconData, bundled: false };
+        const iconData = app.webIconData;
+        // An icon that already failed to load once: never offer it again, or
+        // the <img> reinstates the broken glyph on every re-render.
+        if (iconData && !this.state.brokenIcons[app.id] && iconData !== ODOO_DEFAULT_ICON_PATH) {
+            if (iconData.startsWith("data:image")) {
+                return { src: iconData, bundled: false };
+            }
+            // Any other URL Odoo may hand us — served as-is, not decoded.
+            if (iconData.startsWith("/") || iconData.startsWith("http")) {
+                return { src: iconData, bundled: false };
             }
             // Same sniff Odoo uses in menu_providers.js: base64 SVG starts with "P" ("<").
-            const prefix = app.webIconData.startsWith("P")
+            const prefix = iconData.startsWith("P")
                 ? "data:image/svg+xml;base64,"
                 : "data:image/png;base64,";
-            return { src: prefix + app.webIconData.replace(/\s/g, ""), bundled: false };
+            return { src: prefix + iconData.replace(/\s/g, ""), bundled: false };
         }
         return { src: ICON_ROOT + ICON_FALLBACK, bundled: true };
+    }
+
+    /**
+     * An app icon that would not decode — a truncated attachment, a mimetype
+     * that lies about its payload. Recorded so the row re-renders onto the
+     * bundled placeholder: an <img> that errors is left showing the browser's
+     * broken-image glyph, which is worse than no artwork at all.
+     */
+    onIconError(app) {
+        if (!this.state.brokenIcons[app.id]) {
+            this.state.brokenIcons[app.id] = true;
+        }
     }
 
     /** Real href, so middle-click and ctrl-click open the app in a new tab. */

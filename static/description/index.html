@@ -1,0 +1,62 @@
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
+        <h2 class="oe_slogan" style="color:#3959b0;">Modern CRM Backend Theme</h2>
+        <h3 class="oe_slogan">A responsive visual reskin of the Odoo backend, tuned for CRM.</h3>
+        <p class="oe_mt32 text-center">
+            Activate the app and the theme applies to the whole web client.
+            Uninstall it and Odoo goes back to its stock look — no data is touched.
+        </p>
+    </div>
+</section>
+
+<section class="oe_container oe_dark">
+    <div class="oe_row oe_spaced">
+        <h3 class="oe_slogan">What it changes</h3>
+        <div class="oe_span6">
+            <ul>
+                <li><b>Design tokens</b> — Deep Indigo primary, tiered white surfaces, 8/12/16px radii</li>
+                <li><b>Typography</b> — Inter and Poppins, bundled in-module (no CDN request)</li>
+                <li><b>Top navbar</b> — restyled colors and typography</li>
+                <li><b>Left app sidebar</b> replacing Odoo's apps dropdown, with bundled app
+                    icons painted through a CSS mask: grey at rest, blue on hover, a stronger
+                    blue for the app you are in</li>
+            </ul>
+        </div>
+        <div class="oe_span6">
+            <ul>
+                <li><b>Light / dark mode</b>, switched from the sidebar footer and remembered per browser</li>
+                <li><b>Control panel</b> styled as a page header</li>
+                <li><b>Kanban board</b> — 320px stage columns, glassmorphic cards with an accent spine</li>
+                <li><b>CRM pipeline stat banner</b> above the pipeline (no extra RPC)</li>
+                <li><b>Buttons, badges, spacing, shadows</b> and responsive tablet/mobile breakpoints</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
+        <h3 class="oe_slogan">Safe by design</h3>
+        <p class="oe_mt32 text-center">
+            The module ships no Python models, controllers or security rules. Everything it
+            adds lives in the <code>web.assets_backend</code> bundle, so it can be activated
+            and removed at any time without migrating or losing data.
+        </p>
+    </div>
+</section>
+
+<section class="oe_container oe_dark">
+    <div class="oe_row oe_spaced">
+        <h3 class="oe_slogan">Known limits</h3>
+        <div class="oe_span12">
+            <ul>
+                <li>Odoo's slide-in app menu on small screens (below <code>md</code>) is left as-is.</li>
+                <li>Dark mode covers the surfaces this theme styles plus the main
+                    list / form / kanban / dialog chrome. Odoo compiles most other colours
+                    into SCSS, so deeper corners — some reports, iframes and third-party
+                    widgets — can still show light patches.</li>
+                <li>No fixed bottom footer bar and no floating action button.</li>
+            </ul>
+        </div>
+    </div>
+</section>

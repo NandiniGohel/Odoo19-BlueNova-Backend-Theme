@@ -917,6 +917,28 @@
     }
 
     // ── Chatter (the panel beside a form view) ───────────────
+    // The panel that wraps the whole chatter — aside or full width —
+    // is filled `background-color: $o-webclient-background-color` by
+    // chatter/web/form_renderer.scss, i.e. the compiled $o-gray-100
+    // literal #f8f9fa. The pieces inside it (top bar, thread, messages)
+    // are darkened elsewhere in this file, so the fill only survives
+    // where nothing is painted on top of it — and that is precisely the
+    // wrapper's own padding: the 3rem `padding-bottom` under the last
+    // message, the horizontal padding either side of the thread, and
+    // the scrollbar gutter (a scrollbar track is transparent here, so it
+    // shows the *scrolling element's* background, never a child's).
+    // Those strips are the bright hairlines down both edges of the
+    // chatter and the light band across the bottom of the record.
+    //
+    // Filled with the canvas rather than a raised surface: the chatter
+    // reads as sitting directly on the record background, which is what
+    // the thread and .o_content around it already use.
+    .o-mail-ChatterContainer,
+    .o-mail-Form-chatter {
+        background-color: var(--cmt-bg) !important;
+        color: var(--cmt-text);
+    }
+
     // chatter/web_portal/chatter.scss fills .o-mail-Chatter-top with
     // $o-webclient-background-color and, once the strip sticks on
     // scroll, paints a $o-view-background-color gradient over it.

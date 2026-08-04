@@ -9,7 +9,7 @@
         Hidden below the md breakpoint: on small screens Odoo keeps its own
         slide-in app menu, which we leave untouched.
     -->
-    <t t-name="crm_modern_theme.AppsSidebar">
+    <t t-name="bluegray_modern_theme.AppsSidebar">
         <nav t-if="sidebar.isOpen" class="cmt-app-sidebar d-none d-md-flex" aria-label="Applications">
 
             <!-- Workspace header: active company + database -->
@@ -46,6 +46,7 @@
                         <img t-else=""
                              class="cmt-app-sidebar__app-icon cmt-app-sidebar__app-icon--native"
                              t-att-src="icon.src"
+                             t-on-error="() => this.onIconError(app)"
                              alt=""/>
                         <span class="cmt-app-sidebar__app-label" t-esc="app.name"/>
                     </a>
@@ -81,7 +82,7 @@
         instead, which places the sidebar beside the action manager while
         leaving both as direct children.
     -->
-    <t t-name="crm_modern_theme.WebClient" t-inherit="web.WebClient" t-inherit-mode="extension">
+    <t t-name="bluegray_modern_theme.WebClient" t-inherit="web.WebClient" t-inherit-mode="extension">
         <xpath expr="//ActionContainer" position="before">
             <AppsSidebar t-if="!state.fullscreen"/>
         </xpath>
@@ -94,7 +95,7 @@
         follows it in the original stays put, as does the small-screen branch
         above (Odoo's own slide-in menu, still the right UI on mobile).
     -->
-    <t t-name="crm_modern_theme.NavBarAppsMenu" t-inherit="web.NavBar.AppsMenu" t-inherit-mode="extension">
+    <t t-name="bluegray_modern_theme.NavBarAppsMenu" t-inherit="web.NavBar.AppsMenu" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('o_navbar_apps_menu')]" position="replace">
             <div t-if="!isScopedApp" class="o_navbar_apps_menu">
                 <button type="button"

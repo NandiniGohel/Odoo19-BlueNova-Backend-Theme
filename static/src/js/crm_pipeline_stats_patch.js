@@ -11,7 +11,7 @@
  *   approach for adding sub-components to an existing OWL class.
  */
 import { CrmKanbanRenderer } from "@crm/views/crm_kanban/crm_kanban_renderer";
-import { CrmPipelineStats } from "@crm_modern_theme/js/crm_pipeline_stats";
+import { CrmPipelineStats } from "@bluegray_modern_theme/js/crm_pipeline_stats";
 
 try {
     CrmKanbanRenderer.components = {
@@ -21,10 +21,10 @@ try {
 
     // Point to the primary-inherited template that prepends the stats
     // banner before the kanban renderer div.
-    CrmKanbanRenderer.template = "crm_modern_theme.CrmKanbanRenderer";
+    CrmKanbanRenderer.template = "bluegray_modern_theme.CrmKanbanRenderer";
 } catch (e) {
     console.warn(
-        "[crm_modern_theme] Could not patch CRM kanban renderer for stats banner:",
+        "[bluegray_modern_theme] Could not patch CRM kanban renderer for stats banner:",
         e
     );
 }
