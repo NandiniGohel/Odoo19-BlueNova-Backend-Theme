@@ -17,6 +17,15 @@ Key Features:
 • Clean white main content area with subtle depth
 • Fully supports Light & Dark mode
 • Applies to the entire web client (navbar, sidebar, control panel, kanban, list, form views, etc.)
+• Editable light-mode colours under Settings > Theme Settings, with an
+  uploadable sidebar brand image and JSON preset import / export / reset.
+  Changes apply on save — no asset rebuild or server restart.
+• The same theme on the login, signup and reset-password pages, including
+  dark mode, an optional logo and background image, and a tagline.
+• A themed Dashboard app: KPI tiles for whichever apps are installed and
+  readable by the user, optionally opened automatically after login.
+• An optional themed public page at / for anonymous visitors. Off by
+  default, and it stands down when the `website` module is installed.
 
 Uninstall the module to instantly return to the default Odoo look.
 No data is modified.
@@ -29,30 +38,95 @@ No data is modified.
         'base_setup',
     ],
     'data': [
-        # Uncomment when you add the files
-        # 'views/assets.xml',
+        'security/ir.model.access.csv',
+
+        # Renders the colours saved under Settings > Theme Settings into
+        # the backend page head, after the compiled bundles.
+        'views/theme_styles.xml',
+
+        # The unauthenticated surfaces. Both render through
+        # web.frontend_layout and read the same colours as the backend;
+        # neither needs a dependency beyond `web`.
+        'views/auth_theme.xml',
+        'views/public_home.xml',
+
+        # The landing dashboard: client action + its app menu.
+        'views/home_dashboard_actions.xml',
+
+        'wizard/theme_import_wizard_views.xml',
+        'views/res_config_settings_views.xml',
     ],
     'assets': {
+        # ── Brand colours ────────────────────────────────────────
+        # ('prepend', …), not a plain entry: core's own
+        # primary_variables.scss declares $o-brand-primary and friends
+        # with `!default` and then derives a dozen more variables from
+        # them on the spot. Loading after it would win the assignment
+        # and lose every derivation. See the header comment in the file
+        # itself.
+        'web._assets_primary_variables': [
+            ('prepend', 'bluenova_backend_theme/static/src/scss/primary_variables.scss'),
+        ],
+
+        # ── The web client ───────────────────────────────────────
+        # Appended to the end of web.assets_backend, so these rules land
+        # after core's and win at equal specificity.
         'web.assets_backend': [
-            'bluegray_modern_theme/static/src/scss/fonts.scss',
-            'bluegray_modern_theme/static/src/scss/variables.scss',
-            'bluegray_modern_theme/static/src/scss/base.scss',
-            'bluegray_modern_theme/static/src/scss/navbar.scss',
-            'bluegray_modern_theme/static/src/scss/apps_sidebar.scss',
-            'bluegray_modern_theme/static/src/scss/control_panel.scss',
-            'bluegray_modern_theme/static/src/scss/kanban.scss',
-            'bluegray_modern_theme/static/src/scss/stats_banner.scss',
-            'bluegray_modern_theme/static/src/scss/buttons_misc.scss',
-            'bluegray_modern_theme/static/src/scss/responsive.scss',
+            'bluenova_backend_theme/static/src/scss/fonts.scss',
+            'bluenova_backend_theme/static/src/scss/variables.scss',
+            'bluenova_backend_theme/static/src/scss/base.scss',
+            'bluenova_backend_theme/static/src/scss/navbar.scss',
+            'bluenova_backend_theme/static/src/scss/apps_sidebar.scss',
+            'bluenova_backend_theme/static/src/scss/control_panel.scss',
+            'bluenova_backend_theme/static/src/scss/kanban.scss',
+            'bluenova_backend_theme/static/src/scss/stats_banner.scss',
+            # After apps_sidebar.scss and base.scss: it uses the
+            # cmt-masked-icon and cmt-label-sm mixins they define, and a
+            # bundle is compiled as one SCSS document in this order.
+            'bluenova_backend_theme/static/src/scss/home_dashboard.scss',
+            'bluenova_backend_theme/static/src/scss/settings_page.scss',
+            'bluenova_backend_theme/static/src/scss/buttons_misc.scss',
+            'bluenova_backend_theme/static/src/scss/responsive.scss',
             # Last: overrides every surface above once dark mode is on.
-            'bluegray_modern_theme/static/src/scss/dark_mode.scss',
-            'bluegray_modern_theme/static/src/js/theme_mode.js',
-            'bluegray_modern_theme/static/src/js/apps_sidebar.js',
-            'bluegray_modern_theme/static/src/js/apps_sidebar_patch.js',
-            'bluegray_modern_theme/static/src/js/crm_pipeline_stats.js',
-            'bluegray_modern_theme/static/src/js/crm_pipeline_stats_patch.js',
-            'bluegray_modern_theme/static/src/xml/apps_sidebar.xml',
-            'bluegray_modern_theme/static/src/xml/crm_pipeline_stats.xml',
+            'bluenova_backend_theme/static/src/scss/dark_mode.scss',
+
+            'bluenova_backend_theme/static/src/js/theme_mode.js',
+            'bluenova_backend_theme/static/src/js/apps_sidebar_state.js',
+            'bluenova_backend_theme/static/src/js/apps_sidebar.js',
+            'bluenova_backend_theme/static/src/js/apps_sidebar_patch.js',
+            'bluenova_backend_theme/static/src/js/home_dashboard.js',
+
+            'bluenova_backend_theme/static/src/xml/apps_sidebar.xml',
+            'bluenova_backend_theme/static/src/xml/home_dashboard.xml',
+        ],
+
+        # ── Login, signup, reset-password and the public page ────
+        # These render through web.frontend_layout, which pulls
+        # web.assets_frontend — a different bundle from the backend one,
+        # so none of the stylesheets above reach them.
+        #
+        # Only four files, not the whole backend set:
+        #
+        #   fonts.scss     — the @font-face rules; the bundles are
+        #                    compiled separately, so the backend's copy
+        #                    is not shared.
+        #   variables.scss — the cmt token block every rule below reads.
+        #   auth_pages.scss / public_home.scss — the surfaces themselves.
+        #
+        # dark_mode.scss is deliberately left out. It is written against
+        # backend DOM that does not exist here; the two files below
+        # carry their own :root[data-cmt-theme="dark"] blocks for the
+        # handful of surfaces they own.
+        #
+        # primary_variables.scss needs no entry: web.assets_frontend
+        # includes web._assets_frontend_helpers, which includes
+        # web._assets_primary_variables — the same bundle the block at
+        # the top of this dict prepends to.
+        'web.assets_frontend': [
+            'bluenova_backend_theme/static/src/scss/fonts.scss',
+            'bluenova_backend_theme/static/src/scss/variables.scss',
+            'bluenova_backend_theme/static/src/scss/auth_pages.scss',
+            'bluenova_backend_theme/static/src/scss/public_home.scss',
         ],
     },
     'images': [
