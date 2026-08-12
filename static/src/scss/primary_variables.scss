@@ -63,3 +63,31 @@ $o-brand-primary: #3959b0;
 // $o-enterprise-action-color since. Pointed at the brand so those
 // badges match the rest of the theme.
 $o-enterprise-action-color: #3959b0;
+
+// ── Type scale ───────────────────────────────────────────────
+// One notch smaller than stock, matching the -1px applied to every
+// font-size the theme declares in its own stylesheets.
+//
+// These four have to be overridden here rather than chased per
+// selector: they are the roots of Odoo's whole type scale. Lowering
+// $o-font-size-base moves $font-size-base, every .fs-1….fs-6 (Odoo
+// derives $h1…$h6 as multiples of it in bootstrap_overridden.scss),
+// $input-btn-font-size, table cells, form controls — the several
+// hundred places nobody would want to restate. $o-font-size-base-small
+// does the same for $font-size-sm, which Odoo also assigns to
+// $small-font-size (so <small>, .small and <code>) and Bootstrap to
+// $input-btn-font-size-sm (so every .btn-sm).
+//
+// Because the heading classes are *multipliers*, they scale rather
+// than shifting by exactly 1px: .fs-5 was 14 × 1.1 = 15.4px and is
+// now 13 × 1.1 = 14.3px. Pinning each $hN-font-size to an exact
+// -1px value instead would flatten the scale's proportions, which is
+// a different change from the one asked for.
+//
+// o-to-rem() is safe this early: its base is a hardcoded default of
+// 16, not $o-root-font-size, so it does not depend on anything core's
+// primary_variables.scss declares after this file.
+$o-font-size-base: o-to-rem(13px);          // was 14px
+$o-font-size-base-touch: o-to-rem(15px);    // was 16px
+$o-font-size-base-small: o-to-rem(12px);    // was 13px
+$o-font-size-base-smaller: o-to-rem(11px);  // was 12px

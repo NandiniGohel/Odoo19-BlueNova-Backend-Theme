@@ -17,7 +17,7 @@
     // reads as navigation.
     .o_breadcrumb .o_last_breadcrumb_item {
         font-family: var(--cmt-font-sans);
-        font-size: 32px;
+        font-size: 31px;
         line-height: 40px;
         font-weight: 600;
         letter-spacing: -0.01em;
@@ -26,13 +26,13 @@
 
     .o_breadcrumb .breadcrumb-item,
     .o_back_button {
-        font-size: 13px;
+        font-size: 12px;
         color: var(--cmt-text-muted);
     }
 
     // Odoo's own `fs-4` on the last crumb would otherwise win.
     .o_breadcrumb .o_last_breadcrumb_item.fs-4 {
-        font-size: 32px !important;
+        font-size: 31px !important;
     }
 }
 
@@ -48,7 +48,7 @@
 
     input {
         font-family: var(--cmt-font-sans);
-        font-size: 14px;
+        font-size: 13px;
         color: var(--cmt-search-text);
 
         &::placeholder {

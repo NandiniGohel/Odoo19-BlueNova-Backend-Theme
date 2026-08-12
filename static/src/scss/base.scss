@@ -9,7 +9,7 @@
     color: var(--cmt-text);
 
     // body-md — 15px/22px is the spec's default reading size.
-    font-size: 15px;
+    font-size: 14px;
     line-height: 22px;
 
     .o_action_manager {
@@ -25,7 +25,7 @@
 // ragged against each other in the kanban and list views.
 @mixin cmt-label-sm {
     font-family: var(--cmt-font-label);
-    font-size: 12px;
+    font-size: 11px;
     line-height: 16px;
     font-weight: 500;
     letter-spacing: var(--cmt-tracking-label);

@@ -43,7 +43,7 @@
     // headline-lg — Inter 32px/40px 600
     .cmt-stat-card__value {
         font-family: var(--cmt-font-sans);
-        font-size: 32px;
+        font-size: 31px;
         line-height: 40px;
         font-weight: 600;
         color: var(--cmt-text);
@@ -74,7 +74,7 @@
         padding: 0 16px 16px;
 
         .cmt-stat-card__value {
-            font-size: 24px;         // headline-lg-mobile
+            font-size: 23px;         // headline-lg-mobile
             line-height: 32px;
         }
     }
