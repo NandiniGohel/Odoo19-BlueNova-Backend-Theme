@@ -383,13 +383,13 @@ class ResConfigSettings(models.TransientModel):
     # is added on the way out by _THEME_METRIC_VARS. Shared by both
     # colour schemes — a type scale is not a palette.
     theme_home_title_size = fields.Integer(
-        string="Title Size (px)", default=60,
+        string="Title Size (px)", default=59,
         config_parameter="bluenova_backend_theme.home_title_size")
     theme_home_title_weight = fields.Integer(
         string="Title Weight", default=800,
         config_parameter="bluenova_backend_theme.home_title_weight")
     theme_home_lead_size = fields.Integer(
-        string="Lead Size (px)", default=16,
+        string="Lead Size (px)", default=15,
         config_parameter="bluenova_backend_theme.home_lead_size")
     theme_home_lead_weight = fields.Integer(
         string="Lead Weight", default=500,
