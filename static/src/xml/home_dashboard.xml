@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!--
+        The themed landing page.
+
+        OWL 2 markup rendered by the HomeDashboard client action, so `this`
+        is the component: state lives under `state`, clicks are `t-on-*`
+        handlers, and the tile loop carries a t-key.
+
+        Every tile in `state.tiles` was already filtered server-side to
+        apps that are installed *and* readable by this user, so there is
+        no visibility logic here — an empty list simply falls through to
+        the empty state, which is what a bare database with no business
+        apps installed sees.
+
+        The tiles are <button>s rather than divs because they are click
+        targets: that is what makes them reachable and activatable from
+        the keyboard for free. A tile whose action could not be resolved
+        arrives with action_id false and is rendered disabled — it still
+        shows its figure, it just does not navigate.
+    -->
+    <t t-name="bluenova_backend_theme.HomeDashboard">
+        <div class="cmt-dashboard">
+
+            <header class="cmt-dashboard__header">
+                <h1 class="cmt-dashboard__greeting">
+                    <t t-esc="greeting"/><t t-if="state.userName">, <t t-esc="state.userName"/></t>
+                </h1>
+                <p class="cmt-dashboard__sub" t-esc="state.companyName"/>
+            </header>
+
+            <div class="cmt-dashboard__tiles" t-if="state.tiles.length">
+                <button type="button"
+                        class="cmt-dashboard__tile"
+                        t-foreach="state.tiles" t-as="tile" t-key="tile.key"
+                        t-att-disabled="tile.action_id ? null : 'disabled'"
+                        t-on-click="() => this.onTileClick(tile)">
+                    <span class="cmt-dashboard__tile-icon"
+                          t-attf-style="--cmt-icon-url: url('{{ tile.icon }}')"/>
+                    <span class="cmt-dashboard__tile-value" t-esc="tile.value"/>
+                    <span class="cmt-dashboard__tile-label" t-esc="tile.label"/>
+                    <span class="cmt-dashboard__tile-sub" t-esc="tile.sub"/>
+                </button>
+            </div>
+            <div class="cmt-dashboard__empty" t-else="">
+                <i class="fa fa-th-large cmt-dashboard__empty-icon" role="img"/>
+                <p>No apps to summarise yet. Install an app and its figures appear here.</p>
+            </div>
+
+        </div>
+    </t>
+
+</templates>

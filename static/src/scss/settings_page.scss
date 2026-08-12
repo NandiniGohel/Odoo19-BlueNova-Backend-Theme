@@ -1,0 +1,119 @@
+// ============================================================
+// Settings > Theme Settings — layout
+//
+// Scoped to this module's own panel, so nothing here touches any other
+// settings screen. On 14 the panel was a hand-written
+// `<div class="app_settings_block cmt-theme-settings">` and the scope
+// was that extra class; Odoo 19 compiles the panel from an `<app>`
+// element (web/…/settings_form_compiler.js), which emits only
+// `class="app_settings_block"` plus `data-key`. The attribute selector
+// below is therefore the hook — `data-key` is the module's technical
+// name and is exactly as stable as the class was.
+//
+// Why this file exists at all: the screen is ~60 label/swatch pairs in
+// two columns, and Bootstrap's `d-flex justify-content-between` is not
+// enough to lay that out safely. A flex item defaults to
+// `min-width: auto`, which refuses to shrink below its content — so a
+// long label ("Search Placeholder (Dark)") next to a fixed-size colour
+// swatch pushes the swatch out of the box rather than wrapping, and at
+// the lg breakpoint, where the two columns are at their narrowest
+// relative to their content, it does so on a perfectly ordinary
+// desktop. That single `min-width: 0` is the whole fix, and it cannot
+// be expressed as a utility class.
+// ============================================================
+.app_settings_block[data-key="bluenova_backend_theme"] {
+
+    // ── Label + control rows ─────────────────────────────────
+    .cmt-setting-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 6px;
+
+        > label {
+            // The two halves of the fix: shrink before the control
+            // does, and wrap rather than overflow.
+            flex: 1 1 auto;
+            min-width: 0;
+            margin-bottom: 0;
+            overflow-wrap: break-word;
+        }
+
+        // The colour swatch and the number input keep their size.
+        > .o_field_widget {
+            flex: 0 0 auto;
+            margin-bottom: 0;
+        }
+    }
+
+    // Odoo's FieldColor renders a round swatch; give it a consistent
+    // hit area so a column of them reads as a column.
+    .o_field_color {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+    }
+
+    // Number inputs (hero typography). Wide enough for four digits and
+    // no wider — a full-width input in a two-column settings panel
+    // reads as a text field and invites prose.
+    .cmt-setting-number.o_field_widget input,
+    input.cmt-setting-number {
+        width: 84px;
+        text-align: right;
+    }
+
+    // ── Checkbox rows ────────────────────────────────────────
+    // Left-aligned, unlike the label/control rows above: a checkbox
+    // pushed to the far right of a wide box loses its association with
+    // the label entirely.
+    .cmt-setting-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+
+        > label {
+            min-width: 0;
+            margin-bottom: 0;
+            overflow-wrap: break-word;
+        }
+
+        .o_field_widget {
+            flex: 0 0 auto;
+            margin-bottom: 0;
+        }
+    }
+
+    // ── Image uploads ────────────────────────────────────────
+    // Several boxes stack two of these (light and dark). Core's
+    // .oe_avatar floats and has a fixed height, which overlaps the
+    // label of the pair below it once there is more than one.
+    .oe_avatar {
+        float: none;
+        display: block;
+        max-width: 120px;
+        max-height: 120px;
+        margin: 4px 0 12px;
+    }
+
+    // ── Narrow screens ───────────────────────────────────────
+    // Below sm the boxes are already full-width, but the label and its
+    // control still sit on one line, which is where the longest labels
+    // finally run out of room. Stack them instead.
+    @media (max-width: 575.98px) {
+        .cmt-setting-row {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .cmt-setting-number.o_field_widget input,
+        input.cmt-setting-number {
+            width: 100%;
+            text-align: left;
+        }
+    }
+}

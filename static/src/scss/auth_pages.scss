@@ -1,0 +1,420 @@
+// ============================================================
+// Login / signup / reset-password
+//
+// Scoped entirely under .o_bluenova_auth_page, the class
+// views/auth_theme.xml puts on <body>. Nothing here can reach the
+// backend even though both bundles declare the same token names.
+//
+// Two things this file cannot borrow from the backend, because the
+// frontend is a separately compiled bundle:
+//
+//   • the mixins in base.scss (cmt-label-sm, cmt-bs-vars) — not in
+//     this bundle, so the few declarations they would have produced
+//     are written out longhand below;
+//   • dark_mode.scss — 1.6k lines of backend selectors. Only the
+//     handful of tokens this page actually reads are restated in the
+//     dark block at the bottom.
+//
+// Core's markup is fixed (web.login_layout is Odoo's, not ours), so a
+// few of its Bootstrap utilities have to be beaten rather than
+// removed: `bg-100` on the body and the card, and the inline
+// `max-width: 300px` on the card, which no stylesheet can outrank
+// without !important.
+// ============================================================
+
+.o_bluenova_auth_page {
+    min-height: 100%;
+    // !important throughout this file's background declarations: core
+    // puts `bg-100` on both the body and the card, and Odoo generates
+    // its bg utilities with !important, so a plain declaration here
+    // loses and the page stays stock grey.
+    background-color: var(--cmt-login-bg) !important;
+
+    // Only painted when an image is actually uploaded:
+    // --cmt-login-bg-image is emitted by _get_theme_css() and absent
+    // otherwise, so the fallback in var() is what normally applies.
+    background-image: var(--cmt-login-bg-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    font-family: var(--cmt-font-sans);
+    color: var(--cmt-text);
+
+    // ── The card ─────────────────────────────────────────────
+    .card {
+        // Beats the inline style="max-width: 300px" on core's div.
+        // 300px was sized for the stock form; the padding and type
+        // scale below need the extra room.
+        max-width: 420px !important;
+        width: 100%;
+
+        // An opaque panel, and deliberately *not* a glass one.
+        //
+        // This used to carry `backdrop-filter: blur(--cmt-glass-blur)`.
+        // Behind an opaque fill that blur is invisible and buys
+        // nothing — but the moment the fill does not paint (a token
+        // that fails to resolve, a stale bundle, a browser that drops
+        // the declaration) the blur is still there, and a bright
+        // background photo blurred at 20px renders as a flat milky
+        // grey panel. In dark mode that puts near-white heading text
+        // on a near-white surface and the heading disappears.
+        //
+        // The backend's kanban cards read as glass through their
+        // border and shadow rather than their alpha (see the note in
+        // dark_mode.scss); the login panel now does the same, and has
+        // no failure mode that can silently invert its own contrast.
+        // The fallback is not decoration: if --cmt-login-card-bg ever
+        // fails to resolve, `background` is invalid at computed-value
+        // time and computes to `transparent` rather than to anything
+        // sensible. --cmt-surface is declared in both schemes, so the
+        // panel stays on the right side of the palette either way.
+        background: var(--cmt-login-card-bg, var(--cmt-surface)) !important;
+        border: var(--cmt-glass-border);
+        border-radius: var(--cmt-radius-xl);
+        box-shadow: var(--cmt-shadow-lg), var(--cmt-chrome-inset);
+    }
+
+    .card-body {
+        padding: 32px;
+    }
+
+    // ── Branding ─────────────────────────────────────────────
+    .o_bluenova_auth_logo {
+        max-height: 72px;
+        max-width: 100%;
+        width: auto;
+    }
+
+    // Heading + standfirst, per the reference design. Which of the
+    // three pairs of strings appears is decided in views/auth_theme.xml
+    // from the request path; the styling is shared.
+    .o_bluenova_auth_heading {
+        margin: 16px 0 0;
+        font-size: 26px;
+        line-height: 34px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: var(--cmt-text);
+    }
+
+    .o_bluenova_auth_lede {
+        margin: 6px 0 0;
+        font-size: 13px;
+        line-height: 18px;
+        color: var(--cmt-text-muted);
+    }
+
+    .o_bluenova_auth_tagline {
+        margin-top: 12px;
+        font-family: var(--cmt-font-label);
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: var(--cmt-tracking-label);
+        text-transform: uppercase;
+        color: var(--cmt-text-muted);
+    }
+
+    // The two hairlines core draws around the logo block and the
+    // footer links. Bootstrap's border utilities compile a literal
+    // grey, so both are restated in the theme's own border token.
+    .border-bottom,
+    .border-top {
+        border-color: var(--cmt-border) !important;
+    }
+
+    // ── Form ─────────────────────────────────────────────────
+    label {
+        font-family: var(--cmt-font-label);
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: var(--cmt-tracking-label);
+        text-transform: uppercase;
+        color: var(--cmt-text-muted);
+        margin-bottom: 6px;
+    }
+
+    .form-control {
+        height: auto;
+        padding: 10px 14px;
+        background-color: var(--cmt-auth-input-bg);
+        border: 1px solid var(--cmt-auth-input-border);
+        border-radius: var(--cmt-radius-md);
+        color: var(--cmt-auth-input-text);
+        box-shadow: none;
+        transition: border-color .2s ease, box-shadow .2s ease;
+
+        &::placeholder {
+            color: var(--cmt-auth-input-placeholder);
+        }
+
+        &:focus {
+            background-color: var(--cmt-auth-input-bg);
+            border-color: var(--cmt-primary);
+            color: var(--cmt-auth-input-text);
+            // Same ring the backend inputs use. The triplet form of the
+            // brand colour exists precisely so it can be given an alpha
+            // here — CSS cannot decompose a hex.
+            box-shadow: 0 0 0 3px rgba(var(--cmt-primary-rgb), 0.25);
+        }
+    }
+
+    // The database picker on a multi-db instance.
+    .input-group-append .btn {
+        border-radius: 0 var(--cmt-radius-md) var(--cmt-radius-md) 0;
+    }
+
+    // ── Field icons ──────────────────────────────────────────
+    // The reference design puts a glyph inside each field. Doing that
+    // with markup would mean wrapping every input in an input-group —
+    // i.e. rewriting web.login, auth_signup.signup and
+    // auth_signup.reset_password, two of which are in a module this one
+    // does not depend on.
+    //
+    // So it is done in CSS, keyed on the ids Odoo already gives those
+    // inputs. An <input> cannot carry ::before or ::after (it has no
+    // content box to put them in), which is why these are background
+    // images rather than pseudo-elements.
+    //
+    // The SVGs are inlined as data URIs: an external file would be a
+    // second request on a page whose whole job is to load fast, and
+    // #6b7280 is the resting icon grey used elsewhere in the theme.
+    // A data URI cannot read currentColor, so the dark block at the
+    // bottom of this file re-declares these with a lighter stroke.
+    #login,
+    #password,
+    #confirm_password,
+    #name {
+        padding-left: 40px;
+        background-repeat: no-repeat;
+        background-position: 14px center;
+        background-size: 15px 15px;
+    }
+
+    #login {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z'/%3E%3Cpolyline points='22,6 12,13 2,6'/%3E%3C/svg%3E");
+    }
+
+    #name {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E");
+    }
+
+    #password,
+    #confirm_password {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2' ry='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E");
+    }
+
+    // ── Buttons ──────────────────────────────────────────────
+    // --cmt-auth-action-* rather than the global --cmt-button-*: the
+    // reference design gives the login action a deeper navy than the
+    // backend's buttons, and the settings screen carries its own pair
+    // of pickers for it. The light aliases in variables.scss point back
+    // at the button tokens, so an instance that never touches those
+    // pickers still matches the backend.
+    .btn-primary {
+        padding: 11px 16px;
+        background: var(--cmt-auth-action-bg);
+        border: none;
+        border-radius: var(--cmt-radius-md);
+        color: var(--cmt-auth-action-text);
+        font-family: var(--cmt-font-label);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        box-shadow: var(--cmt-shadow-sm);
+        transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+
+        &:hover,
+        &:focus {
+            background: var(--cmt-auth-action-bg);
+            color: var(--cmt-auth-action-text);
+            filter: brightness(1.08);
+            box-shadow: var(--cmt-shadow-md);
+        }
+
+        &:active {
+            transform: translateY(1px);
+        }
+
+        &:focus {
+            box-shadow: var(--cmt-shadow-md), 0 0 0 3px rgba(var(--cmt-primary-rgb), 0.3);
+        }
+    }
+
+    // The trailing arrow from the reference design. A pseudo-element on
+    // the button, not a character in the label, so it stays out of the
+    // translated string and out of the accessible name.
+    .oe_login_buttons .btn-primary::after {
+        content: "\2192";   // →
+        margin-left: 8px;
+        font-weight: 400;
+    }
+
+    // "Don't have an account?", "Reset Password", "Log in as superuser".
+    .btn-link,
+    a {
+        color: var(--cmt-primary);
+
+        &:hover {
+            color: var(--cmt-primary-dark);
+        }
+    }
+
+    // ── Alerts ───────────────────────────────────────────────
+    // Bootstrap compiles these from literal theme colours, so the
+    // fill, border and text are all restated against the semantic
+    // tokens — the four the "Semantic Colors" box on the settings
+    // screen drives — to keep them legible in both schemes.
+    //
+    // The fill is the page's own surface rather than a tinted wash of
+    // the status colour. A wash would need the token at low alpha, and
+    // CSS cannot decompose a custom property into channels; hardcoding
+    // `rgba(239, 68, 68, .12)` would mean the fill silently ignored
+    // whatever an admin picked for Danger. Surface plus a coloured
+    // border and text carries the same signal and actually follows the
+    // setting.
+    .alert {
+        background: var(--cmt-surface-dim);
+        border-radius: var(--cmt-radius-md);
+        border-width: 1px;
+        border-style: solid;
+        border-left-width: 3px;
+        font-size: 13px;
+    }
+
+    .alert-danger {
+        border-color: var(--cmt-danger);
+        color: var(--cmt-danger);
+    }
+
+    .alert-success {
+        border-color: var(--cmt-success);
+        color: var(--cmt-success);
+    }
+
+    .alert-warning {
+        border-color: var(--cmt-warning);
+        color: var(--cmt-warning);
+    }
+
+    .alert-info {
+        border-color: var(--cmt-info);
+        color: var(--cmt-info);
+    }
+
+    // ── Footer ───────────────────────────────────────────────
+    .card-body > .text-center.small {
+        color: var(--cmt-text-muted);
+    }
+}
+
+// ── Dark mode ────────────────────────────────────────────────
+// Set on <html> by the inline script in views/auth_theme.xml, from
+// the same localStorage key js/theme_mode.js writes in the backend —
+// so whichever mode the user last chose is the one the login page
+// comes back in.
+//
+// Only the tokens these pages read are restated; the values are the
+// ones dark_mode.scss uses for the same tokens in the backend, so the
+// two surfaces match.
+//
+// The declarations sit on a *bare* `:root[data-cmt-theme="dark"]`,
+// with no descendant selector, and that is load-bearing rather than
+// stylistic. These are defaults; the settings screen's "Dark Mode
+// Colors" overrides them through _get_theme_css_dark(), which emits
+// that exact selector. Nesting them under `.o_bluenova_auth_page`
+// would make this rule (0,3,0) outrank the settings block (0,2,0) and
+// every dark colour an admin picked would silently do nothing. Equal
+// specificity is what lets document order decide — and the settings
+// <style> is in <body>, after this compiled bundle in <head>.
+//
+// Scoping is not lost by dropping the class: the frontend bundle only
+// loads on frontend pages, and data-cmt-theme is only ever set by the
+// two templates in this module.
+:root[data-cmt-theme="dark"] {
+    color-scheme: dark;
+
+    --cmt-primary: #7c9aff;
+    --cmt-primary-dark: #a5b8ff;
+    --cmt-primary-rgb: 124, 154, 255;
+    --cmt-on-primary: #0b1120;
+
+    --cmt-bg: #0b1120;
+    --cmt-surface: #131c31;
+    --cmt-border: #243149;
+    --cmt-outline: #64748b;
+
+    --cmt-text: #e2e8f0;
+    --cmt-text-muted: #94a3b8;
+    --cmt-surface-dim: #0f1728;
+
+    // Lifted variants: the light reds and greens fall below the
+    // contrast floor on a near-black canvas. These are only the
+    // defaults — the semantic pickers have no dark twin, so
+    // _get_theme_css_dark() re-emits whatever an admin chose into this
+    // same selector (see _THEME_SHARED_COLOR_FIELDS) and one choice
+    // covers both schemes.
+    --cmt-info: #38bdf8;
+    --cmt-success: #34d399;
+    --cmt-warning: #fbbf24;
+    --cmt-danger: #f87171;
+
+    --cmt-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --cmt-shadow-md: 0 4px 15px rgba(0, 0, 0, 0.35);
+    --cmt-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.45);
+    --cmt-chrome-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --cmt-glass-border: 1px solid rgba(255, 255, 255, 0.08);
+
+    // The settings-driven aliases have to be restated too. Their
+    // definitions in variables.scss are lazy — --cmt-login-bg is
+    // var(--cmt-bg) — but only while nobody has saved a colour:
+    // _get_theme_css() re-declares them as literals under
+    // :root:not([data-cmt-theme="dark"]), which is exactly the
+    // selector that stops applying here. Without these lines a
+    // customised instance would fall back to the compiled light
+    // values in dark mode.
+    --cmt-login-bg: #0b1120;
+    --cmt-login-card-bg: #131c31;
+    --cmt-auth-action-bg: #1e3a8a;
+    --cmt-auth-action-text: #ffffff;
+    --cmt-button-bg: #7c9aff;
+    --cmt-button-text: #0b1120;
+
+    // The inputs stay light on the dark panel — the one place this
+    // theme's dark scheme deliberately inverts.
+    //
+    // Everything else on the card is a surface you read; these are the
+    // two you type into, and on a #131c31 panel a #0f1728 field is a
+    // barely-darker rectangle that reads as a disabled control rather
+    // than an empty one. A light field is unmistakable, and it is the
+    // pattern the reference design uses.
+    //
+    // Note these are --cmt-auth-input-*, not --cmt-search-*: the two
+    // are aliased in light mode but separate names, precisely so this
+    // inversion does not reach the backend's top bar search. See the
+    // note in variables.scss.
+    --cmt-auth-input-bg: #e8edf5;
+    --cmt-auth-input-text: #0f172a;
+    --cmt-auth-input-border: #cbd5e1;
+    --cmt-auth-input-placeholder: #64748b;
+
+    // No dark override for the field glyphs, deliberately.
+    //
+    // There used to be one: the whole SVG repeated with a #94a3b8
+    // stroke, because #6b7280 on a #0f1728 field read as a smudge. The
+    // fields are light in dark mode now, so the light-mode stroke is
+    // the correct one in both schemes and a lightened glyph would be
+    // the thing that disappears. One set of icons, both modes.
+}
+
+// ── Responsive ───────────────────────────────────────────────
+@media (max-width: 575.98px) {
+    .o_bluenova_auth_page {
+        .card-body {
+            padding: 24px 20px;
+        }
+
+        .o_bluenova_auth_logo {
+            max-height: 56px;
+        }
+    }
+}

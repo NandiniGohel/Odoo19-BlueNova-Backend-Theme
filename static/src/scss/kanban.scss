@@ -20,6 +20,16 @@
     .o_kanban_renderer {
         --Kanban-background: var(--cmt-bg);
         --KanbanGroup-background: var(--cmt-bg);
+
+        // Card padding goes through the custom properties rather than a
+        // `padding` declaration on the card, because core derives other
+        // geometry from them: the full-bleed `aside` image cancels the
+        // card padding with negative margins, and --Ribbon-gap-top is
+        // computed from the vertical one. Declaring `padding: 16px`
+        // directly moved the box but not those, which left the avatar
+        // column floating off the card edge on the Contacts kanban.
+        --KanbanRecord-padding-v: 16px;
+        --KanbanRecord-padding-h: 16px;
     }
 
     // ── Columns ──────────────────────────────────────────────
@@ -98,7 +108,19 @@
     // to keep the last row aligned. Core collapses them to max-height: 0
     // and skips them when it paints backgrounds and borders; styling them
     // here anyway is what drew the row of empty cards after the real ones.
-    .o_kanban_record:not(.o_kanban_ghost) {
+    //
+    // The `.o_kanban_renderer` qualifier is not cosmetic. Core paints the
+    // card fill from
+    //   .o_kanban_renderer .o_kanban_record:not(.o_legacy_kanban_record):not(.o_kanban_ghost)
+    // (kanban_controller.scss), four classes, against the three this block
+    // had — so `background`, `border` and the accent spine below all lost
+    // the cascade and every card kept core's white $o-view-background-color.
+    // Light mode hid it (white on white), dark mode did not: the cards
+    // stayed white while the text followed --cmt-text, which is the
+    // unreadable Contacts board. Matching core's count and landing later in
+    // the bundle is enough; core's :not(.o_legacy_kanban_record) is
+    // deliberately *not* mirrored, so legacy dashboard cards keep the theme.
+    .o_kanban_renderer .o_kanban_record:not(.o_kanban_ghost) {
         background: var(--cmt-glass-bg);
         backdrop-filter: blur(var(--cmt-glass-blur));
         -webkit-backdrop-filter: blur(var(--cmt-glass-blur));
@@ -106,14 +128,29 @@
         border-left: 4px solid var(--cmt-border);
         border-radius: var(--cmt-radius-lg);
         box-shadow: var(--cmt-shadow-md);
-        padding: 16px;
         margin-bottom: 16px;
-        transition: box-shadow .2s ease, transform .2s ease, border-left-color .2s ease;
+        transition: background-color .2s ease, box-shadow .2s ease,
+                    transform .2s ease, border-left-color .2s ease;
 
-        &:hover {
+        // Hover: the spine takes the brand colour and the fill lifts one
+        // step, so the state reads on its own — before this block landed,
+        // hover only moved a 1px border it did not own.
+        //
+        // .o_dragged is excluded because a card being dragged is still under
+        // the cursor and so still matches :hover. This selector outranks
+        // core's `.o_kanban_renderer .o_dragged { transform: rotate(-3deg) }`,
+        // so without the guard the card snapped flat the moment it was
+        // picked up and the drag lost its tilt.
+        &:hover:not(.o_dragged) {
+            background: var(--cmt-glass-bg-hover);
             border-left-color: var(--cmt-primary);
             box-shadow: var(--cmt-shadow-lg);
             transform: translateY(-2px);
+
+            // Core stacks cards with a -1px bottom margin and they are all
+            // position: relative, so the next card in source order paints
+            // over the lifted one and clips the larger shadow.
+            z-index: 1;
         }
 
         // Won opportunities take the tertiary (ocean blue) spine and a
@@ -122,6 +159,13 @@
         &:has(.o_cmt_won_marker) {
             border-left-color: var(--cmt-tertiary);
             background: var(--cmt-won-tint);
+
+            // Nested, not a sibling rule: at equal specificity the hover
+            // block above would win on a won card and wash the tint out
+            // mid-interaction.
+            &:hover:not(.o_dragged) {
+                background: var(--cmt-won-tint-hover);
+            }
         }
 
         // Top row: title left, priority stars right
@@ -142,6 +186,29 @@
 
         .o_cmt_card_priority {
             flex: 0 0 auto;
+        }
+
+        // ── Full-bleed image cards (Employees, and anything else using
+        //    o_kanban_image_fill_left) ──────────────────────────────
+        //
+        // Odoo deliberately bleeds that panel past the card's own padding —
+        // kanban_controller.scss gives it negative top/bottom/left margins so
+        // the photo runs to the card edge — and drops the <img> inside it as
+        // `position: absolute; inset: 0`.
+        //
+        // On Odoo's own square-cornered card that is fine. This card has a
+        // 12px radius and no clipping, so the photo kept its square corners
+        // and overhung the rounded edge: the employee card showed a hard
+        // square block of colour poking out of a rounded card, which is the
+        // mismatch in the screenshot.
+        //
+        // Clipped on the panel rather than by putting `overflow: hidden` on
+        // the card itself, which would also trap anything a card legitimately
+        // paints outside its box.
+        .o_kanban_image_fill_left {
+            overflow: hidden;
+            border-top-left-radius: var(--cmt-radius-lg);
+            border-bottom-left-radius: var(--cmt-radius-lg);
         }
 
         // Contact metadata line

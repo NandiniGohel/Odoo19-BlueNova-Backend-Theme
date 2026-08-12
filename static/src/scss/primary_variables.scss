@@ -1,0 +1,65 @@
+// ============================================================
+// BlueNova — brand variable overrides
+//
+// Odoo's brand colour is a *compiled literal*, not a runtime custom
+// property. Every purple in web/, mail/, calendar/… is baked in at
+// build time from the SCSS variables in
+// web/static/src/scss/primary_variables.scss:
+//
+//   $o-community-color:  #71639e   // the community purple (19.0)
+//   $o-enterprise-color: #714B67
+//   $o-brand-odoo:       $o-community-color
+//   $o-brand-primary:    $o-community-color
+//
+// Redefining --cmt-primary in variables.scss cannot reach any of them
+// — there is no var() on the other end to read it. Left alone, an
+// indigo theme still shows purple links, focus rings, required-input
+// borders, progress bars, calendar's "today" pill and every
+// .btn-primary in the backend, because bootstrap_overridden.scss seeds
+// Bootstrap's whole $primary family from $o-brand-primary.
+//
+// ── Why this file is *prepended*, not appended ──────────────
+//
+// The 14.0 version of this theme appended the same assignments to
+// web._assets_primary_variables, because on 14 that was the only way in
+// (assets were XML templates, and an inherit could only add to the end).
+// Appending is the wrong shape here and would only half-work:
+// $o-brand-primary would take the new value, but everything core
+// derives *from* it — $o-action, $o-main-link-color,
+// $o-input-border-required, the $o-theme-text-colors map — is computed
+// on the line it is declared, which has already run by the time an
+// appended file loads. Those would stay purple.
+//
+// Every one of core's declarations carries `!default`, so prepending
+// instead makes the plain assignments below win and leaves core's
+// versions as no-ops. Everything downstream then derives from the
+// theme's indigo with no per-variable chase. See the ('prepend', …)
+// entry for this file in __manifest__.py.
+//
+// Two things to keep in mind:
+//
+// 1. Anything derived from a brand colour is computed downstream
+//    (secondary_variables.scss and bootstrap_overridden.scss both load
+//    after this file), so nothing has to be restated here.
+//
+// 2. These are build-time values, so they do not follow the light/dark
+//    switch the way --cmt-* tokens do. dark_mode.scss retints the
+//    surfaces it owns; core's brand literals stay at the light-mode
+//    indigo in both schemes.
+//
+// Keep the values in step with --cmt-primary and friends in
+// variables.scss by hand — SCSS cannot read a custom property.
+// ============================================================
+
+// #3959b0 = --cmt-primary (Deep Indigo)
+$o-community-color: #3959b0;
+$o-enterprise-color: #3959b0;
+$o-brand-odoo: #3959b0;
+$o-brand-primary: #3959b0;
+
+// The teal accent Odoo uses for enterprise-flavoured actions — the
+// systray unread counter and a handful of accents in google_calendar,
+// hr_holidays and account. Named $o-enterprise-primary-color on 14;
+// $o-enterprise-action-color since. Pointed at the brand so those
+// badges match the rest of the theme.
+$o-enterprise-action-color: #3959b0;

@@ -10,13 +10,22 @@
 // renders its New Lead / Import buttons flat, and the arc read as a
 // smudge on Odoo's smaller control-panel buttons.
 .btn-primary {
-    background-color: var(--cmt-primary) !important;
-    border-color: var(--cmt-primary) !important;
+    background-color: var(--cmt-button-bg) !important;
+    border-color: var(--cmt-button-bg) !important;
     border-radius: var(--cmt-radius-md) !important;
     font-family: var(--cmt-font-sans);
     font-weight: 600;
     box-shadow: var(--cmt-shadow-sm);
     transition: filter .15s ease, transform .1s ease, box-shadow .15s ease;
+
+    // Bootstrap compiles the label to a flat `color: #fff`, chosen against
+    // the light-mode indigo. Dark mode lifts --cmt-primary to a pale
+    // periwinkle to clear the near-black canvas, and white on *that* lands
+    // at 2.6:1 — every Create / Edit / Save button in the backend. The
+    // token flips with the scheme, so one declaration serves both.
+    &, &:hover, &:focus, &:active {
+        color: var(--cmt-button-text) !important;
+    }
 
     &:hover, &:focus {
         background-color: var(--cmt-primary) !important;
@@ -35,6 +44,138 @@
     font-weight: 500;
 }
 
+// ── Outline primary button ───────────────────────────────────
+// The form view renders the control panel's New button as
+// .btn-outline-primary (web/views/form/form_controller.xml), and
+// Bootstrap's outline mixin fills it with $primary on hover. Odoo binds
+// $primary to $o-brand-primary, which is $o-community-color — #71639e —
+// so the button flooded Odoo's community purple the moment the pointer
+// touched it, in the middle of an indigo theme. The rule above only
+// reshaped it; nothing here was claiming its colours.
+//
+// Every state is a --btn-* custom property (Bootstrap's
+// button-outline-variant mixin), so the set is redeclared wholesale
+// rather than fought state by state with :hover/:active rules. The
+// filled states take --cmt-on-primary because the brand flips
+// lightness between modes and white only works for one of them.
+.btn-outline-primary {
+    @include cmt-bs-vars((
+        btn-color: var(--cmt-primary),
+        btn-border-color: var(--cmt-primary),
+        btn-hover-color: var(--cmt-on-primary),
+        btn-hover-bg: var(--cmt-primary),
+        btn-hover-border-color: var(--cmt-primary),
+        btn-focus-shadow-rgb: var(--cmt-primary-rgb),
+        btn-active-color: var(--cmt-on-primary),
+        btn-active-bg: var(--cmt-primary-dark),
+        btn-active-border-color: var(--cmt-primary-dark),
+        btn-disabled-color: var(--cmt-outline),
+        btn-disabled-border-color: var(--cmt-border),
+    ));
+}
+
+// ...and the same set again as plain declarations, because on 17.0 the
+// block above reaches nothing.
+//
+// Bootstrap only started exposing buttons as --bs-btn-* custom properties
+// in 5.3; the version bundled here still runs the old
+// button-outline-variant mixin, which compiles every state to a literal:
+//
+//   .btn-outline-primary       { color: #71639e; border-color: #71639e; }
+//   .btn-outline-primary:hover { color: #FFFFFF; background-color: #71639e; … }
+//
+// A grep of the built bundle finds zero consumers of --bs-btn-hover-bg, so
+// the property set was inert and the purple flood the comment above
+// describes was still happening — the form view's New button turned
+// #71639e the moment the pointer touched it, which is the survey screen
+// this was reported from. The property block is kept for the versions that
+// do read it; these are what land on 17.0.
+//
+// !important throughout: core repeats all of the above at (0,2,0) for each
+// .o_cc1….o_cc5 colour-combination level, which a bare .btn-outline-primary
+// rule would lose to.
+.btn-outline-primary {
+    color: var(--cmt-primary) !important;
+    border-color: var(--cmt-primary) !important;
+    background-color: transparent !important;
+
+    // Filled states. The label takes --cmt-on-primary rather than white for
+    // the reason given above: the brand flips lightness between modes, so in
+    // dark mode the fill is a *light* periwinkle and white on it is unreadable.
+    &:hover,
+    &:focus,
+    .btn-check:focus + &,
+    .btn-check:checked + &,
+    .btn-check:active + & {
+        color: var(--cmt-on-primary) !important;
+        background-color: var(--cmt-primary) !important;
+        border-color: var(--cmt-primary) !important;
+    }
+
+    // Later than the block above so it wins at equal specificity: pressed
+    // and open-dropdown states go one step darker, as the property set asked.
+    &:active,
+    &.active,
+    &.dropdown-toggle.show {
+        color: var(--cmt-on-primary) !important;
+        background-color: var(--cmt-primary-dark) !important;
+        border-color: var(--cmt-primary-dark) !important;
+    }
+
+    // Core's focus ring is `rgba(113, 99, 158, .5)` — the same purple.
+    &:focus,
+    &:active:focus,
+    &.active:focus {
+        box-shadow: 0 0 0 .25rem rgba(var(--cmt-primary-rgb), .5) !important;
+    }
+
+    &:disabled,
+    &.disabled {
+        color: var(--cmt-outline) !important;
+        border-color: var(--cmt-border) !important;
+        background-color: transparent !important;
+    }
+}
+
+// ── Checkboxes and radios ────────────────────────────────────
+// The same #71639e, and the same screenshot: the Individual/Company
+// radio on a new contact. Bootstrap compiles it straight into
+// `.form-check-input:checked` from $form-check-input-checked-bg-color
+// rather than exposing a property, so this is a direct override at
+// matching specificity, landing later in the bundle.
+//
+// :focus is included because it reads the same brand literal through
+// $input-focus-border-color — without it the control flashed purple on
+// click even once the checked fill was themed.
+.form-check-input {
+    &:checked {
+        background-color: var(--cmt-primary);
+        border-color: var(--cmt-primary);
+    }
+
+    &:focus {
+        border-color: var(--cmt-primary);
+        box-shadow: 0 0 0 .25rem var(--cmt-primary-soft);
+    }
+}
+
+// The hover half of the same literal, which the block above did not cover:
+// core tints the outline purple on pointer-over, before anything is even
+// checked (`.form-check:hover .form-check-input:not(:disabled)` and
+// `.form-select:where(:not(:disabled)):hover`, both `border-color: #71639e`).
+.form-check:hover .form-check-input:not(:disabled),
+.form-select:where(:not(:disabled)):hover {
+    border-color: var(--cmt-primary);
+}
+
+// The settings-page switch repeats it a third time at (0,5,0) — higher than
+// the rule above, so it needs its own selector rather than riding along.
+// Note the plain `.form-switch:hover` variant next to it in core is green
+// ($success, the switch's "on" colour) and is deliberately left alone.
+.form-switch.o_switch_toggle:hover .form-check-input:not(:disabled) {
+    border-color: var(--cmt-primary);
+}
+
 // ── List view ────────────────────────────────────────────────
 .o_list_view {
     font-family: var(--cmt-font-sans);
@@ -48,6 +189,32 @@
 
     .o_data_row:hover {
         background-color: var(--cmt-primary-light);
+    }
+
+    // Odoo pads every ungrouped list out to a minimum of four rows
+    // (list_renderer.js: `Math.max(0, 4 - records.length)`), emitting
+    // class-less <tr>s whose single cell holds nothing but a zero-width
+    // space. Bootstrap paints every cell from --table-bg
+    // (`.table > :not(caption) > * > *`), and the themed row border draws a
+    // rule under each, so a short or empty list shows a stack of blank bands.
+    //
+    // This is not dark-mode-only, which is what it first looked like. Core
+    // leaves --table-bg at `white`, and on Odoo's own white view that hides
+    // the fillers — but this theme's canvas is --cmt-bg (#f8f9fa in light),
+    // so white bands and their rules read clearly against it too. The empty
+    // Attendances list is where it shows.
+    //
+    // Matched on shape because the rows carry no class at all: only the
+    // filler cell is both its row's only child and carries a colspan. The
+    // editable-list "Add a line" row is class-less too but has several
+    // cells, so it is left alone.
+    //
+    // Blanked rather than `display: none` so the table keeps the height
+    // Odoo intends — the rows stay, the lines go.
+    .o_list_table > tbody > tr:not([class]) > td[colspan]:only-child {
+        background-color: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
     }
 
     .o_field_monetary {

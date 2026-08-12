@@ -81,6 +81,109 @@ body .o_tour_pointer {
     --o-discuss-badge-bg: var(--cmt-primary);
 }
 
+// ── Empty views (sample-data mode) ───────────────────────────
+// A view with no records renders realistic ghost rows behind the
+// "let's create one" helper. Core fades them with three effects that
+// stack, and the result reads as mud rather than as a clean empty state:
+//
+//   1. .o_data_row, .o_group_header, … { opacity: .33 }   (utils.scss)
+//   2. .o_view_nocontent {                                (views/view.scss)
+//          background-image: radial-gradient(at 50% 50%,
+//              $o-view-background-color 0px,
+//              rgba($o-view-background-color, .5) 100%);
+//      }
+//   3. .o_view_sample_data .o_nocontent_help {
+//          background-color: $o-view-background-color;
+//          box-shadow: 0 0 120px 100px $o-view-background-color;
+//      }
+//
+// (2) is the expensive one, and not only because it is near-opaque at the
+// centre: .o_view_nocontent is inset:0 on the *whole* view, so it also
+// washes things that are not sample data at all — the Purchase RFQ
+// dashboard band, the column headers, the pager. A 33% row under a ~75%
+// scrim lands around 1.2:1 against the canvas, which is the muddiness.
+//
+// Retuned rather than removed: the scrim still has a job, which is to lift
+// the helper text off the rows behind it. It is just moved from "bleach the
+// view" to "sit the message on a soft pool", with (3) kept tight around the
+// message where it is actually needed.
+//
+// Written against --cmt-bg-rgb so one rule serves both colour schemes;
+// dark_mode.scss only has to restate the token, not the geometry.
+.o_view_nocontent {
+    background-image: radial-gradient(
+        at 50% 50%,
+        rgba(var(--cmt-bg-rgb), .60) 0px,
+        rgba(var(--cmt-bg-rgb), .12) 100%
+    ) !important;
+
+    // Core centres the helper inside this box, and the box is inset:0 on the
+    // whole scrollable area — which in views that have one also spans the
+    // dashboard band above the rows (Purchase's RFQ counters, Sales', etc.).
+    // Centring across that taller box lifts the message well above the middle
+    // of the rows, and its illustration ends up tucked under the sticky
+    // column-header strip with no breathing room.
+    //
+    // Biased downwards rather than re-anchored with a fixed `top`: the
+    // positioned ancestor this box resolves against differs between list,
+    // kanban and the dashboard-carrying views, so any absolute offset would
+    // be wrong in some of them. Padding keeps core's centring and simply
+    // moves the midpoint down — with `align-items: center` the content shifts
+    // by half the padding, so the value is doubled to land ~48px — and the vh
+    // cap stops it pushing the message off a short viewport.
+    //
+    // Interpolated, not written bare: Sass owns the name `min()` and would
+    // evaluate it at compile time, where mixing vh with px is
+    // "Incompatible units: 'px' and 'vh'" and takes the whole bundle down.
+    // The quoted form is passed through as the CSS function it is meant to be.
+    padding-top: #{"min(12vh, 96px)"};
+}
+
+// In sample mode there is realistic content *behind* the message, and core
+// separates the two with a disc of view-background plus a 100px bloom of the
+// same colour. That works on a list, where the rows behind are thin lines of
+// text, but not on a kanban: the Events board is full-size cards with fills,
+// borders and shadows, and a soft halo over them leaves the message looking
+// like it is floating on top of live data rather than labelling an empty
+// board. Odoo's own dimming is doing its job — kanban sample cards sit at
+// opacity .33 via `.o_kanban_view .o_view_sample_data .o_kanban_record`,
+// which at (0,3,0) also outranks the row rule below — but a gradient alone
+// cannot carry the separation over cards that size.
+//
+// So the helper is given an actual surface instead of a bloom: a panel with
+// a border, radius and shadow reads unambiguously as a foreground
+// call-to-action in front of a backdrop, in both schemes, without needing to
+// bleach the board to achieve it.
+//
+// Scoped to sample mode on purpose. A genuinely empty view has nothing
+// behind the message, and a panel there would be a box drawn around thin air.
+.o_view_sample_data .o_nocontent_help {
+    background-color: var(--cmt-surface) !important;
+    border: 1px solid var(--cmt-border);
+    border-radius: var(--cmt-radius-lg);
+    box-shadow: var(--cmt-shadow-lg) !important;
+    padding: 24px 32px;
+}
+
+// With the scrim off them, the ghost rows no longer need to fight it, and
+// a small lift stops them reading as smudges. Deliberately still well
+// below the real thing: these are fake vendor names and amounts, and they
+// must not pass for live data. This is the one line to turn back down if
+// they ever start looking real.
+// Deliberately list-only. Kanban sample cards are dimmed by
+// `.o_kanban_view .o_view_sample_data .o_kanban_record` at (0,3,0), which
+// outranks this rule's (0,2,0) — listing .o_kanban_record here would look
+// like it set the card opacity while changing nothing. Cards keep Odoo's
+// .33, which is the right level for something the panel above sits in front of.
+.o_view_sample_data {
+    .o_data_row,
+    .o_list_footer,
+    .o_group_header,
+    thead .o_list_record_selector {
+        opacity: .45;
+    }
+}
+
 // Slim scrollbars, matching the mockup's 6px rails.
 .o_web_client {
     ::-webkit-scrollbar {

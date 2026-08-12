@@ -6,7 +6,7 @@
         Renders 4 summary cards; hidden when isVisible is false or stats
         is null (e.g. ungrouped kanban, empty pipeline, data-structure mismatch).
     -->
-    <t t-name="bluegray_modern_theme.PipelineStats">
+    <t t-name="bluenova_backend_theme.PipelineStats">
         <div t-if="isVisible and stats" class="cmt-stats-banner">
             <!-- Card 1 — first pipeline stage -->
             <div class="cmt-stat-card cmt-stat-card--new">
@@ -47,7 +47,7 @@
         kanban.scss turns .o_content into a flex column so the banner
         stays pinned and only the board scrolls.
     -->
-    <t t-name="bluegray_modern_theme.CrmKanbanRenderer"
+    <t t-name="bluenova_backend_theme.CrmKanbanRenderer"
        t-inherit="web.KanbanRenderer"
        t-inherit-mode="primary">
         <xpath expr="//div[hasclass('o_kanban_renderer')]" position="before">

@@ -1,33 +1,31 @@
-import { Component, onWillUnmount, reactive, useState } from "@odoo/owl";
-import { browser } from "@web/core/browser/browser";
+import { Component, onMounted, onWillUnmount, useState } from "@odoo/owl";
+import { _t } from "@web/core/l10n/translation";
 import { user } from "@web/core/user";
-import { useService } from "@web/core/utils/hooks";
 import { session } from "@web/session";
-import { themeModeState } from "./theme_mode";
+import { useBus, useService } from "@web/core/utils/hooks";
 
-const ICON_ROOT = "/bluegray_modern_theme/static/src/image/icons/";
-const STORAGE_KEY = "cmt_apps_sidebar_open";
+import { themeMode, toggleThemeMode } from "./theme_mode";
+import { applySidebarBodyClass, sidebarState } from "./apps_sidebar_state";
+
+/**
+ * AppsSidebar — the persistent app rail that replaces Odoo's apps dropdown.
+ *
+ * Lists every app the user has access to (the same `menuService.getApps()`
+ * the dropdown is built from), each with its bundled icon, and marks the
+ * one currently open.
+ *
+ * On 14 this was a legacy `web.Widget` rendered through core.qweb, parented
+ * to web.Menu so `app_clicked` could reach the WebClient through
+ * trigger_up. Odoo 19 has no widget tree and no core.bus: this is a plain
+ * OWL 2 component mounted by the WebClient (see apps_sidebar_patch.js),
+ * it reads the menus from the `menu` service, and opening an app is a
+ * direct `menuService.selectMenu()` call.
+ */
+
+const ICON_ROOT = "/bluenova_backend_theme/static/src/image/icons/";
 
 /** Neutral placeholder, so an app we have no artwork for still gets a row. */
 const ICON_FALLBACK = "generic-app.svg";
-
-/**
- * What Odoo puts in `webIconData` when an app has no icon of its own.
- *
- * web/models/ir_ui_menu.py builds that field three ways: a full
- * `data:<mime>;base64,…` URI when the module ships
- * static/description/icon.png, nothing at all when web_icon names a built
- * font icon — and, for everything else, this literal *path*. It is a URL,
- * not image data, so it has to be recognised rather than decoded: read as
- * base64 it produced `data:image/png;base64,/web/static/…`, which is not
- * valid base64, and every custom app in the rail rendered as the browser's
- * broken-image glyph.
- *
- * Treated as "this app has no icon" rather than followed, so those apps get
- * the bundled placeholder — single-colour and mask-painted like the rest of
- * the rail — instead of Odoo's full-colour default sitting among them.
- */
-const ODOO_DEFAULT_ICON_PATH = "/web/static/img/default_icon_app.png";
 
 /**
  * Display names that have to be checked before anything else.
@@ -47,9 +45,7 @@ const ICON_BY_NAME_FIRST = {
  *
  * Only needed where one module owns several app menus and keying on the
  * module alone would hand both of them the same icon — `base` owns Apps
- * and Settings. Odoo's own artwork is no help for either: the images
- * behind `base,static/description/*.png` are white line art drawn for the
- * dark app drawer, so on a light sidebar they render as an invisible square.
+ * and Settings.
  */
 const ICON_BY_XMLID = {
     "base.menu_administration": "setting.png",
@@ -61,7 +57,7 @@ const ICON_BY_XMLID = {
  * xmlid (`crm.crm_menu_root` → `crm`). Matching on the module rather than
  * on the displayed name keeps the mapping working in every language.
  *
- * Apps with no entry here fall back to their own Odoo icon — see iconFor().
+ * Apps with no entry here fall back to their own Odoo icon — see getIcon().
  */
 const ICON_BY_MODULE = {
     account: "invoice.png",
@@ -190,66 +186,53 @@ const ICON_BY_NAME = {
     website: "website.png",
 };
 
-/**
- * Open/closed state of the sidebar, shared between the sidebar itself and
- * the navbar button that toggles it. Kept as a module-level `reactive` so
- * both components can subscribe to it without a service round-trip; the
- * choice is remembered per browser.
- */
-export const appsSidebarState = reactive({
-    isOpen: browser.localStorage.getItem(STORAGE_KEY) !== "false",
-    toggle() {
-        this.isOpen = !this.isOpen;
-        try {
-            browser.localStorage.setItem(STORAGE_KEY, String(this.isOpen));
-        } catch {
-            // Private browsing / quota — the toggle still works for this session.
-        }
-    },
-});
-
-/**
- * AppsSidebar — the persistent app rail that replaces Odoo's apps dropdown.
- *
- * Lists every app the user has access to (same source as the dropdown,
- * menuService.getApps()), each with its bundled icon, and marks the one
- * currently open. Rendered by the WebClient next to the action manager.
- */
 export class AppsSidebar extends Component {
-    static template = "bluegray_modern_theme.AppsSidebar";
+    static template = "bluenova_backend_theme.AppsSidebar";
     static props = {};
 
     setup() {
         this.menuService = useService("menu");
-        this.sidebar = useState(appsSidebarState);
-        this.theme = useState(themeModeState);
 
-        // App ids whose icon failed to load, keyed rather than kept in a Set
-        // so OWL's reactivity picks the write up. See onIconError().
-        this.state = useState({ brokenIcons: {} });
+        // Both stores are module-level reactives; useState subscribes this
+        // component to them and unsubscribes on unmount.
+        this.themeMode = useState(themeMode);
+        this.sidebar = useState(sidebarState);
+
+        // App ids whose icon failed to load. An <img> that errors is left
+        // showing the browser's broken-image glyph, which is worse than no
+        // artwork at all, so those rows are re-rendered onto the
+        // placeholder. Reactive, so the swap is a re-render rather than a
+        // DOM edit behind OWL's back.
+        this.brokenIcons = useState({});
 
         // The menu service has no reactive store; it announces app switches
-        // on the bus instead. Re-render on it so the active row follows
-        // navigation, including back/forward and direct URL loads.
-        const render = () => this.render();
-        this.env.bus.addEventListener("MENUS:APP-CHANGED", render);
-        onWillUnmount(() => this.env.bus.removeEventListener("MENUS:APP-CHANGED", render));
+        // on the env bus. Following it here keeps the active row in step
+        // with navigation, including back/forward and direct URL loads.
+        useBus(this.env.bus, "MENUS:APP-CHANGED", () => this.render());
+
+        onMounted(applySidebarBodyClass);
+        onWillUnmount(() => document.body.classList.remove("cmt-has-sidebar"));
     }
+
+    //--------------------------------------------------------------------------
+    // Getters used by the template
+    //--------------------------------------------------------------------------
 
     get apps() {
         return this.menuService.getApps();
     }
 
+    /** Menu id of the app currently open, or undefined. */
     get currentAppId() {
-        const currentApp = this.menuService.getCurrentApp();
-        return currentApp && currentApp.id;
+        const app = this.menuService.getCurrentApp();
+        return app && app.id;
     }
 
     /** Header block: which company and database this session is pointed at. */
     get workspace() {
         return {
-            name: user.activeCompany?.name || session.db || "Workspace",
-            subtitle: session.db || user.login || "",
+            name: (user.activeCompany && user.activeCompany.name) || session.db || _t("Workspace"),
+            subtitle: session.db || user.name || "",
         };
     }
 
@@ -257,22 +240,31 @@ export class AppsSidebar extends Component {
         return ICON_ROOT + "employee.png";
     }
 
+    get themeToggleLabel() {
+        return this.themeMode.mode === "dark" ? _t("Light mode") : _t("Dark mode");
+    }
+
+    get themeToggleTitle() {
+        return this.themeMode.mode === "dark"
+            ? _t("Switch to light mode")
+            : _t("Switch to dark mode");
+    }
+
     /**
      * Icon for an app: bundled artwork first, then the app's own Odoo icon
-     * (base64 from the menu payload), then the neutral placeholder — so an
-     * app we have no artwork for still renders a row rather than a gap, and
-     * never borrows another app's icon.
-     *
-     * "The app's own icon" is only the middle branch when Odoo actually has
-     * one. Its stand-in path and any icon that failed to load both drop
-     * straight through to the placeholder — see ODOO_DEFAULT_ICON_PATH.
+     * (a data: URL built server-side by ir.ui.menu.load_web_menus), then the
+     * neutral placeholder — so an app we have no artwork for still renders a
+     * row rather than a gap, and never borrows another app's icon.
      *
      * `bundled` tells the template which of the two it got. The bundled set
      * is single-colour, so the template paints it through a CSS mask and the
      * colour follows hover/active state; Odoo's own icons are full-colour
      * artwork that has to be drawn as-is. The two cannot share a class.
+     *
+     * @param {Object} app a menu from menuService.getApps()
+     * @returns {{src: string, bundled: boolean}}
      */
-    iconFor(app) {
+    getIcon(app) {
         const name = (app.name || "").toLowerCase().trim();
         const module = (app.xmlid || "").split(".")[0];
         const file =
@@ -284,49 +276,61 @@ export class AppsSidebar extends Component {
             // Several filenames contain spaces.
             return { src: ICON_ROOT + encodeURIComponent(file), bundled: true };
         }
-        const iconData = app.webIconData;
+
         // An icon that already failed to load once: never offer it again, or
         // the <img> reinstates the broken glyph on every re-render.
-        if (iconData && !this.state.brokenIcons[app.id] && iconData !== ODOO_DEFAULT_ICON_PATH) {
-            if (iconData.startsWith("data:image")) {
-                return { src: iconData, bundled: false };
-            }
-            // Any other URL Odoo may hand us — served as-is, not decoded.
-            if (iconData.startsWith("/") || iconData.startsWith("http")) {
-                return { src: iconData, bundled: false };
-            }
-            // Same sniff Odoo uses in menu_providers.js: base64 SVG starts with "P" ("<").
-            const prefix = iconData.startsWith("P")
-                ? "data:image/svg+xml;base64,"
-                : "data:image/png;base64,";
-            return { src: prefix + iconData.replace(/\s/g, ""), bundled: false };
+        if (app.webIconData && !this.brokenIcons[app.id]) {
+            // Unlike 14, load_web_menus already returns a full
+            // `data:<mimetype>;base64,…` URL (or a path for icons served
+            // from disk), so there is no prefix to guess here.
+            return { src: app.webIconData, bundled: false };
         }
         return { src: ICON_ROOT + ICON_FALLBACK, bundled: true };
     }
 
     /**
-     * An app icon that would not decode — a truncated attachment, a mimetype
-     * that lies about its payload. Recorded so the row re-renders onto the
-     * bundled placeholder: an <img> that errors is left showing the browser's
-     * broken-image glyph, which is worse than no artwork at all.
+     * Real href, so middle-click and ctrl-click open the app in a new tab.
+     * Built exactly the way NavBar.getMenuItemHref builds it — Odoo 19
+     * routes the web client on paths (`/odoo/action-42`), not on the hash
+     * fragment the 14.0 sidebar produced.
      */
-    onIconError(app) {
-        if (!this.state.brokenIcons[app.id]) {
-            this.state.brokenIcons[app.id] = true;
-        }
-    }
-
-    /** Real href, so middle-click and ctrl-click open the app in a new tab. */
-    hrefFor(app) {
+    getHref(app) {
         return `/odoo/${app.actionPath || "action-" + app.actionID}`;
     }
 
+    //--------------------------------------------------------------------------
+    // Handlers
+    //--------------------------------------------------------------------------
+
+    /**
+     * @param {MouseEvent} ev
+     * @param {Object} app
+     */
     onAppClick(ev, app) {
         // Let the browser handle the modified clicks the href is there for.
         if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) {
             return;
         }
         ev.preventDefault();
+        if (!app.actionID) {
+            // A root with no actionable descendant at all — nothing to open.
+            return;
+        }
         this.menuService.selectMenu(app);
+    }
+
+    onThemeToggleClick() {
+        toggleThemeMode();
+    }
+
+    /**
+     * An app icon that would not decode — a truncated attachment, a mimetype
+     * that lies about its payload. Recorded so getIcon() hands out the
+     * bundled placeholder on the next render instead.
+     *
+     * @param {Object} app
+     */
+    onIconError(app) {
+        this.brokenIcons[app.id] = true;
     }
 }

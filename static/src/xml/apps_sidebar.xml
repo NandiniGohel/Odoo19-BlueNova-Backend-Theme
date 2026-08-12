@@ -2,15 +2,21 @@
 <templates xml:space="preserve">
 
     <!--
-        The persistent app rail. Lists the same apps Odoo's dropdown listed
+        The persistent app rail. Lists the same apps Odoo's dropdown lists
         (menuService.getApps()), each with its bundled icon from
         static/src/image/icons, and highlights the one currently open.
 
+        OWL 2 markup: `this` is the AppsSidebar component, clicks are
+        `t-on-*` handlers, and every t-foreach carries a t-key (mandatory
+        since OWL 2 — the 14.0 QWeb2 version had none).
+
         Hidden below the md breakpoint: on small screens Odoo keeps its own
-        slide-in app menu, which we leave untouched.
+        apps menu, which we leave in place and untouched.
     -->
-    <t t-name="bluegray_modern_theme.AppsSidebar">
-        <nav t-if="sidebar.isOpen" class="cmt-app-sidebar d-none d-md-flex" aria-label="Applications">
+    <t t-name="bluenova_backend_theme.AppsSidebar">
+        <nav class="cmt-app-sidebar d-none d-md-flex"
+             t-att-class="{ 'cmt-app-sidebar--closed': !sidebar.open }"
+             aria-label="Applications">
 
             <!-- Workspace header: active company + database -->
             <div class="cmt-app-sidebar__workspace">
@@ -25,13 +31,13 @@
             <!-- App list -->
             <ul class="cmt-app-sidebar__apps">
                 <li t-foreach="apps" t-as="app" t-key="app.id">
-                    <t t-set="icon" t-value="iconFor(app)"/>
+                    <t t-set="icon" t-value="getIcon(app)"/>
                     <a class="cmt-app-sidebar__app"
                        t-att-class="{ 'cmt-app-sidebar__app--active': app.id === currentAppId }"
-                       t-att-href="hrefFor(app)"
+                       t-att-href="getHref(app)"
                        t-att-title="app.name"
                        t-att-data-menu-xmlid="app.xmlid"
-                       t-att-data-section="app.id"
+                       t-att-data-menu-id="app.id"
                        t-on-click="(ev) => this.onAppClick(ev, app)">
                         <!--
                             Bundled artwork is single-colour, so it is painted
@@ -57,57 +63,56 @@
             <div class="cmt-app-sidebar__footer">
                 <button type="button"
                         class="cmt-theme-toggle"
-                        t-att-title="theme.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-                        t-att-aria-label="theme.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-                        t-att-aria-pressed="theme.isDark"
-                        t-on-click="() => this.theme.toggle()">
+                        t-att-title="themeToggleTitle"
+                        t-att-aria-label="themeToggleTitle"
+                        t-att-aria-pressed="themeMode.mode === 'dark' ? 'true' : 'false'"
+                        t-on-click="onThemeToggleClick">
                     <i class="cmt-theme-toggle__icon fa"
-                       t-att-class="theme.isDark ? 'fa-sun-o' : 'fa-moon-o'"
+                       t-att-class="themeMode.mode === 'dark' ? 'fa-sun-o' : 'fa-moon-o'"
                        role="img"/>
-                    <span class="cmt-theme-toggle__label"
-                          t-esc="theme.isDark ? 'Light mode' : 'Dark mode'"/>
+                    <span class="cmt-theme-toggle__label" t-esc="themeToggleLabel"/>
                 </button>
             </div>
         </nav>
     </t>
 
     <!--
-        Put the sidebar beside the action manager rather than above it.
-
-        It goes in as a plain sibling — no wrapper. Odoo's whole scroll
-        layout hangs off `.o_web_client > .o_action_manager > .o_action`
-        (webclient_layout.scss), so nesting the action manager one level
-        deeper silently kills `.o_content { overflow: auto }` and the view
-        stops scrolling. apps_sidebar.scss turns .o_web_client into a grid
-        instead, which places the sidebar beside the action manager while
-        leaving both as direct children.
+        Mount point. The rail sits next to the navbar inside the WebClient,
+        under the same `t-if` so both stand down when an action goes
+        fullscreen. AppsSidebar is added to WebClient.components in
+        js/apps_sidebar_patch.js — a template alone cannot introduce a
+        component tag.
     -->
-    <t t-name="bluegray_modern_theme.WebClient" t-inherit="web.WebClient" t-inherit-mode="extension">
-        <xpath expr="//ActionContainer" position="before">
-            <AppsSidebar t-if="!state.fullscreen"/>
+    <t t-name="bluenova_backend_theme.WebClient"
+       t-inherit="web.WebClient"
+       t-inherit-mode="extension">
+        <xpath expr="//NavBar" position="after">
+            <AppsSidebar/>
         </xpath>
     </t>
 
     <!--
-        Replace the apps dropdown with a plain toggle for the sidebar.
+        The switch. Placed straight after Odoo's own apps menu so the two
+        read as one control group; core's menu is left in place and keeps
+        working below the md breakpoint, where the rail is hidden.
 
-        Only the .o_navbar_apps_menu branch is touched; the `t-else` div that
-        follows it in the original stays put, as does the small-screen branch
-        above (Odoo's own slide-in menu, still the right UI on mobile).
+        `d-none d-md-flex` mirrors the rail's own breakpoint — a button that
+        toggles something invisible is worse than no button.
     -->
-    <t t-name="bluegray_modern_theme.NavBarAppsMenu" t-inherit="web.NavBar.AppsMenu" t-inherit-mode="extension">
-        <xpath expr="//div[hasclass('o_navbar_apps_menu')]" position="replace">
-            <div t-if="!isScopedApp" class="o_navbar_apps_menu">
-                <button type="button"
-                        class="cmt-apps-toggle"
-                        data-hotkey="h"
-                        title="Applications"
-                        aria-label="Toggle applications sidebar"
-                        t-att-aria-expanded="appsSidebar.isOpen"
-                        t-on-click="() => this.appsSidebar.toggle()">
-                    <i class="oi oi-apps"/>
-                </button>
-            </div>
+    <t t-name="bluenova_backend_theme.NavBar"
+       t-inherit="web.NavBar"
+       t-inherit-mode="extension">
+        <xpath expr="//t[@t-call='web.NavBar.AppsMenu']" position="after">
+            <button type="button"
+                    class="cmt-apps-toggle d-none d-md-flex"
+                    accesskey="h"
+                    title="Applications"
+                    aria-label="Toggle applications sidebar"
+                    t-att-aria-expanded="cmtSidebarOpen ? 'true' : 'false'"
+                    t-att-class="{ 'cmt-apps-toggle--active': cmtSidebarOpen }"
+                    t-on-click="onCmtAppsToggleClick">
+                <i class="fa fa-th-large" role="img"/>
+            </button>
         </xpath>
     </t>
 

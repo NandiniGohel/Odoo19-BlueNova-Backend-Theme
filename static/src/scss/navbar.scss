@@ -16,7 +16,7 @@
     // it is left undefined. White reads fine on the stock dark
     // navbar; on ours it turned every hovered/clicked menu entry
     // into white text on a pale fill — invisible.
-    --NavBar-entry-color: var(--cmt-text-muted);
+    --NavBar-entry-color: var(--cmt-topbar-text);
     --NavBar-entry-color--hover: var(--cmt-primary);
     --NavBar-entry-color--active: var(--cmt-primary);
     --NavBar-entry-backgroundColor: transparent;
@@ -43,10 +43,10 @@
     --o-navbar-badge-color: var(--cmt-surface);
     --o-navbar-badge-text-shadow: none;
 
-    background: var(--cmt-surface) !important;
+    background: var(--cmt-topbar-bg) !important;
     border-bottom: 1px solid var(--cmt-border);
     box-shadow: var(--cmt-shadow-sm);
-    color: var(--cmt-text-muted);
+    color: var(--cmt-topbar-text);
 
     // ── Brand / current app name ─────────────────────────────
     // The mockup sets this at display-lg (48px); that overflows
@@ -81,10 +81,35 @@
             font-family: var(--cmt-font-sans);
             font-size: 15px;
             font-weight: 600;
-            color: var(--cmt-text-muted);
+            color: var(--cmt-topbar-text);
             transition: color .15s ease;
 
             // %-main-navbar-entry-base already sets position: relative.
+            //
+            // A section with a submenu is a <button class="dropdown-toggle">,
+            // and that is a *Bootstrap* class: it already owns this ::after
+            // and builds its caret triangle out of borders, not a background —
+            //
+            //   .dropdown-toggle::after {
+            //       margin-left: 3.4px;
+            //       border-top: 4px solid;              // currentColor
+            //       border-right: 4px solid transparent;
+            //       border-left: 4px solid transparent;
+            //   }
+            //
+            // Overriding content/position/height/background here does not
+            // remove any of that. The caret kept its borders and inherited
+            // this block's `left`/`right`, so instead of a triangle it drew a
+            // 4px bar the full width of the label, in the entry's own text
+            // colour, with the side borders tapering its ends and margin-left
+            // pushing it 3.4px off-centre. That is the row of heavy slabs
+            // under Mailings / Reporting / Configuration — dark in light mode,
+            // pale in dark mode, on every section that has a submenu.
+            //
+            // Zeroing both is also what makes the underline a single marker
+            // rather than a caret and an underline fighting for the same
+            // pseudo-element; the caret is redundant once selection reads as
+            // an underline, which is the intent stated above.
             &::after {
                 content: "";
                 position: absolute;
@@ -92,6 +117,8 @@
                 right: .63em;
                 bottom: 7px;
                 height: 2px;
+                margin: 0;
+                border: 0;
                 border-radius: 2px;
                 background-color: transparent;
                 transition: background-color .15s ease;
@@ -124,7 +151,7 @@
 
     // ── Apps grid toggle ─────────────────────────────────────
     .o_navbar_apps_menu, .o_menu_toggle {
-        color: var(--cmt-text-muted);
+        color: var(--cmt-topbar-text);
 
         &:hover, &:focus {
             color: var(--cmt-primary);
@@ -134,10 +161,10 @@
 
     // ── Systray (activities, messaging, user menu) ───────────
     .o_menu_systray {
-        color: var(--cmt-text-muted);
+        color: var(--cmt-topbar-text);
 
         > * {
-            color: var(--cmt-text-muted);
+            color: var(--cmt-topbar-text);
 
             &:hover, &:focus {
                 color: var(--cmt-primary);

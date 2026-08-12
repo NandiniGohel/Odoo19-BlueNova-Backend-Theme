@@ -1,0 +1,153 @@
+// ============================================================
+// Public home page
+//
+// Scoped under .o_bluenova_public_home, the class views/public_home.xml
+// puts on <body>. Same bundle and same constraints as auth_pages.scss:
+// no base.scss mixins and no dark_mode.scss to lean on, so the handful
+// of tokens this page reads are restated in its own dark block.
+//
+// It reuses the login page's two settings-driven tokens on purpose —
+// --cmt-login-bg and --cmt-login-card-bg. Both surfaces are the same
+// thing to a visitor (the front door of this instance), so giving the
+// public page its own pair of pickers would only create a way for the
+// two to drift apart.
+// ============================================================
+.o_bluenova_public_home {
+    min-height: 100%;
+    background-color: var(--cmt-login-bg);
+    // Shares the login page's background image rather than carrying its
+    // own: both are the front door of this instance, and one upload
+    // dressing both is what keeps them looking like one product.
+    background-image: var(--cmt-login-bg-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    font-family: var(--cmt-font-sans);
+    color: var(--cmt-text);
+
+    .cmt-public-home {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 32px 16px;
+    }
+
+    .cmt-public-home__panel {
+        width: 100%;
+        max-width: 520px;
+        padding: 48px 40px;
+        text-align: center;
+
+        // Opaque, and no backdrop-filter — same reasoning as the login
+        // card in auth_pages.scss: this panel sits over the same
+        // admin-supplied background image, and a blur behind a fill
+        // that fails to paint turns the panel into a milky grey that
+        // swallows the headline.
+        background: var(--cmt-login-card-bg, var(--cmt-surface));
+        border: var(--cmt-glass-border);
+        border-radius: var(--cmt-radius-xl);
+        box-shadow: var(--cmt-shadow-lg), var(--cmt-chrome-inset);
+    }
+
+    .cmt-public-home__logo {
+        max-height: 80px;
+        max-width: 100%;
+        width: auto;
+        margin-bottom: 24px;
+    }
+
+    // The hero's two lines. Each reads its own colour token rather than
+    // the generic text tokens, so the hero can be tuned without moving
+    // every other surface with it.
+    //
+    // Size and weight come from the Hero Typography settings, wrapped
+    // in clamp() rather than used raw. The default title is 60px, and
+    // an admin who pushes it to 120 for a desktop hero would otherwise
+    // get a headline wider than a phone. clamp() keeps their number as
+    // the ceiling, lets the viewport drive it down on narrow screens,
+    // and holds a readable floor — one setting that works at every
+    // width, with no media query second-guessing it.
+    //
+    // clamp() and not min(): libsass has its own min() and would try to
+    // evaluate `min(var(...), 5vw)` at compile time and fail. clamp()
+    // is not a Sass built-in, so it passes through to the browser
+    // untouched.
+    .cmt-public-home__title {
+        margin: 0;
+        font-size: clamp(28px, 8vw, var(--cmt-home-title-size));
+        font-weight: var(--cmt-home-title-weight);
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        // Long company names have no spaces to break at; without this a
+        // 60px headline can push the panel wider than the screen.
+        overflow-wrap: break-word;
+        color: var(--cmt-home-title);
+    }
+
+    .cmt-public-home__tagline {
+        margin: 12px 0 0;
+        font-family: var(--cmt-font-label);
+        font-size: clamp(13px, 3.6vw, var(--cmt-home-lead-size));
+        font-weight: var(--cmt-home-lead-weight);
+        line-height: 1.5;
+        color: var(--cmt-home-lead);
+    }
+
+    .cmt-public-home__cta {
+        display: inline-block;
+        margin-top: 32px;
+        padding: 12px 32px;
+
+        background: var(--cmt-auth-action-bg);
+        border-radius: var(--cmt-radius-md);
+        color: var(--cmt-auth-action-text);
+        font-family: var(--cmt-font-label);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-decoration: none;
+        box-shadow: var(--cmt-shadow-sm);
+        transition: filter .2s ease, box-shadow .2s ease, transform .15s ease;
+
+        &:hover,
+        &:focus {
+            color: var(--cmt-auth-action-text);
+            text-decoration: none;
+            filter: brightness(1.08);
+            box-shadow: var(--cmt-shadow-md);
+        }
+
+        &:active {
+            transform: translateY(1px);
+        }
+    }
+}
+
+// ── Dark mode ────────────────────────────────────────────────
+// Only the three hero tokens. Everything else this page reads —
+// surfaces, text, shadows, the action colours — is already declared by
+// auth_pages.scss's dark block, which sits in the same bundle on the
+// same bare `:root[data-cmt-theme="dark"]` selector. Restating it here
+// would be two copies of one palette, drifting apart on the first edit.
+//
+// Bare selector for the same load-bearing reason given at length in
+// auth_pages.scss: nesting these under `.o_bluenova_public_home` would
+// outrank the settings screen's own dark block and quietly disable
+// every "Dark Mode Colors" picker on this section.
+:root[data-cmt-theme="dark"] {
+    --cmt-home-title: #f8fafc;
+    --cmt-home-lead: #94a3b8;
+}
+
+@media (max-width: 575.98px) {
+    .o_bluenova_public_home {
+        .cmt-public-home__panel {
+            padding: 32px 24px;
+        }
+
+        .cmt-public-home__title {
+            font-size: 24px;
+            line-height: 32px;
+        }
+    }
+}

@@ -13,10 +13,20 @@
     --cmt-primary-soft: rgba(57, 89, 176, 0.35);  // hinted brand — hover underlines, rings
     --cmt-on-primary-container: #1e3a8a;
 
+    // Ink for anything sitting *on* a --cmt-primary fill. It flips with
+    // the mode, because the brand does: the light indigo takes white,
+    // the dark theme's lifted periwinkle takes the canvas colour back.
+    --cmt-on-primary: #ffffff;
+
+    // Same colour as --cmt-primary, as the bare triplet Bootstrap wants
+    // for its rgba() focus rings (--btn-focus-shadow-rgb and friends).
+    --cmt-primary-rgb: 57, 89, 176;
+
     --cmt-tertiary: #0284c7;         // Ocean Blue — status + secondary accents
     --cmt-tertiary-container: #e0f2fe;
     --cmt-on-tertiary-container: #0369a1;
     --cmt-won-tint: rgba(224, 242, 254, 0.35);  // won-opportunity card wash
+    --cmt-won-tint-hover: rgba(224, 242, 254, 0.6);
 
     // ── App icons ────────────────────────────────────────────
     // The sidebar's app artwork is single-colour and painted through a
@@ -31,6 +41,10 @@
 
     // ── Surfaces ─────────────────────────────────────────────
     --cmt-bg: #f8f9fa;               // background — the main canvas
+    // Channel form of the same colour, for the places that need the canvas
+    // at partial alpha — the empty-view scrim in base.scss. Kept in step
+    // with --cmt-bg by hand; CSS cannot decompose a hex into components.
+    --cmt-bg-rgb: 248, 249, 250;
     --cmt-surface: #ffffff;          // surface-bright — cards, navbar, panels
     --cmt-surface-dim: #f9fafb;      // inputs, table headers
     --cmt-surface-highest: #f3f4f6;  // count pills, chips
@@ -44,6 +58,12 @@
     --cmt-text-muted: #4b5563;       // on-surface-variant — metadata
 
     // ── Status ───────────────────────────────────────────────
+    // Settings-driven (see the "Semantic Colors" box on the settings
+    // screen) but declared here with the rest of the palette rather
+    // than down in the aliases block: unlike the aliases, these are
+    // real values that plenty of rules already read, not lazy
+    // redirections added later for the sake of a picker.
+    --cmt-info: #0284c7;
     --cmt-success: #16a34a;
     --cmt-warning: #d97706;
     --cmt-danger: #ef4444;
@@ -69,6 +89,7 @@
 
     // Glass surfaces — translucent white over a blurred backdrop.
     --cmt-glass-bg: rgba(255, 255, 255, 0.7);
+    --cmt-glass-bg-hover: rgba(255, 255, 255, 0.95);
     --cmt-glass-border: 1px solid rgba(0, 0, 0, 0.08);
     --cmt-glass-blur: 20px;
 
@@ -80,4 +101,103 @@
     --cmt-font-label: 'Poppins', 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
 
     --cmt-tracking-label: 0.05em;    // label-sm letter-spacing
+
+    // ── Settings-driven tokens ───────────────────────────────
+    // Everything above is a design decision, edited here in source.
+    // The tokens below are the ones Settings > Theme Settings can
+    // repaint at runtime, one per colour picker on that screen.
+    //
+    // Each is declared as an *alias* of the base token it used to be
+    // hardcoded against, so the theme looks exactly the same until
+    // someone actually saves a value. The alias is lazy — the var()
+    // is substituted where the token is used, not here — so a region
+    // left at its default still follows dark mode through the base
+    // token, with no dark-mode counterpart rule needed.
+    //
+    // views/theme_styles.xml re-declares these under
+    // :root:not([data-cmt-theme="dark"]) from the stored settings.
+    // That selector scopes the whole feature to light mode, matching
+    // the "Light Mode Colors" heading on the settings screen and
+    // leaving dark_mode.scss the sole owner of the dark scheme.
+    //
+    // Adding a picker means: a token here, a field in
+    // models/res_config_settings.py's _THEME_CSS_VARS map, and a
+    // <field> in views/res_config_settings_views.xml.
+
+    // Core
+    --cmt-text-hover: var(--cmt-text);
+    --cmt-button-bg: var(--cmt-primary);
+    --cmt-button-text: var(--cmt-on-primary);
+
+    // Top bar
+    --cmt-topbar-bg: var(--cmt-surface);
+    --cmt-topbar-text: var(--cmt-text-muted);
+    --cmt-search-bg: var(--cmt-surface);
+    --cmt-search-text: var(--cmt-text);
+    --cmt-search-placeholder: var(--cmt-outline);
+    --cmt-search-border: var(--cmt-border);
+
+    // Sidebar
+    --cmt-sidebar-bg: var(--cmt-surface);
+
+    // Active menu
+    --cmt-active-app: var(--cmt-primary);
+
+    // Authentication pages
+    //
+    // The surfaces of the login screen that would look wrong simply
+    // borrowing the backend canvas: the page behind the panel, the
+    // panel itself, and the primary action. Everything else there
+    // (inputs, labels, links) reads the tokens above, so it follows the
+    // backend for free.
+    //
+    // The two image tokens have no alias here: they are emitted by
+    // _get_theme_css()/_get_theme_css_dark() only when an image is
+    // actually uploaded, and `none` is what an unset custom property
+    // already falls back to through the second argument of the var()
+    // that consumes it.
+    //
+    // Each of these has a dark twin. The twin is *not* declared here:
+    // the dark values live in the :root[data-cmt-theme="dark"] block of
+    // whichever stylesheet owns the surface (auth_pages.scss,
+    // public_home.scss), and _get_theme_css_dark() overrides them from
+    // the settings screen. The token name is the same on both sides —
+    // that is what lets one SCSS rule serve both schemes.
+    --cmt-login-bg: var(--cmt-bg);
+    --cmt-login-card-bg: var(--cmt-surface);
+    --cmt-auth-action-bg: var(--cmt-button-bg);
+    --cmt-auth-action-text: var(--cmt-button-text);
+
+    // The login form's inputs.
+    //
+    // Aliased to the top bar's search tokens, so in light mode the two
+    // look identical and the existing Top Bar pickers still drive both
+    // — but they are separate names on purpose. The auth panel and the
+    // backend search bar are different surfaces that happen to agree in
+    // light mode and deliberately disagree in dark: the panel goes
+    // dark, and the inputs on it stay light so the fields read as the
+    // thing you type into. Sharing one token would make that
+    // impossible to express without also repainting the backend's
+    // search bar.
+    --cmt-auth-input-bg: var(--cmt-search-bg);
+    --cmt-auth-input-text: var(--cmt-search-text);
+    --cmt-auth-input-border: var(--cmt-search-border);
+    --cmt-auth-input-placeholder: var(--cmt-search-placeholder);
+
+    // Home page hero — colour
+    --cmt-home-title: var(--cmt-text);
+    --cmt-home-lead: var(--cmt-text-muted);
+
+    // Home page hero — type scale
+    //
+    // Numbers, not colours, and the same in both schemes: emitted by
+    // _get_theme_metrics_css() on a bare `:root` rather than by either
+    // of the two scheme-scoped blocks. The defaults below match the
+    // field defaults in models/res_config_settings.py — change one and
+    // change the other, or a fresh install and a reset install will
+    // render differently.
+    --cmt-home-title-size: 60px;
+    --cmt-home-title-weight: 800;
+    --cmt-home-lead-size: 16px;
+    --cmt-home-lead-weight: 500;
 }

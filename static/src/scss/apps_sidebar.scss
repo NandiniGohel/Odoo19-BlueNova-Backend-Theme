@@ -25,61 +25,50 @@
 }
 
 // ── Layout ───────────────────────────────────────────────────
-// The sidebar is injected as a sibling of the action manager, so
-// .o_web_client goes from a flex column to a two-column grid:
-// navbar across the top, sidebar and action manager side by side
-// beneath it.
+// The rail is taken out of flow and the action manager is inset to
+// clear it, rather than the two being made grid/flex siblings.
 //
-// Grid rather than a wrapper element on purpose. Odoo's entire
-// scroll model is written as `.o_web_client > .o_action_manager >
-// .o_action`, ending in `.o_content { overflow: auto; height: 100% }`
-// (webclient_layout.scss). Nesting the action manager inside a flex
-// row would drop that whole chain and views would stop scrolling.
-// Keeping every part a direct child leaves core's rules intact.
+// That is deliberate. On Odoo 14 `.o_web_client` is <body> itself
+// (webclient_templates.xml sets it as body_classname, and
+// web.web_client calls setElement($(document.body))), so its children
+// are not just the navbar and the action manager — dialogs, the
+// notification manager and the loading indicator all live there too,
+// and any grid or flex-row over that set has to account for each one.
+// Odoo's entire scroll model is also written as `.o_web_client >
+// .o_action_manager > .o_action`, ending in
+// `.o_content { overflow: auto; height: 100% }` (webclient_layout.scss);
+// restructuring that chain is what stops views scrolling.
 //
-// `:has()` scopes this to when the sidebar is actually in the DOM;
-// toggled off, the layout falls back to core's flex column. Beaten
-// out of `html .o_web_client` (0,1,1) on class count.
-html .o_web_client:has(> .cmt-app-sidebar) {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-
-    > .o_navbar {
-        grid-column: 1 / -1;
-        grid-row: 1;
-    }
-
-    > .cmt-app-sidebar {
-        grid-column: 1;
-        grid-row: 2;
-    }
-
-    > .o_action_manager {
-        grid-column: 2;
-        grid-row: 2;
-    }
-
-    // Dialogs, notifications and the like: fixed-position children,
-    // so this row collapses to nothing.
-    > .o-main-components-container {
-        grid-column: 1 / -1;
-        grid-row: 3;
-    }
-}
+// Both halves hang off `cmt-has-sidebar` on <body>, which
+// js/apps_sidebar.js sets from the stored open/closed choice.
+$cmt-sidebar-width: 208px;
+$cmt-sidebar-width-md: 176px;
+// = $o-navbar-height in web/static/src/scss/primary_variables.scss.
+// Read through the variable so a future core change follows.
+$cmt-navbar-height: $o-navbar-height;
 
 .cmt-app-sidebar {
-    flex: 0 0 auto;
-    width: 208px;
-    display: flex;
+    position: fixed;
+    top: $cmt-navbar-height;
+    left: 0;
+    bottom: 0;
+    width: $cmt-sidebar-width;
+    // Above the action manager, below Bootstrap's modal/backdrop layer.
+    z-index: 3;
     flex-flow: column nowrap;
     min-height: 0;
     padding: 12px 10px;
-    background-color: var(--cmt-surface);
+    background-color: var(--cmt-sidebar-bg);
     border-right: 1px solid var(--cmt-border);
     font-family: var(--cmt-font-sans);
 
     // ── Workspace header ─────────────────────────────────────
+    // Doubles as the brand area: Settings > Theme Settings can upload
+    // a background image for it, which arrives as --cmt-sidebar-brand-image
+    // (a url(), injected per-page by views/theme_styles.xml). No image
+    // uploaded means the token is never declared, `background-image`
+    // falls back to `none`, and the flat primary-light fill below is all
+    // that shows — which is how the block looked before this existed.
     .cmt-app-sidebar__workspace {
         display: flex;
         align-items: center;
@@ -88,6 +77,10 @@ html .o_web_client:has(> .cmt-app-sidebar) {
         margin-bottom: 12px;
         border-radius: var(--cmt-radius-md);
         background-color: var(--cmt-primary-light);
+        background-image: var(--cmt-sidebar-brand-image, none);
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
         overflow: hidden;
     }
 
@@ -159,7 +152,7 @@ html .o_web_client:has(> .cmt-app-sidebar) {
         transition: color .15s ease, background-color .15s ease;
 
         &:hover, &:focus {
-            color: var(--cmt-text);
+            color: var(--cmt-text-hover);
             background-color: var(--cmt-surface-highest);
             text-decoration: none;
 
@@ -171,7 +164,7 @@ html .o_web_client:has(> .cmt-app-sidebar) {
 
     // Current app: filled row plus the accent spine used on kanban cards.
     .cmt-app-sidebar__app--active {
-        color: var(--cmt-primary);
+        color: var(--cmt-active-app);
         font-weight: 600;
         background-color: var(--cmt-primary-light);
 
@@ -182,12 +175,12 @@ html .o_web_client:has(> .cmt-app-sidebar) {
         // equally-specific selector, declared later, reliably wins.
         &, &:hover, &:focus {
             .cmt-app-sidebar__app-icon--bundled {
-                background-color: var(--cmt-app-icon-active);
+                background-color: var(--cmt-active-app);
             }
         }
 
         &:hover, &:focus {
-            color: var(--cmt-primary);
+            color: var(--cmt-active-app);
             background-color: var(--cmt-primary-light);
         }
 
@@ -199,7 +192,7 @@ html .o_web_client:has(> .cmt-app-sidebar) {
             bottom: 6px;
             width: 3px;
             border-radius: 0 3px 3px 0;
-            background-color: var(--cmt-primary);
+            background-color: var(--cmt-active-app);
         }
     }
 
@@ -273,18 +266,42 @@ html .o_web_client:has(> .cmt-app-sidebar) {
     }
 }
 
+// ── Open / closed ────────────────────────────────────────────
+// The rail is a Bootstrap `d-none d-md-flex` element, so both of
+// these have to out-!important that utility rather than merely
+// out-specify it.
+.cmt-app-sidebar--closed {
+    display: none !important;
+}
+
+// Give the action manager the width back. Only from md up: below the
+// breakpoint the rail is hidden and Odoo's own apps dropdown is what
+// switches apps, so there is nothing to clear.
+@media (min-width: 768px) {
+    body.o_web_client.cmt-has-sidebar > .o_action_manager {
+        margin-left: $cmt-sidebar-width;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+    body.o_web_client.cmt-has-sidebar > .o_action_manager {
+        margin-left: $cmt-sidebar-width-md;
+    }
+}
+
 // ── Navbar toggle ────────────────────────────────────────────
-// Stands in for the dropdown toggle Odoo rendered here, so it has
-// to reproduce the entry sizing that %-main-navbar-entry-base gave
-// that button.
+// Stands in for Odoo's apps dropdown toggle, so it has to reproduce
+// the sizing web/static/src/scss/navbar.scss gives `.o_main_navbar > button`.
 .o_main_navbar .cmt-apps-toggle {
-    display: flex;
+    // `.o_main_navbar` is `display: flex` upstream, so the button is a
+    // flex item and needs no float — the 14.0 version of this rule had
+    // one because 14's navbar was a float layout.
     align-items: center;
-    height: var(--o-navbar-height);
+    height: $cmt-navbar-height;
     padding: 0 12px;
     border: 0;
     background: transparent;
-    font-size: 1.2em;
+    font-size: 18px;
     line-height: 1;
     color: var(--cmt-text-muted);
     transition: color .15s ease, background-color .15s ease;
@@ -294,7 +311,29 @@ html .o_web_client:has(> .cmt-app-sidebar) {
         background-color: var(--cmt-primary-light);
     }
 
-    &[aria-expanded="true"] {
+    &:focus, &:active, &:focus:active {
+        outline: none;
+    }
+
+    &.cmt-apps-toggle--active {
         color: var(--cmt-primary);
+    }
+}
+
+// Odoo's stock apps menu stays in the DOM so the rail can hand over to
+// it below md, where the rail itself is `d-none`.
+//
+// `.o_navbar_apps_menu` is the dropdown Odoo 19 renders on wide screens;
+// below its own `ui.isSmall` threshold the navbar swaps it for
+// `.o_menu_toggle` (the slide-in sidebar), which is left alone — that is
+// exactly the surface taking over here. The two breakpoints line up:
+// isSmall is `size <= SM`, i.e. the same 768px this media query and the
+// rail's `d-md-flex` use.
+//
+// On 14 this hid a `.cmt-stock-apps-menu` class the patch had to add by
+// hand, because the widget-era markup carried no stable hook of its own.
+@media (min-width: 768px) {
+    .o_main_navbar .o_navbar_apps_menu {
+        display: none !important;
     }
 }

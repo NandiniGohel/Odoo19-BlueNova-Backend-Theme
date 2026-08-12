@@ -40,8 +40,8 @@
 // Mockup: white field, 1px outline-variant border, 8px radius,
 // 1px primary ring on focus.
 .o_searchview {
-    background: var(--cmt-surface);
-    border: 1px solid var(--cmt-border) !important;
+    background: var(--cmt-search-bg);
+    border: 1px solid var(--cmt-search-border) !important;
     border-radius: var(--cmt-radius-md) !important;
     padding: 5px 12px;
     transition: border-color .15s ease, box-shadow .15s ease;
@@ -49,15 +49,15 @@
     input {
         font-family: var(--cmt-font-sans);
         font-size: 14px;
-        color: var(--cmt-text);
+        color: var(--cmt-search-text);
 
         &::placeholder {
-            color: var(--cmt-outline);
+            color: var(--cmt-search-placeholder);
         }
     }
 
     .o_searchview_icon {
-        color: var(--cmt-outline);
+        color: var(--cmt-search-placeholder);
     }
 
     &:focus-within {

@@ -1,0 +1,219 @@
+// ============================================================
+// Home dashboard — the themed landing client action
+//
+// Deliberately built on the same two mixins the rest of the backend
+// uses rather than restating their declarations: cmt-label-sm from
+// base.scss and cmt-masked-icon from apps_sidebar.scss. Both files are
+// appended to web.assets_backend before this one in views/assets.xml,
+// and Odoo compiles a bundle as one SCSS document, so a mixin defined
+// earlier in the bundle is in scope here.
+//
+// The card treatment is the same brushed-metal language as
+// stats_banner.scss's .cmt-stat-card — chrome border, inset white
+// reflection, shadow lifting on hover. Not shared through a mixin
+// because the banner's cards are laid out inside the kanban's control
+// panel and these are a standalone page grid; only the surface
+// treatment is common, and that is already carried by the tokens.
+// ============================================================
+.cmt-dashboard {
+    padding: 32px;
+    min-height: 100%;
+    background: var(--cmt-bg);
+    font-family: var(--cmt-font-sans);
+
+    // ── Header ───────────────────────────────────────────────
+    .cmt-dashboard__header {
+        margin-bottom: 28px;
+    }
+
+    .cmt-dashboard__greeting {
+        margin: 0;
+        font-size: 28px;
+        line-height: 36px;
+        font-weight: 600;
+        color: var(--cmt-text);
+    }
+
+    .cmt-dashboard__sub {
+        @include cmt-label-sm;
+        margin: 4px 0 0;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--cmt-text-muted);
+    }
+
+    // ── Tiles ────────────────────────────────────────────────
+    // auto-fill rather than a fixed column count: the number of tiles
+    // depends on which apps are installed, so anything from one to
+    // seven has to lay out sensibly without a media query per case.
+    .cmt-dashboard__tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 16px;
+    }
+
+    .cmt-dashboard__tile {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        padding: 20px;
+
+        background: var(--cmt-surface);
+        border: var(--cmt-chrome-border);
+        border-radius: var(--cmt-radius-lg);
+        box-shadow: var(--cmt-shadow-sm), var(--cmt-chrome-inset);
+        // The element is a <button>, so the browser's own control
+        // styling has to be cleared before the theme's can show.
+        appearance: none;
+        cursor: pointer;
+        // Anchors the accent bar below.
+        position: relative;
+        transition: background-color .2s ease, box-shadow .3s ease,
+                    transform .15s ease;
+
+        // ── Hover accent bar ─────────────────────────────────
+        // A pseudo-element rather than `border-left`, because a border
+        // that only exists on hover changes the box width and shunts
+        // the tile's contents 4px sideways every time the pointer
+        // crosses it. This is out of flow, so nothing moves.
+        //
+        // The 1px negative offsets bleed it over the chrome border so
+        // the bar sits flush with the tile's outer edge, and the radius
+        // matches the tile's own left corners so it reads as part of
+        // the card rather than a stripe laid on top.
+        //
+        // Painted with --cmt-primary, which is already #3959b0 in light
+        // and #7c9aff in dark — the two colours the reference designs
+        // use — so one declaration covers both schemes and it follows
+        // the configured Primary if an admin changes it.
+        &::before {
+            content: "";
+            position: absolute;
+            top: -1px;
+            bottom: -1px;
+            left: -1px;
+            width: 4px;
+            background: var(--cmt-primary);
+            border-radius: var(--cmt-radius-lg) 0 0 var(--cmt-radius-lg);
+            opacity: 0;
+            transition: opacity .2s ease;
+        }
+
+        // ── Hover ────────────────────────────────────────────
+        // The accent bar plus a fill that lifts a step up the surface
+        // ramp (#f3f4f6 light / #1e293b dark). Both read in either
+        // scheme, which the shadow alone did not: --cmt-shadow-md is
+        // rgba(0, 0, 0, .35) in dark, and a black shadow on a #0b1120
+        // canvas renders as nothing — the 2px translate was the only
+        // surviving signal, so the tiles felt dead on a dark dashboard.
+        // The shadow is kept because it still does the work in light.
+        &:hover {
+            background: var(--cmt-surface-highest);
+            box-shadow: var(--cmt-shadow-md), var(--cmt-chrome-inset);
+            transform: translateY(-2px);
+
+            &::before {
+                opacity: 1;
+            }
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--cmt-shadow-md), var(--cmt-chrome-inset),
+                        0 0 0 3px rgba(var(--cmt-primary-rgb), 0.35);
+        }
+
+        // No resolvable action behind it: still informative, but it is
+        // not pretending to be a link — so it opts out of all three
+        // hover signals, not just the two it used to.
+        &[disabled] {
+            cursor: default;
+
+            &:hover {
+                background: var(--cmt-surface);
+                box-shadow: var(--cmt-shadow-sm), var(--cmt-chrome-inset);
+                transform: none;
+
+                &::before {
+                    opacity: 0;
+                }
+            }
+        }
+    }
+
+    // Single-colour artwork painted through a CSS mask, exactly as the
+    // app rail does it — the colour then lives here and can follow
+    // hover state instead of being baked into the PNG.
+    .cmt-dashboard__tile-icon {
+        @include cmt-masked-icon;
+        display: block;
+        width: 28px;
+        height: 28px;
+        margin-bottom: 14px;
+        background-color: var(--cmt-app-icon);
+        transition: background-color .2s ease;
+    }
+
+    // :not([disabled]) so a tile with no action behind it stays inert —
+    // the icon lighting up is a promise that clicking does something.
+    .cmt-dashboard__tile:not([disabled]):hover .cmt-dashboard__tile-icon {
+        background-color: var(--cmt-app-icon-hover);
+    }
+
+    .cmt-dashboard__tile-value {
+        font-size: 32px;
+        line-height: 40px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--cmt-text);
+    }
+
+    .cmt-dashboard__tile-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--cmt-text);
+    }
+
+    .cmt-dashboard__tile-sub {
+        @include cmt-label-sm;
+        margin-top: 2px;
+        color: var(--cmt-text-muted);
+    }
+
+    // ── Empty state ──────────────────────────────────────────
+    .cmt-dashboard__empty {
+        padding: 64px 24px;
+        text-align: center;
+        color: var(--cmt-text-muted);
+    }
+
+    .cmt-dashboard__empty-icon {
+        display: block;
+        font-size: 40px;
+        margin-bottom: 12px;
+        color: var(--cmt-outline);
+    }
+}
+
+// ── Responsive ───────────────────────────────────────────────
+@media (max-width: 767.98px) {
+    .cmt-dashboard {
+        padding: 20px 16px;
+
+        .cmt-dashboard__greeting {
+            font-size: 22px;
+            line-height: 30px;
+        }
+
+        .cmt-dashboard__tiles {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .cmt-dashboard__tile-value {
+            font-size: 26px;
+            line-height: 34px;
+        }
+    }
+}

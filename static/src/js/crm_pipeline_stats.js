@@ -1,3 +1,5 @@
+/** @odoo-module **/
+
 import { Component } from "@odoo/owl";
 
 /**
@@ -9,7 +11,7 @@ import { Component } from "@odoo/owl";
  * so it will never break the page even if Odoo's internals change.
  */
 export class CrmPipelineStats extends Component {
-    static template = "bluegray_modern_theme.PipelineStats";
+    static template = "bluenova_backend_theme.PipelineStats";
     static props = {
         list: { type: Object },
     };
@@ -104,7 +106,7 @@ export class CrmPipelineStats extends Component {
             };
         } catch (e) {
             console.warn(
-                "[bluegray_modern_theme] Could not compute pipeline stats:",
+                "[bluenova_backend_theme] Could not compute pipeline stats:",
                 e
             );
             return null;
