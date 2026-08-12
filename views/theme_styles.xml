@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Applies the colours saved in Settings > Theme Settings.
+
+        The CSS is rendered into the page head rather than served from a
+        controller route: a <link> inside an asset bundle is an
+        instruction to the AssetsBundle, which resolves the href as a
+        *file on the addons path*, compiles it and concatenates it. A
+        route is not a file, so the bundle would fail to build — and even
+        if it resolved, the result would be frozen into the bundle and
+        only change when the bundle was regenerated, which is the exact
+        problem this feature exists to avoid.
+
+        This template appends to `head_web` in web.webclient_bootstrap,
+        which is where the asset bundles themselves are pulled in, so the
+        <style> lands after every compiled stylesheet and wins the cascade
+        at equal specificity. It is regenerated on each page load straight
+        from ir.config_parameter: saving the settings form returns Odoo's
+        standard `reload` client action, so the new colours are on screen
+        the moment the page comes back — no bundle rebuild, no server
+        restart, and nothing cached to invalidate.
+
+        t-out, not t-raw: t-raw was removed in 15.0. _get_theme_css()
+        returns markupsafe.Markup so t-out emits it unescaped — see the
+        note above the Runtime CSS section in
+        models/res_config_settings.py for why that is safe here.
+
+        Nothing is emitted when no colour has been customised — the
+        methods return "" — so an untouched install carries no extra
+        markup and looks exactly as it did before this feature existed.
+    -->
+    <template id="theme_styles" inherit_id="web.webclient_bootstrap"
+              name="BlueNova Theme Settings Styles">
+        <xpath expr="//t[@t-set='head_web']" position="inside">
+            <t t-set="cmt_theme_css"
+               t-value="request.env['res.config.settings'].sudo()._get_theme_css()"/>
+            <style t-if="cmt_theme_css" type="text/css" t-out="cmt_theme_css"/>
+
+            <!--
+                The dark block, second.
+
+                The two selectors are mutually exclusive
+                (`:root:not([data-cmt-theme="dark"])` against
+                `:root[data-cmt-theme="dark"]`), so order is not what
+                decides the winner here — but emitting dark last keeps
+                document order agreeing with intent, and matters for the
+                one declaration the two blocks share: the sidebar brand
+                image, which is repeated in both so the artwork survives
+                the light/dark switch.
+
+                Most of what this block carries paints the login and
+                public pages, which the backend never renders. It is
+                emitted anyway rather than filtered: an unread custom
+                property costs nothing, and a filter would be one more
+                place to forget when a token starts being used on both
+                sides.
+            -->
+            <t t-set="cmt_theme_css_dark"
+               t-value="request.env['res.config.settings'].sudo()._get_theme_css_dark()"/>
+            <style t-if="cmt_theme_css_dark" type="text/css" t-out="cmt_theme_css_dark"/>
+        </xpath>
+    </template>
+
+</odoo>

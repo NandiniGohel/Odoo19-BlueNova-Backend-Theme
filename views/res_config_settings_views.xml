@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Settings > Theme Settings.
+
+        Rewritten for Odoo 19's settings markup. On 14 a module added its
+        panel by xpath'ing a hand-written
+        `<div class="app_settings_block" data-key="…">` into
+        `//div[hasclass('settings')]`; since 16.0 the screen is compiled
+        from `<app>` / `<block>` / `<setting>` elements
+        (web/static/src/webclient/settings_form_view/settings_form_compiler.js),
+        and the anchor is `//form` on base.res_config_settings_view_form.
+
+        `name` on <app> still has to be the module's technical name: the
+        compiler derives the panel's `data-key` from it — which is what
+        the left-hand entry filters on — and, with no `logo` attribute,
+        resolves the entry's icon as
+        /<name>/static/description/icon.png.
+
+        Colour fields use widget="color", which Odoo 19 renders as a
+        native <input type="color"> (web/…/views/fields/color/). It always
+        emits a #rrggbb value, so every save already satisfies the
+        COLOR_RE check in models/res_config_settings.py.
+
+        Layout: <setting> compiles to the same `o_setting_box col-12
+        col-lg-6` the 14 view wrote by hand, so the screen is still two
+        columns from the lg breakpoint up and a single stack below it.
+        The rows inside a box stay `cmt-setting-row`, a class this module
+        adds (scss/settings_page.scss) rather than a bare
+        `d-flex justify-content-between` — long labels next to a fixed
+        swatch need `min-width: 0` to wrap instead of squeezing the
+        swatch, and that cannot be expressed in Bootstrap utilities.
+
+        Note on <setting>: the compiler only adopts a child <field> as the
+        setting's own field when it is the *first* child. Every box below
+        starts with a <div>, so each one keeps the label given by its
+        `string` attribute and the fields inside are laid out by this
+        module's own markup.
+
+        Structure mirrors the reference designs:
+          Presets & Assets
+          Home Page              — visibility, typography, hero content
+          Authentication Pages   — branding, panels (light + dark), semantic
+          Light Mode Colors      — core, top bar, sidebar, active menu, home
+          Dark Mode Colors       — the same blocks again, one for one
+    -->
+    <record id="res_config_settings_view_form_theme" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.bluenova.theme</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Theme Settings"
+                     string="Theme Settings"
+                     name="bluenova_backend_theme"
+                     groups="base.group_system">
+
+                    <!-- ════════════════════════════════════════════
+                         Presets &amp; Assets
+                         ════════════════════════════════════════════ -->
+                    <block title="Presets &amp; Assets" name="cmt_presets_block">
+
+                        <setting string="Theme Settings Presets"
+                                 help="Export or import theme settings. Colors and hero typography are included; images are not.">
+                            <div class="mt-2">
+                                <button name="action_import_theme_settings"
+                                        type="object"
+                                        string="Import Settings"
+                                        class="btn btn-primary"/>
+                                <button name="action_export_theme_settings"
+                                        type="object"
+                                        string="Export Settings"
+                                        class="btn btn-secondary ms-2"/>
+                            </div>
+                        </setting>
+
+                        <setting string="Theme Reset"
+                                 help="Reset all theme settings to defaults, light and dark, including uploaded images.">
+                            <div class="mt-2">
+                                <button name="action_reset_theme_settings"
+                                        type="object"
+                                        icon="oi-arrow-right"
+                                        string="Reset All Theme Settings"
+                                        class="btn-link"/>
+                            </div>
+                        </setting>
+
+                        <setting string="Sidebar Brand Asset"
+                                 help="Background image used in the left sidebar brand area. Doubles as the login logo when the option below is ticked.">
+                            <div class="mt-2">
+                                <label for="theme_sidebar_brand_image"
+                                       class="o_light_label"/>
+                                <field name="theme_sidebar_brand_image"
+                                       widget="image"
+                                       class="oe_avatar"/>
+                            </div>
+                        </setting>
+
+                    </block>
+
+                    <!-- ════════════════════════════════════════════
+                         Home Page
+                         ════════════════════════════════════════════ -->
+                    <block title="Home Page" name="cmt_home_block">
+
+                        <setting string="Home Page Visibility"
+                                 help="Show or hide the themed public page at /. While it is off, / redirects to the web client exactly as stock Odoo does.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-check">
+                                    <field name="theme_public_home_enabled"/>
+                                    <label for="theme_public_home_enabled"
+                                           class="o_light_label mb-0"/>
+                                </div>
+                                <div class="cmt-setting-check">
+                                    <field name="theme_landing_dashboard"/>
+                                    <label for="theme_landing_dashboard"
+                                           class="o_light_label mb-0"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Hero Typography"
+                                 help="Control title and lead text on the Home page hero section. Sizes are the desktop ceiling; the hero scales down on narrow screens on its own.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_home_title_size" class="o_light_label mb-0"/>
+                                    <field name="theme_home_title_size" class="cmt-setting-number" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_home_title_weight" class="o_light_label mb-0"/>
+                                    <field name="theme_home_title_weight" class="cmt-setting-number" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_home_lead_size" class="o_light_label mb-0"/>
+                                    <field name="theme_home_lead_size" class="cmt-setting-number" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_home_lead_weight" class="o_light_label mb-0"/>
+                                    <field name="theme_home_lead_weight" class="cmt-setting-number" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                    </block>
+
+                    <!-- ════════════════════════════════════════════
+                         Authentication Pages
+                         ════════════════════════════════════════════ -->
+                    <block title="Authentication Pages" name="cmt_auth_block">
+
+                        <setting string="Panels &amp; Actions"
+                                 help="Panel and action colors used on authentication pages.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_login_bg" class="o_light_label mb-0"/>
+                                    <field name="theme_color_login_bg" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_login_card_bg" class="o_light_label mb-0"/>
+                                    <field name="theme_color_login_card_bg" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_auth_action_bg" class="o_light_label mb-0"/>
+                                    <field name="theme_color_auth_action_bg" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_auth_action_text" class="o_light_label mb-0"/>
+                                    <field name="theme_color_auth_action_text" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Dark Panels &amp; Actions"
+                                 help="Dark mode panel and action colors used on authentication pages.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_login_bg_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_login_bg_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_login_card_bg_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_login_card_bg_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_auth_action_bg_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_auth_action_bg_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_auth_action_text_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_auth_action_text_dark" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Semantic Colors"
+                                 help="System semantic colors for authentication and shared alerts. Shared by both color schemes.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_info" class="o_light_label mb-0"/>
+                                    <field name="theme_color_info" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_success" class="o_light_label mb-0"/>
+                                    <field name="theme_color_success" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_warning" class="o_light_label mb-0"/>
+                                    <field name="theme_color_warning" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_danger" class="o_light_label mb-0"/>
+                                    <field name="theme_color_danger" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Login Branding"
+                                 help="Applies to the login, signup and reset-password pages. Tick the box to reuse the Sidebar Brand Asset as the logo; leave it clear to keep the company logo.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-check">
+                                    <field name="theme_login_use_brand_image"/>
+                                    <label for="theme_login_use_brand_image"
+                                           class="o_light_label mb-0"/>
+                                </div>
+                                <label for="theme_login_tagline"
+                                       class="o_light_label"/>
+                                <field name="theme_login_tagline"
+                                       nolabel="1"
+                                       placeholder="e.g. Welcome back"/>
+                            </div>
+                        </setting>
+
+                        <setting string="Login Background Images"
+                                 help="Full-page background behind the login panel, one per colour scheme.">
+                            <div class="mt-2">
+                                <label for="theme_login_background_image"
+                                       class="o_light_label"/>
+                                <field name="theme_login_background_image"
+                                       widget="image"
+                                       class="oe_avatar"/>
+                                <label for="theme_login_background_image_dark"
+                                       class="o_light_label"/>
+                                <field name="theme_login_background_image_dark"
+                                       widget="image"
+                                       class="oe_avatar"/>
+                            </div>
+                        </setting>
+
+                    </block>
+
+                    <!-- ════════════════════════════════════════════
+                         Light Mode Colors
+                         ════════════════════════════════════════════ -->
+                    <block title="Light Mode Colors" name="cmt_light_block">
+
+                        <setting string="Core Colors"
+                                 help="Global theme foundation colors used throughout backend views.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_primary" class="o_light_label mb-0"/>
+                                    <field name="theme_color_primary" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_background" class="o_light_label mb-0"/>
+                                    <field name="theme_color_background" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_text" class="o_light_label mb-0"/>
+                                    <field name="theme_color_text" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_muted_text" class="o_light_label mb-0"/>
+                                    <field name="theme_color_muted_text" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_text_hover" class="o_light_label mb-0"/>
+                                    <field name="theme_color_text_hover" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_button" class="o_light_label mb-0"/>
+                                    <field name="theme_color_button" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_button_text" class="o_light_label mb-0"/>
+                                    <field name="theme_color_button_text" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Top Bar"
+                                 help="Colors for the main top navigation and search area.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_topbar_bg" class="o_light_label mb-0"/>
+                                    <field name="theme_color_topbar_bg" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_topbar_text" class="o_light_label mb-0"/>
+                                    <field name="theme_color_topbar_text" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_search_text" class="o_light_label mb-0"/>
+                                    <field name="theme_color_search_text" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_search_placeholder" class="o_light_label mb-0"/>
+                                    <field name="theme_color_search_placeholder" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_search_border" class="o_light_label mb-0"/>
+                                    <field name="theme_color_search_border" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_search_bg" class="o_light_label mb-0"/>
+                                    <field name="theme_color_search_bg" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Sidebar Base"
+                                 help="Default colors for the main left sidebar and brand area.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_sidebar_bg" class="o_light_label mb-0"/>
+                                    <field name="theme_color_sidebar_bg" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Active Menu"
+                                 help="Colors for the selected sidebar menu item.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_active_app" class="o_light_label mb-0"/>
+                                    <field name="theme_color_active_app" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Home Page Colors"
+                                 help="Colors for the Home page hero text.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_home_title" class="o_light_label mb-0"/>
+                                    <field name="theme_color_home_title" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_home_lead" class="o_light_label mb-0"/>
+                                    <field name="theme_color_home_lead" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                    </block>
+
+                    <!-- ════════════════════════════════════════════
+                         Dark Mode Colors
+
+                         Every box below mirrors one above, field for
+                         field. A light/dark pair writes the *same* CSS
+                         custom property — the light value under
+                         :root:not([data-cmt-theme="dark"]) and the dark
+                         one under :root[data-cmt-theme="dark"] — so the
+                         two can never both apply and no stylesheet
+                         downstream has to know which scheme is active.
+                         See _THEME_CSS_VARS_DARK in
+                         models/res_config_settings.py.
+
+                         Semantic Colors and Hero Typography have no dark
+                         box on purpose: a danger red stays a danger red,
+                         and a type scale is not a palette.
+                         ════════════════════════════════════════════ -->
+                    <block title="Dark Mode Colors" name="cmt_dark_block">
+
+                        <setting string="Core Colors"
+                                 help="Global dark mode foundation colors used throughout backend views.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_primary_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_primary_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_background_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_background_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_text_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_text_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_muted_text_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_muted_text_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_text_hover_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_text_hover_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_button_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_button_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_button_text_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_button_text_dark" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Top Bar"
+                                 help="Dark mode colors for the main top navigation and search area.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_topbar_bg_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_topbar_bg_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_topbar_text_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_topbar_text_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_search_text_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_search_text_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_search_placeholder_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_search_placeholder_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_search_border_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_search_border_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_search_bg_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_search_bg_dark" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Sidebar Base"
+                                 help="Dark mode colors for the main left sidebar and brand area.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_sidebar_bg_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_sidebar_bg_dark" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Active Menu"
+                                 help="Dark mode colors for the selected sidebar menu item.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_active_app_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_active_app_dark" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Home Page Colors"
+                                 help="Dark mode colors for the Home page hero text.">
+                            <div class="mt-2">
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_home_title_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_home_title_dark" widget="color" nolabel="1"/>
+                                </div>
+                                <div class="cmt-setting-row">
+                                    <label for="theme_color_home_lead_dark" class="o_light_label mb-0"/>
+                                    <field name="theme_color_home_lead_dark" widget="color" nolabel="1"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                    </block>
+
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

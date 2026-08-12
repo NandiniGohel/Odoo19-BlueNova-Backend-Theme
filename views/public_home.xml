@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        The themed public page at `/`.
+
+        Served by controllers/main.py only when an admin has switched it
+        on and the `website` module is absent — see the docstring on
+        BlueNovaHome.index for why both conditions exist.
+
+        Built on web.frontend_layout rather than on anything from
+        `website`. That is the whole reason this module still depends on
+        `web` and `base_setup` alone: frontend_layout already pulls
+        web.assets_frontend, which the manifest has extended with this
+        theme's tokens and stylesheets for the login page, so the public
+        page costs no new dependency and no new bundle.
+
+        The trade-off is honest and worth stating: there is no
+        drag-and-drop editing here. The copy below is either the
+        company's own data or the tagline from Settings > Theme
+        Settings. Anything richer than that is what the `website` module
+        is for.
+    -->
+    <template id="public_home" name="BlueNova Public Home">
+        <t t-call="web.frontend_layout">
+            <t t-set="html_data" t-value="{'style': 'height: 100%;'}"/>
+            <t t-set="body_classname" t-value="'o_bluenova_public_home'"/>
+            <t t-set="no_header" t-value="True"/>
+            <t t-set="no_footer" t-value="True"/>
+            <t t-set="title" t-value="cmt_company.name"/>
+
+            <!--
+                Dark mode before the first paint, from the same
+                localStorage key js/theme_mode.js writes in the backend.
+                Identical to the block in views/auth_theme.xml and
+                inline for the same reason: the frontend JS bundle is
+                deferred, so a module-based approach lands after the
+                page has already been painted light.
+            -->
+            <script type="text/javascript">
+                try {
+                    if (window.localStorage.getItem('cmt_color_scheme') === 'dark') {
+                        document.documentElement.setAttribute('data-cmt-theme', 'dark');
+                    }
+                } catch (e) {
+                    /* private browsing: no stored preference, stay light */
+                }
+            </script>
+
+            <!--
+                The colours saved under Settings > Theme Settings, light
+                then dark. The two selectors are mutually exclusive, so
+                the script above is what decides which one matches.
+            -->
+            <t t-set="cmt_settings" t-value="request.env['res.config.settings'].sudo()"/>
+            <t t-set="cmt_theme_css" t-value="cmt_settings._get_theme_css()"/>
+            <style t-if="cmt_theme_css" type="text/css" t-out="cmt_theme_css"/>
+            <t t-set="cmt_theme_css_dark" t-value="cmt_settings._get_theme_css_dark()"/>
+            <style t-if="cmt_theme_css_dark" type="text/css" t-out="cmt_theme_css_dark"/>
+
+            <!--
+                And the hero type scale, which belongs to neither scheme
+                — hence a third block on a bare :root rather than a few
+                more declarations in either of the two above.
+            -->
+            <t t-set="cmt_theme_metrics" t-value="cmt_settings._get_theme_metrics_css()"/>
+            <style t-if="cmt_theme_metrics" type="text/css" t-out="cmt_theme_metrics"/>
+
+            <main class="cmt-public-home">
+                <div class="cmt-public-home__panel">
+
+                    <img t-if="cmt_branding['logo_url']"
+                         class="cmt-public-home__logo"
+                         t-att-src="cmt_branding['logo_url']" alt="Logo"/>
+                    <img t-else=""
+                         class="cmt-public-home__logo"
+                         src="/web/binary/company_logo" alt="Logo"/>
+
+                    <!--
+                        The hero's two lines, each painted by its own
+                        token. The headline is always present; the lead
+                        appears once an admin has set a tagline.
+
+                        t-out on plain strings, never Markup: this is
+                        admin-entered free text and company data on a
+                        page served to anonymous visitors, so it is
+                        escaped.
+                    -->
+                    <h1 class="cmt-public-home__title" t-out="cmt_company.name"/>
+
+                    <p t-if="cmt_branding['tagline']"
+                       class="cmt-public-home__tagline"
+                       t-out="cmt_branding['tagline']"/>
+
+                    <a class="cmt-public-home__cta" href="/web/login">Sign in</a>
+
+                </div>
+            </main>
+        </t>
+    </template>
+
+</odoo>

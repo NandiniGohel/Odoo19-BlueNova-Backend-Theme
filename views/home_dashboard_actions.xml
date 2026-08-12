@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        The dashboard's action and menu entry.
+
+        `tag` is the key static/src/js/home_dashboard.js registers itself
+        under in the "actions" registry — the two must stay in step, and a
+        mismatch shows up as "Undefined action" rather than an install
+        error, so it is worth keeping the names literal on both sides.
+    -->
+    <record id="action_home_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard</field>
+        <field name="tag">bluenova_dashboard</field>
+        <!--
+            The action carries no res_model, so nothing here grants
+            access to anything: every figure on the page is counted as
+            the requesting user by models/theme_dashboard.py.
+        -->
+    </record>
+
+    <!--
+        A root menu, so it becomes an app in its own right and the
+        theme's app rail (js/apps_sidebar.js) lists it like any other.
+        `web_icon` points at the module's own icon, the same file the
+        Apps card and the Theme Settings entry use.
+
+        sequence 1: it is a landing page, so it belongs first.
+    -->
+    <menuitem id="menu_home_dashboard"
+              name="Dashboard"
+              action="action_home_dashboard"
+              web_icon="bluenova_backend_theme,static/description/icon.png"
+              sequence="1"/>
+
+</odoo>
