@@ -1171,146 +1171,145 @@
     }
 
     // ── Calendar ─────────────────────────────────────────────
-    // .o_calendar_renderer is filled with $o-view-background-color and
-    // the FullCalendar variables Odoo sets on .o_calendar_widget point
-    // at the same literal, so the grid, its sticky day-header row and
-    // the out-of-hours shading were all light while the surrounding
-    // control panel and side panel were dark.
-    .o_calendar_renderer,
-    .o_calendar_view,
-    .o_calendar_container,
-    .o_calendar_widget {
+    // VERSION NOTE — Odoo 19 bundles FullCalendar **v6**
+    // (web/static/lib/fullcalendar/{core,daygrid,timegrid,list}/index.global.js,
+    // one bundle per plugin rather than 4.x's main.css). The block that
+    // used to sit here was written for **v4.4.0**, whose markup emits
+    // .fc-widget-content, .fc-unthemed, .fc-head-container, .fc-day-grid,
+    // .fc-day-header, .fc-axis and .fc-list-heading. v6 emits none of
+    // them, so every one of those selectors was inert — which is why the
+    // week grid still showed a white all-day strip and a washed grey
+    // body in dark mode.
+    //
+    // v6 also *does* expose the --fc-* custom property set v4 lacked, so
+    // most of this is now a handful of property overrides rather than a
+    // per-surface chase. The properties are set on .o_calendar_widget,
+    // not on .o_calendar_renderer: calendar_renderer.scss declares
+    // --fc-page-bg-color and --fc-border-color on
+    // `.o_calendar_renderer .o_calendar_widget` (0,2,0), and a value set
+    // on an ancestor would lose to it for everything inside the widget.
+    //
+    // Three surfaces in the screenshot, three causes:
+    //
+    //   • the mid-grey grid body — FullCalendar's own
+    //     --fc-non-business-color, rgba(215,215,215,.3), compositing
+    //     over the dark canvas
+    //   • the white all-day strip — calendar_renderer.scss fills the
+    //     non-liquid scroller harness with $o-view-background-color
+    //     (compiled: white), which no property covers
+    //   • the pale weekend cells in that strip — .o_calendar_disabled,
+    //     which this file previously painted with a *translucent* dark.
+    //     Layer 1's note at the top of this file applies exactly:
+    //     a translucent fill composites over whatever core painted
+    //     underneath and comes out washed. It is opaque now.
+    .o_calendar_renderer {
         --o-cw-border-color: var(--cmt-border);
 
         background-color: var(--cmt-bg) !important;
         color: var(--cmt-text);
 
-        .fc-widget-header,
-        .fc-widget-content,
-        .fc-row,
-        .fc-head,
-        .fc-body,
-        .fc-divider,
-        .fc-list-view,
-        .fc-popover,
-        .fc-week-number,
-        .fc-axis,
-        .fc-day-header,
-        .fc-view,
-        .fc-view-container,
-        .fc-head-container,
-        .fc-unthemed th,
-        .fc-unthemed td,
-        .fc-unthemed thead,
-        .fc-unthemed tbody,
-        .fc-unthemed .fc-row,
-        .fc-unthemed .fc-content,
-        th,
-        td {
-            border-color: var(--cmt-border) !important;
-        }
-
-        // NOTE ON VERSIONS — 17.0 bundles FullCalendar **v4.4.0**
-        // (web/static/lib/fullcalendar/{core,daygrid,timegrid,list}/main.css).
-        //
-        // v4 has no --fc-* custom properties whatsoever: `grep -c -- --fc-`
-        // over all four of those files returns 0. The whole --fc-page-bg-color
-        // / --fc-today-bg-color property set that used to sit here was
-        // therefore inert, and so were the selectors below it —
-        // .fc-col-header-cell-cushion, .fc-daygrid-day-number,
-        // .fc-timegrid-axis-cushion and friends are v5/v6 class names that
-        // v4's markup never emits.
-        //
-        // What actually paints is Odoo's own calendar_renderer.scss, in
-        // literal `$o-view-background-color` (compiled: `white`), which is why
-        // the week grid showed a white day-header strip, a white all-day row
-        // and — most visibly — a full-height white column on today.
-        //
-        // --o-cw-border-color above is the exception and is kept: that one is
-        // Odoo's own property and core really does read it (`th, td {
-        // border-color: var(--o-cw-border-color) }`).
         .o_calendar_widget {
-            // The sticky SUN/MON/TUE strip. `background-color: white` at
-            // (0,3,0).
-            .fc-head-container {
+            // The FullCalendar v6 palette. Every one of these is a real
+            // custom property the bundled library reads at runtime.
+            --fc-page-bg-color: var(--cmt-bg);
+            --fc-border-color: var(--cmt-border);
+            --fc-neutral-bg-color: var(--cmt-surface-highest);
+            --fc-neutral-text-color: var(--cmt-text-muted);
+            --fc-highlight-color: rgba(var(--cmt-primary-rgb), 0.20);
+            --fc-non-business-color: var(--cmt-surface-dim);
+            --fc-more-link-bg-color: var(--cmt-surface-highest);
+            --fc-more-link-text-color: var(--cmt-text);
+            --fc-now-indicator-color: var(--cmt-danger);
+
+            // Today's column needs nothing here: core sets
+            // `--fc-today-bg-color: none` on .fc-day-today and marks the
+            // day with a pill on the number instead (--o-cw-bg), so
+            // there is no full-height slab to undo the way there was on
+            // v4.
+
+            // ── The all-day strip ────────────────────────────
+            // The one surface with no property behind it.
+            // --cmt-surface rather than --cmt-bg so it reads as the same
+            // lifted band as the day-header row directly above it.
+            .fc-scrollgrid-section-body:not(.fc-scrollgrid-section-liquid)
+            .fc-scroller-harness {
                 background-color: var(--cmt-surface) !important;
             }
 
-            // The all-day row beneath it, plus the drop shadow it casts —
-            // tuned for a white surface, invisible-to-muddy on a dark one.
-            .fc-timeGridDay-view div.fc-day-grid,
-            .fc-timeGridWeek-view div.fc-day-grid {
-                background-color: var(--cmt-surface) !important;
-                box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.5) !important;
-            }
-
-            // Today's column. Core deliberately replaces FullCalendar's pale
-            // yellow with a flat `background: white` here, which is a no-op in
-            // light mode and a glaring slab in dark mode. Restored to what the
-            // highlight was always meant to be — a faint tint of the brand.
-            // (0,7,0) in core, hence !important rather than a longer selector.
-            .fc-timeGridDay-view .fc-day.fc-widget-content.fc-today:not(.o_calendar_disabled),
-            .fc-timeGridWeek-view .fc-day.fc-widget-content.fc-today:not(.o_calendar_disabled) {
-                background: rgba(var(--cmt-primary-rgb), 0.10) !important;
-            }
-
-            // The two horizontal rules framing the all-day row: $gray-400 and
-            // $gray-300, both compiled literals.
-            hr.fc-widget-header,
-            .fc-timeGridDay-view div.fc-day-grid + hr.fc-widget-header,
-            .fc-timeGridWeek-view div.fc-day-grid + hr.fc-widget-header {
-                background: var(--cmt-border) !important;
-            }
-
-            // Events are separated from their neighbours by a 1px ring in the
-            // view background colour — again a literal white, so every event
-            // in dark mode was outlined in white.
-            .fc-timeGridDay-view .fc-event:not(.o_event_allday):not(.o_homework_event),
-            .fc-timeGridWeek-view .fc-event:not(.o_event_allday):not(.o_homework_event) {
+            // Events carry a 1px ring in the view background colour so
+            // same-coloured neighbours do not merge — a white outline on
+            // a dark grid.
+            .fc-event:not(.o_event_allday):not(.o_homework_event) {
                 box-shadow: 0 0 0 1px var(--cmt-bg) !important;
             }
+
+            // Out-of-range / weekend cells. Opaque, and dimmer than the
+            // canvas so they still read as recessed.
+            .o_calendar_disabled {
+                background-color: var(--cmt-surface-dim) !important;
+            }
+
+            // The week-number chip, $gray-100 below the lg breakpoint.
+            .fc-daygrid-week-number {
+                background-color: var(--cmt-surface-dim) !important;
+                color: var(--cmt-text-muted) !important;
+            }
+
+            // The rule between the all-day strip and the time grid.
+            .fc-timegrid-divider {
+                background: var(--cmt-border) !important;
+                border-color: var(--cmt-border) !important;
+            }
+
+            // ── Type ─────────────────────────────────────────
+            // Day-of-week strip, hour gutter and list headings are left
+            // at $body-color by core.
+            .fc-col-header-cell,
+            .fc-col-header-cell a,
+            .o_cw_day_name,
+            .fc-timegrid-axis-cushion,
+            .fc-timegrid-slot-label-cushion,
+            .fc-list-day-text,
+            .fc-list-day-side-text,
+            .fc-list-event-time,
+            .fc-list-empty {
+                color: var(--cmt-text-muted) !important;
+            }
+
+            // Day numbers, except today's — core gives that one
+            // `color: var(--o-cw-color)` so it stays legible against the
+            // accent pill behind it, and overriding it would sink the
+            // number into the pill.
+            .fc-col-header-cell:not(.fc-day-today) .o_cw_day_number,
+            .fc-daygrid-day:not(.fc-day-today) .fc-daygrid-day-number,
+            .fc-list-event-title {
+                color: var(--cmt-text) !important;
+            }
         }
 
-        // Day-of-week strip, hour gutter and month-cell numbers are left at
-        // $body-color by core. v4 names this time — the day cell holds
-        // Odoo's own .o_cw_day_name / .o_cw_day_number spans
-        // (calendar_common_renderer.xml).
-        //
-        // Today's number is excluded on purpose: core gives it
-        // `color: var(--o-cw-color)` so it stays legible against the accent
-        // pill behind it, and overriding that would sink it into the pill.
-        .fc-day-header .o_cw_day_name,
-        .fc-day-header:not(.fc-today) .o_cw_day_number,
-        .fc-day-number,
-        .fc-axis,
-        .fc-list-heading-main,
-        .fc-list-heading-alt {
-            color: var(--cmt-text-muted) !important;
-        }
-
-        // `rgba($gray-200, .5)` — a light wash. Inverted to a dark one
-        // so disabled/out-of-working-hours slots still read as recessed.
-        .o_calendar_disabled {
-            background-color: rgba(11, 17, 32, 0.45) !important;
-        }
-
-        // v4 names again: the "+2 more" popover is .fc-popover with an
-        // .fc-header bar, the list scale is .fc-list-view with .fc-list-heading
-        // rows. v4 ships these as `.fc-unthemed …` literals — #fff for the
-        // popover, #eee for the header and list-day bars.
-        .fc-popover,
-        .fc-list-view {
+        // ── "+N more" popover and the list scale ─────────────
+        // v6 names: .fc-popover with .fc-popover-header/.fc-popover-body,
+        // and .fc-list with .fc-list-day-cushion bars.
+        .fc-popover {
             background-color: var(--cmt-surface) !important;
             border-color: var(--cmt-border) !important;
             color: var(--cmt-text);
         }
 
-        .fc-popover .fc-header,
-        .fc-list-heading td,
-        .fc-divider {
-            background: var(--cmt-surface-highest) !important;
-            border-color: var(--cmt-border) !important;
+        .fc-popover-header,
+        .fc-list-day-cushion {
+            background-color: var(--cmt-surface-highest) !important;
             color: var(--cmt-text);
+        }
+
+        .fc-more-popover.o_calendar_disabled {
+            background-color: var(--cmt-surface-highest) !important;
+        }
+
+        .fc-list,
+        .fc-list-table td,
+        .fc-list-table th {
+            border-color: var(--cmt-border) !important;
         }
     }
 
