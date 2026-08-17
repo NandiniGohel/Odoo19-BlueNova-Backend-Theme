@@ -12,142 +12,232 @@
         signup pages pick the styling up if and only if that module
         happens to be installed.
 
-        Four changes, in the order they appear below.
+        ── Why this replaces the layout wholesale ──────────────────
+
+        It used to be four small xpaths into core's markup (a t-set on
+        body_classname, two blocks before the card, and the logo). That
+        broke the moment `website` was installed, and silently:
+
+            website/views/website_templates.xml
+              <template id="login_layout" inherit_id="web.login_layout"
+                        priority="20">
+                <xpath expr="t[@t-call]" position="replace">
+                  <t t-call="website.layout">
+                    <div class="oe_website_login_container" t-out="0"/>
+                  </t>
+                </xpath>
+
+        That replace takes out the *entire* `t-call` subtree — core's
+        card, core's logo and everything this module had just added
+        inside it — and hands the bare form to website.layout instead.
+        With the o_bluenova_auth_page class gone from <body>, every rule
+        in scss/auth_pages.scss is scoped to a class that is no longer
+        on the page, so the login screen falls back to whatever palette
+        the website theme happens to be using. No error, no warning; the
+        page simply stops being themed.
+
+        So this view does the same thing website's does — replace the
+        one `t-call` child — at priority 30, which is *after* website's
+        20. Both structures end at the same place, whether website is
+        installed or not, and the login screen looks the same either
+        way.
+
+        Two notes on the replacement body:
+
+        • It t-calls web.frontend_layout, not website.layout, and that
+          is correct even with website installed. website.layout is a
+          non-primary inherit of portal.frontend_layout, which is a
+          non-primary inherit of web.frontend_layout — all three names
+          resolve to one combined arch. Calling the base name renders
+          the website-aware layout when website is there and the plain
+          one when it is not, without this module ever naming a
+          template it does not depend on.
+
+        • no_header / no_footer stay True, so the website's own header
+          and footer do not appear on the auth pages. That is the point
+          of the fix: these three screens are the theme's, and they look
+          identical on an instance with website and one without. An
+          admin who would rather keep the website chrome around the
+          login card only has to drop those two t-sets.
+
+        Everything outside the branding block below is core's own markup
+        from web.login_layout, kept verbatim — the card classes the
+        database manager keys on (o_database_list), the
+        login_card_classes hook, and the footer with its
+        disable_footer / disable_database_manager guards.
     -->
     <template id="auth_theme_login_layout" inherit_id="web.login_layout"
-              name="BlueNova Themed Auth Pages">
+              name="BlueNova Themed Auth Pages" priority="30">
 
         <!--
-            1. The scope class.
-
-            Everything auth_pages.scss styles hangs off this one class, so
-            the stylesheet can never leak into the backend even though
-            both share the same token names. It replaces core's t-set
-            rather than adding a wrapper div, which puts the class on
-            <body> and lets the page background be styled too.
+            Relative, not `//t[@t-call]`: it has to match the single
+            direct child of the template root in both shapes — core's
+            `t-call="web.frontend_layout"` and, when website's inherit
+            has already run, its `t-call="website.layout"`. This is the
+            same expression website itself uses.
         -->
-        <xpath expr="//t[@t-set='body_classname']" position="replace">
-            <t t-set="body_classname" t-value="'bg-100 o_bluenova_auth_page'"/>
-        </xpath>
+        <xpath expr="t[@t-call]" position="replace">
+            <t t-call="web.frontend_layout">
+                <t t-set="html_data" t-value="{'style': 'height: 100%;'}"/>
 
-        <!--
-            Both blocks go before the card's own container, so they are
-            the first thing in <body>: the style has to beat the compiled
-            bundles (it does, on document order — they are in <head>),
-            and the script has to run before the page is painted.
-        -->
-        <xpath expr="//div[hasclass('container')]" position="before">
-            <!--
-                2. The colours saved under Settings > Theme Settings.
+                <!--
+                    The scope class.
 
-                The same _get_theme_css() the backend head uses (see
-                views/theme_styles.xml), rendered here because the login
-                page never loads web.webclient_bootstrap. request.env is
-                available on this unauthenticated request: ensure_db() has
-                already run by the time the controller renders, and
-                web.frontend_layout — the template this one is nested in —
-                calls request.env itself for the session info.
-            -->
-            <t t-set="cmt_settings" t-value="request.env['res.config.settings'].sudo()"/>
-            <t t-set="cmt_theme_css" t-value="cmt_settings._get_theme_css()"/>
-            <style t-if="cmt_theme_css" type="text/css" t-out="cmt_theme_css"/>
+                    Everything auth_pages.scss styles hangs off this one
+                    class, so the stylesheet can never leak into the
+                    backend even though both share the same token names.
+                    It goes on <body> — via core's own body_classname
+                    hook rather than a wrapper div — which is what lets
+                    the page background be styled too.
+                -->
+                <t t-set="body_classname" t-value="'bg-100 o_bluenova_auth_page'"/>
+                <t t-set="no_header" t-value="True"/>
+                <t t-set="no_footer" t-value="True"/>
 
-            <!--
-                And the dark block. Its selector is the exact opposite of
-                the light one, so only ever one of the two matches; the
-                script below decides which by setting the attribute.
-            -->
-            <t t-set="cmt_theme_css_dark" t-value="cmt_settings._get_theme_css_dark()"/>
-            <style t-if="cmt_theme_css_dark" type="text/css" t-out="cmt_theme_css_dark"/>
+                <!--
+                    The colours saved under Settings > Theme Settings.
 
-            <!--
-                3. Dark mode, before the first paint.
+                    The same _get_theme_css() the backend head uses (see
+                    views/theme_styles.xml), rendered here because the
+                    login page never loads web.webclient_bootstrap.
+                    request.env is available on this unauthenticated
+                    request: ensure_db() has already run by the time the
+                    controller renders, and web.frontend_layout — the
+                    template this one is nested in — calls request.env
+                    itself for the session info.
 
-                static/src/js/theme_mode.js cannot do this job here: it is
-                in web.assets_backend, which the login page never loads,
-                and the frontend bundle is deferred anyway — a module
-                lands after the page has already been painted light and
-                the card would visibly flip. This reads the same
-                localStorage key that file writes ('cmt_color_scheme') and
-                sets the same attribute auth_pages.scss keys on. Kept
-                inline and kept tiny for that reason.
-            -->
-            <script type="text/javascript">
-                try {
-                    if (window.localStorage.getItem('cmt_color_scheme') === 'dark') {
-                        document.documentElement.setAttribute('data-cmt-theme', 'dark');
+                    First in the body, so it beats the compiled bundles
+                    on document order: they are in <head>.
+                -->
+                <t t-set="cmt_settings" t-value="request.env['res.config.settings'].sudo()"/>
+                <t t-set="cmt_theme_css" t-value="cmt_settings._get_theme_css()"/>
+                <style t-if="cmt_theme_css" type="text/css" t-out="cmt_theme_css"/>
+
+                <!--
+                    And the dark block. Its selector is the exact
+                    opposite of the light one, so only ever one of the
+                    two matches; the script below decides which by
+                    setting the attribute.
+                -->
+                <t t-set="cmt_theme_css_dark" t-value="cmt_settings._get_theme_css_dark()"/>
+                <style t-if="cmt_theme_css_dark" type="text/css" t-out="cmt_theme_css_dark"/>
+
+                <!--
+                    Dark mode, before the first paint.
+
+                    static/src/js/theme_mode.js cannot do this job here:
+                    it is in web.assets_backend, which the login page
+                    never loads, and the frontend bundle is deferred
+                    anyway — a module lands after the page has already
+                    been painted light and the card would visibly flip.
+                    This reads the same localStorage key that file
+                    writes ('cmt_color_scheme') and sets the same
+                    attribute auth_pages.scss keys on. Kept inline and
+                    kept tiny for that reason.
+                -->
+                <script type="text/javascript">
+                    try {
+                        if (window.localStorage.getItem('cmt_color_scheme') === 'dark') {
+                            document.documentElement.setAttribute('data-cmt-theme', 'dark');
+                        }
+                    } catch (e) {
+                        /* private browsing: no stored preference, stay light */
                     }
-                } catch (e) {
-                    /* private browsing: no stored preference, stay light */
-                }
-            </script>
-        </xpath>
+                </script>
 
-        <!--
-            4. Branding.
+                <div class="container py-5">
+                    <!--
+                        Core's card, verbatim — including the inline
+                        max-width, which auth_pages.scss overrides with
+                        !important rather than removing here, so a
+                        stale or missing frontend bundle still renders
+                        the stock 300px card instead of a full-width
+                        one.
+                    -->
+                    <div t-attf-class="card border-0 mx-auto bg-100 {{login_card_classes}} o_database_list" style="max-width: 300px;">
+                        <div class="card-body">
+                            <div class="text-center pb-3 border-bottom mb-4">
+                                <!--
+                                    Branding.
 
-            The uploaded sidebar brand image doubles as the login logo, so
-            one upload dresses both surfaces. _get_auth_branding() returns
-            logo_url = False when nothing is uploaded or the admin has
-            turned the image off, and the original company logo is kept in
-            that case — an untouched install still shows exactly what it
-            showed before.
+                                    The uploaded sidebar brand image
+                                    doubles as the login logo, so one
+                                    upload dresses both surfaces.
+                                    _get_auth_branding() returns
+                                    logo_url = False when nothing is
+                                    uploaded or the admin has turned the
+                                    image off, and the original company
+                                    logo is kept in that case — an
+                                    untouched install still shows
+                                    exactly what it showed before.
+                                -->
+                                <t t-set="cmt_branding" t-value="cmt_settings._get_auth_branding()"/>
+                                <img t-if="cmt_branding['logo_url']" class="o_bluenova_auth_logo"
+                                     t-att-src="cmt_branding['logo_url']" alt="Logo"/>
+                                <img t-else="" class="o_bluenova_auth_logo"
+                                     t-attf-src="/web/binary/company_logo{{ '?dbname='+db if db else '' }}"
+                                     alt="Logo" style="max-height:120px; max-width: 100%; width:auto"/>
 
-            The tagline is t-out on a plain string, never Markup: it is
-            admin-entered free text and lands on a page served to
-            anonymous visitors, so it is escaped.
-        -->
-        <!--
-            Selected on @t-attf-src, not on @alt.
+                                <!--
+                                    The heading, per the reference
+                                    design.
 
-            `alt` is translatable, and Odoo refuses to let view
-            inheritance key on a translated attribute (TRANSLATED_ATTRS
-            in odoo/tools/translate.py — it also covers t-attf-alt,
-            title, placeholder and the aria-* pair): the selector would
-            stop matching the moment the parent view was translated.
-            web.login_layout carries exactly one <img>, and t-attf-src is
-            on it, so this picks the same node and survives translation.
-        -->
-        <xpath expr="//img[@t-attf-src]" position="replace">
-            <t t-set="cmt_branding" t-value="cmt_settings._get_auth_branding()"/>
-            <img t-if="cmt_branding['logo_url']" class="o_bluenova_auth_logo"
-                 t-att-src="cmt_branding['logo_url']" alt="Logo"/>
-            <img t-else="" class="o_bluenova_auth_logo"
-                 t-attf-src="/web/binary/company_logo{{ '?dbname='+db if db else '' }}"
-                 alt="Logo" style="max-height:120px; max-width: 100%; width:auto"/>
+                                    All three pages share this one
+                                    template, so which heading to show
+                                    has to come from the request path —
+                                    web.login_layout has no idea which
+                                    of its three callers is rendering
+                                    it, and the two signup templates
+                                    live in auth_signup, a module this
+                                    one deliberately does not depend on.
 
-            <!--
-                The heading, per the reference design.
+                                    Falls back to nothing rather than to
+                                    "Welcome back" on an unrecognised
+                                    path: a heading is better absent
+                                    than wrong, and another module could
+                                    route a fourth page through this
+                                    same layout.
+                                -->
+                                <t t-set="cmt_path" t-value="request.httprequest.path or ''"/>
+                                <t t-if="'reset_password' in cmt_path">
+                                    <h1 class="o_bluenova_auth_heading">Reset Password</h1>
+                                    <p class="o_bluenova_auth_lede">Please enter your details to reset your password</p>
+                                </t>
+                                <t t-elif="'signup' in cmt_path">
+                                    <h1 class="o_bluenova_auth_heading">Create your account</h1>
+                                    <p class="o_bluenova_auth_lede">Please enter your details to get started</p>
+                                </t>
+                                <t t-elif="'login' in cmt_path">
+                                    <h1 class="o_bluenova_auth_heading">Welcome back</h1>
+                                    <p class="o_bluenova_auth_lede">Please enter your details to sign in</p>
+                                </t>
 
-                All three pages share this one template, so which
-                heading to show has to come from the request path —
-                web.login_layout has no idea which of its three callers
-                is rendering it, and the two signup templates live in
-                auth_signup, a module this one deliberately does not
-                depend on.
+                                <!--
+                                    t-out on a plain string, never
+                                    Markup: the tagline is admin-entered
+                                    free text and lands on a page served
+                                    to anonymous visitors, so it is
+                                    escaped.
+                                -->
+                                <div t-if="cmt_branding['tagline']" class="o_bluenova_auth_tagline">
+                                    <t t-out="cmt_branding['tagline']"/>
+                                </div>
+                            </div>
 
-                Falls back to nothing rather than to "Welcome back" on an
-                unrecognised path: a heading is better absent than wrong,
-                and another module could route a fourth page through this
-                same layout.
-            -->
-            <t t-set="cmt_path" t-value="request.httprequest.path or ''"/>
-            <t t-if="'reset_password' in cmt_path">
-                <h1 class="o_bluenova_auth_heading">Reset Password</h1>
-                <p class="o_bluenova_auth_lede">Please enter your details to reset your password</p>
+                            <!-- The form itself: web.login, auth_signup.signup or
+                                 auth_signup.reset_password, whichever called us. -->
+                            <t t-out="0"/>
+
+                            <div class="text-center small mt-4 pt-3 border-top" t-if="not disable_footer">
+                                <t t-if="not disable_database_manager">
+                                    <a class="border-end pe-2 me-1" href="/web/database/manager">Manage Databases</a>
+                                </t>
+                                <a href="https://www.odoo.com?utm_source=db&amp;utm_medium=auth" target="_blank">Powered by <span>Odoo</span></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </t>
-            <t t-elif="'signup' in cmt_path">
-                <h1 class="o_bluenova_auth_heading">Create your account</h1>
-                <p class="o_bluenova_auth_lede">Please enter your details to get started</p>
-            </t>
-            <t t-elif="'login' in cmt_path">
-                <h1 class="o_bluenova_auth_heading">Welcome back</h1>
-                <p class="o_bluenova_auth_lede">Please enter your details to sign in</p>
-            </t>
-
-            <div t-if="cmt_branding['tagline']" class="o_bluenova_auth_tagline">
-                <t t-out="cmt_branding['tagline']"/>
-            </div>
         </xpath>
 
     </template>
