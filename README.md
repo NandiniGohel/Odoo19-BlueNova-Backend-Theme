@@ -95,6 +95,12 @@ employees — for whichever of those apps are installed. Each tile:
 
 - The login, signup and reset-password screens (all built on `web.login_layout`) pick up the same
   palette, plus an optional brand logo and a tagline set from Settings.
+- They keep that styling when the `website` module is installed. `website` replaces the whole
+  `web.login_layout` body with its own layout — which would drop the theme's card, logo and body
+  class and leave the login screen wearing the website theme's colours — so this module's inherit
+  runs at priority 30, after website's 20, and rebuilds the themed layout either way. The website
+  header and footer stay off these three pages; to keep them, remove the `no_header` / `no_footer`
+  lines in `views/auth_theme.xml`.
 - An optional themed public page at `/` for anonymous visitors — off by default, and it
   automatically stands down if the `website` module is installed, since that module owns `/`
   properly.
