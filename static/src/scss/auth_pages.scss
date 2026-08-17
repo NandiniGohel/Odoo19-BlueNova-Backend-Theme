@@ -41,6 +41,31 @@
     font-family: var(--cmt-font-sans);
     color: var(--cmt-text);
 
+    // ── When `website` is installed ──────────────────────────
+    // web.assets_frontend then also carries website.scss, and two of
+    // its rules paint over the page background this file just set:
+    //
+    //   #wrapwrap                { body-image-bg-style() }  — the
+    //     background image configured on the website, if any;
+    //   #wrapwrap > main         { background-color: $body-bg }  — only
+    //     emitted when the website layout is 'boxed' or 'framed'
+    //     rather than the default 'full'.
+    //
+    // Both carry an id, so (0,1,0) rules lose to them however late they
+    // are in the bundle; these two selectors put the class in front of
+    // the id to win on specificity rather than on !important.
+    //
+    // The rules are harmless without website: #wrapwrap is core's own
+    // element from web.frontend_layout and has no background there.
+    #wrapwrap {
+        background-color: transparent;
+        background-image: none;
+
+        > main {
+            background-color: transparent;
+        }
+    }
+
     // ── The card ─────────────────────────────────────────────
     .card {
         // Beats the inline style="max-width: 300px" on core's div.
