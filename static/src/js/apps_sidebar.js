@@ -90,7 +90,6 @@ const ICON_BY_MODULE = {
     marketing_card: "marketing-card.png",
     mass_mailing: "email-marketing.png",
     mass_mailing_sms: "sms-marketing.png",
-    membership: "members.png",
     mrp: "manufacturing.png",
     mrp_plm: "plm.png",
     note: "to-do-list.png",
@@ -161,13 +160,6 @@ const ICON_BY_NAME = {
     manufacturing: "manufacturing.png",
     "marketing automation": "marketing automation.png",
     "marketing card": "marketing-card.png",
-    // The Members app root is not owned by a module this file maps:
-    // core's `partnership` hangs its Members menu under CRM >
-    // Configuration rather than declaring an app of its own, so the
-    // rail only ever sees this one by its displayed name. The
-    // `membership` key above covers the module that does declare it
-    // as an app, for installs that have it.
-    members: "members.png",
     mrp: "mrp.png",
     planning: "planning.png",
     plm: "plm.png",
