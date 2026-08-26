@@ -3,6 +3,10 @@
     'version': '19.0.1.0.0',
     'category': 'Themes/Backend',
     'summary': 'Premium glossy metallic backend theme with deep royal blue, electric blue accents, silver chrome finishes and modern glassmorphic effects',
+    "author": "Strats360 Technolabs-LLP",
+    "company": "Strats360 Technolabs-LLP",
+    "maintainer": "Strats360 Technolabs-LLP",
+    "website": "https://strats360.com/",
     'description': """
 BlueNova Backend Theme
 ======================
@@ -30,8 +34,6 @@ Key Features:
 Uninstall the module to instantly return to the default Odoo look.
 No data is modified.
     """,
-    'author': 'Custom',
-    'website': '',
     'license': 'LGPL-3',
     'depends': [
         'web',

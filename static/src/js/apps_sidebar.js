@@ -25,7 +25,7 @@ import { applySidebarBodyClass, sidebarState } from "./apps_sidebar_state";
 const ICON_ROOT = "/bluenova_backend_theme/static/src/image/icons/";
 
 /** Neutral placeholder, so an app we have no artwork for still gets a row. */
-const ICON_FALLBACK = "generic-app.svg";
+const ICON_FALLBACK = "custom.png";
 
 /**
  * Display names that have to be checked before anything else.
@@ -265,8 +265,18 @@ export class AppsSidebar extends Component {
      * @returns {{src: string, bundled: boolean}}
      */
     getIcon(app) {
+        if (this.brokenIcons[app.id]) {
+            return { src: ICON_ROOT + ICON_FALLBACK, bundled: true };
+        }
+
         const name = (app.name || "").toLowerCase().trim();
         const module = (app.xmlid || "").split(".")[0];
+
+        // Specific icon for the theme's home dashboard created on module installation
+        if (module === "bluenova_backend_theme" || app.xmlid === "bluenova_backend_theme.menu_home_dashboard") {
+            return { src: "/bluenova_backend_theme/static/description/icon.png", bundled: false };
+        }
+
         const file =
             ICON_BY_NAME_FIRST[name] ||
             ICON_BY_XMLID[app.xmlid] ||
@@ -277,14 +287,8 @@ export class AppsSidebar extends Component {
             return { src: ICON_ROOT + encodeURIComponent(file), bundled: true };
         }
 
-        // An icon that already failed to load once: never offer it again, or
-        // the <img> reinstates the broken glyph on every re-render.
-        if (app.webIconData && !this.brokenIcons[app.id]) {
-            // Unlike 14, load_web_menus already returns a full
-            // `data:<mimetype>;base64,…` URL (or a path for icons served
-            // from disk), so there is no prefix to guess here.
-            return { src: app.webIconData, bundled: false };
-        }
+        // No bundled icon found — always show the custom fallback icon
+        // so any app without known artwork displays custom.png.
         return { src: ICON_ROOT + ICON_FALLBACK, bundled: true };
     }
 

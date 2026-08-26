@@ -1,7 +1,7 @@
 <section class="oe_container">
     <div class="oe_row oe_spaced">
         <h2 class="oe_slogan" style="color:#3959b0;">BlueNova Backend Theme</h2>
-        <h3 class="oe_slogan">A responsive visual reskin of the Odoo backend, tuned for CRM.</h3>
+        <h3 class="oe_slogan">A responsive visual reskin of the Odoo backend.</h3>
         <p class="oe_mt32 text-center">
             Activate the app and the theme applies to the whole web client.
             Uninstall it and Odoo goes back to its stock look — no data is touched.
@@ -36,11 +36,58 @@
 
 <section class="oe_container">
     <div class="oe_row oe_spaced">
+        <h3 class="oe_slogan">Settings → Theme Settings</h3>
+        <div class="oe_span6">
+            <ul>
+                <li><b>Live colour pickers</b> for the core palette, top bar, search box,
+                    sidebar, active-app highlight and semantic colours — no SCSS edits or
+                    asset rebuild, changes apply on save</li>
+                <li><b>Uploadable brand image</b> for the sidebar and a login background
+                    image (light and dark)</li>
+            </ul>
+        </div>
+        <div class="oe_span6">
+            <ul>
+                <li><b>Export / Import / Reset</b> — download the current palette as a JSON
+                    preset, re-import it later, or reset to the compiled defaults</li>
+                <li>Every colour is validated before it is saved and again before it is
+                    rendered</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="oe_container oe_dark">
+    <div class="oe_row oe_spaced">
+        <h3 class="oe_slogan">Themed dashboard, login, signup and public page</h3>
+        <div class="oe_span6">
+            <ul>
+                <li><b>KPI dashboard</b> — tiles for open opportunities, quotations, RFQs,
+                    posted invoices, open tasks, transfers and active employees, shown only
+                    for apps the current user can read; can optionally open right after
+                    login</li>
+            </ul>
+        </div>
+        <div class="oe_span6">
+            <ul>
+                <li><b>Login, signup and reset-password pages</b> pick up the same palette,
+                    plus an optional logo and tagline</li>
+                <li><b>Optional public page at "/"</b> for anonymous visitors — off by
+                    default, and it stands down automatically once the Website app is
+                    installed</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
         <h3 class="oe_slogan">Safe by design</h3>
         <p class="oe_mt32 text-center">
-            The module ships no Python models, controllers or security rules. Everything it
-            adds lives in the <code>web.assets_backend</code> bundle, so it can be activated
-            and removed at any time without migrating or losing data.
+            The module adds a small settings model, a transient import wizard, and two
+            opt-in controller hooks (login redirect, public home page) — no new stored
+            business data. It can be activated and removed at any time without
+            migrating or losing data.
         </p>
     </div>
 </section>
