@@ -45,9 +45,7 @@ Bug Tracker
 ============
 
 Bugs are tracked on GitHub Issues. In case of trouble, please check there if
-your issue has already been reported. If you spotted it first, help us
-solve it by logging it at:
-https://github.com/AppsOdoo360/Odoo19-BlueNova-Backend-Theme/issues
+your issue has already been reported. 
 
 Maintainer
 ==========
