@@ -68,6 +68,29 @@ lets an admin recolour the theme without touching SCSS or rebuilding assets:
 - Individual colour pickers for the core palette, top bar, search box, sidebar, active-app
   highlight, semantic colours (info/success/warning/danger) and the auth pages — each with a
   separate dark-mode counterpart where the surface needs one.
+- **Primary repaints the whole brand, not one token.** A brand colour in this theme is a family:
+  hover/pressed fills, the active-row and list-hover tint, focus rings, the sidebar app-icon
+  highlights, and Bootstrap's own `--bs-primary` / `--bs-link-color` — which is what paints Odoo's
+  badges (the "Enterprise" pill on the settings screen), links, progress bars and pagination.
+  All of them are derived from the picked colour at page load by
+  [`models/theme_color.py`](models/theme_color.py), in HSL so the hue holds and the ramp stays
+  coordinated for any brand. `static/src/scss/brand_bridge.scss` covers the rest.
+- **`brand_bridge.scss` — core's compiled literals, by role.** Core spells its brand six ways
+  (`$o-brand-primary`, `$o-action`, `$o-brand-odoo`, `$o-enterprise-action-color`, `$primary`,
+  `$o-component-active-bg`) and derives washes from them inline with `mix()` / `tint-color()` /
+  `rgba()` — none of it reachable from a custom property. The bridge collapses all of it onto the
+  theme's own tokens by role (solid fill → `--cmt-primary`, selected wash → `--cmt-primary-light`,
+  ink on that wash → `--cmt-on-primary-container`, ring → `--cmt-primary-soft`, links →
+  `--bs-link-color`), covering selection surfaces, links, focus rings, form fields, the kanban and
+  calendar renderers, the properties and colour-picker widgets, Discuss/chatter, and the loading
+  indicator.
+- **Pickers that ship with a brand colour follow Primary until they are chosen.** Button, Button
+  Text, Active App and the three login-action colours (plus their dark twins) all have a brand hex
+  as their field default, and a `default=` on a `config_parameter` field is *written to the
+  database* on the first save — so they used to pin themselves to the shipped indigo behind the
+  admin's back. While one still holds exactly the value it shipped with it is emitted as an alias
+  of the brand instead; picking anything else makes the literal win again. See
+  `_THEME_BRAND_FOLLOWERS`.
 - An uploadable **sidebar brand image** and a **login background image** (light and dark), stored
   as `ir.attachment` records rather than in `ir.config_parameter`, so no base64 payload rides along
   on every request.
@@ -185,6 +208,16 @@ The dark palette is the same token set redeclared under `:root[data-cmt-theme="d
 modes stay in step. Note that any token the Settings screen also exposes a picker for will be
 overridden at runtime by a saved value; the SCSS default is only what a fresh install shows.
 
+The same applies to the brand *shades* (`--cmt-primary-dark/-light/-soft/-rgb`,
+`--cmt-on-primary-container`, `--cmt-app-icon-hover/-active`): they are the defaults until Primary
+is picked, after which they are derived from it. `theme_color.py`'s multipliers are fitted to
+reproduce exactly the values in `variables.scss` and `dark_mode.scss` when fed the shipped indigo,
+so a new hand-edited default belongs in both places or in neither.
+
+`$o-brand-primary` in [`primary_variables.scss`](static/src/scss/primary_variables.scss) is a
+*build-time* value and cannot follow a picker — it is what a fresh install compiles against. The
+runtime path to core's brand is Bootstrap's `:root` custom properties plus `brand_bridge.scss`.
+
 ### Add an icon for your own app
 
 Drop a single-colour PNG/SVG on a transparent background into
@@ -219,6 +252,7 @@ bluenova_backend_theme/
 │   └── main.py                        # opt-in login-redirect & public-home hooks on web.Home
 ├── models/
 │   ├── res_config_settings.py         # Theme Settings fields, validation, runtime CSS, presets
+│   ├── theme_color.py                 # HSL colour maths: the brand ramp derived from Primary
 │   └── theme_dashboard.py             # AbstractModel behind the KPI dashboard (no stored data)
 ├── wizard/
 │   ├── theme_import_wizard.py         # validates & applies an uploaded JSON preset
@@ -250,6 +284,7 @@ bluenova_backend_theme/
         │   ├── home_dashboard.scss
         │   ├── settings_page.scss
         │   ├── buttons_misc.scss
+        │   ├── brand_bridge.scss      # core's compiled brand literals → var(--cmt-primary)
         │   ├── responsive.scss
         │   ├── auth_pages.scss        # login / signup / reset-password (frontend bundle)
         │   ├── public_home.scss       # the public `/` page (frontend bundle)
