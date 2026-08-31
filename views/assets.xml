@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Odoo 14 has no `assets` manifest key — that arrived in 15.0. Asset
+        bundles are XML templates here, and a module contributes to one by
+        inheriting it and appending <link>/<script> nodes.
+
+        This is why the theme installed cleanly and changed nothing: the
+        manifest's `assets` dict was simply ignored by the 14.0 loader, so
+        not one stylesheet or script ever reached the browser.
+    -->
+
+    <!--
+        Brand colours.
+
+        Odoo 14 has no runtime colour custom properties; every brand colour
+        in web/, mail/, calendar/… is a compiled literal baked in from
+        $o-brand-primary and friends. This file is appended *after* core's
+        primary_variables.scss, so its plain assignments beat core's and the
+        whole backend recompiles in the theme's indigo.
+    -->
+    <template id="_assets_primary_variables" inherit_id="web._assets_primary_variables">
+        <xpath expr="." position="inside">
+            <link rel="stylesheet" type="text/scss"
+                  href="/bluenova_backend_theme/static/src/scss/primary_variables.scss"/>
+        </xpath>
+    </template>
+
+    <!--
+        Everything else. Appended at the end of web.assets_backend so these
+        rules land after core's and win at equal specificity.
+    -->
+    <template id="assets_backend" inherit_id="web.assets_backend">
+        <xpath expr="." position="inside">
+
+            <!-- ── Styles ──────────────────────────────────────── -->
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/fonts.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/variables.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/base.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/navbar.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/apps_sidebar.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/control_panel.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/kanban.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/stats_banner.scss"/>
+            <!-- After apps_sidebar.scss and base.scss: it uses the
+                 cmt-masked-icon and cmt-label-sm mixins they define, and a
+                 bundle is compiled as one SCSS document in this order. -->
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/home_dashboard.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/settings_page.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/buttons_misc.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/responsive.scss"/>
+            <!-- Overrides every surface above once dark mode is on. -->
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/dark_mode.scss"/>
+            <!-- Last. Odoo 13's markup predates .o_nav_entry, .o_breadcrumb,
+                 .o_kanban_renderer and the NavBar/Kanban custom properties
+                 every file above is written against, and its calendar,
+                 dashboards and chatter are hardcoded light. This restates
+                 those rules for 13's own DOM, in the theme's own custom
+                 properties so one rule serves both colour schemes. It goes
+                 at the end of the bundle so it wins every specificity
+                 tie. -->
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/odoo13_compat.scss"/>
+
+            <!-- ── Scripts ─────────────────────────────────────── -->
+            <script type="text/javascript" src="/bluenova_backend_theme/static/src/js/theme_mode.js"/>
+            <script type="text/javascript" src="/bluenova_backend_theme/static/src/js/apps_sidebar.js"/>
+            <script type="text/javascript" src="/bluenova_backend_theme/static/src/js/apps_sidebar_patch.js"/>
+            <script type="text/javascript" src="/bluenova_backend_theme/static/src/js/home_dashboard.js"/>
+
+        </xpath>
+    </template>
+
+    <!--
+        The unauthenticated surfaces: login, signup, reset-password and the
+        public home page. They render through web.frontend_layout, which
+        pulls web.assets_frontend — a different bundle from the backend
+        one above, so none of the stylesheets in it reach these pages.
+
+        Only three files are appended, not the whole backend set:
+
+          fonts.scss     — the @font-face rules; the bundles are compiled
+                           separately, so the backend's copy is not shared.
+          variables.scss — the cmt token block every rule below reads.
+          auth_pages.scss / public_home.scss — the surfaces themselves.
+
+        dark_mode.scss is deliberately left out. It is 1.6k lines written
+        against backend DOM that does not exist here; the two files below
+        carry their own :root[data-cmt-theme="dark"] blocks for the handful
+        of surfaces they own.
+
+        primary_variables.scss needs no entry: web.assets_frontend calls
+        web._assets_helpers, which calls web._assets_primary_variables —
+        the same template the block at the top of this file extends. The
+        brand colour therefore already reaches these pages, which is why
+        the login button was indigo before any of this was added.
+    -->
+    <template id="assets_frontend" inherit_id="web.assets_frontend">
+        <xpath expr="." position="inside">
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/fonts.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/variables.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/auth_pages.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/bluenova_backend_theme/static/src/scss/public_home.scss"/>
+        </xpath>
+    </template>
+
+</odoo>
