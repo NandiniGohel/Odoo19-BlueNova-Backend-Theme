@@ -8,6 +8,8 @@ from markupsafe import Markup
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+from . import theme_color
+
 _logger = logging.getLogger(__name__)
 
 # Attachment names the uploaded images are stored under. Looked up by
@@ -154,6 +156,45 @@ class ResConfigSettings(models.TransientModel):
         "theme_color_warning",
         "theme_color_danger",
     )
+
+    # ── Pickers that follow Primary until they are chosen ────────
+    # Ten of the pickers above ship with a *brand* colour as their
+    # field default: Button and Active App are the shipped indigo,
+    # Login Button is its container shade, and the three text fields
+    # are the ink that goes on them.
+    #
+    # A `default=` on a config_parameter field is not inert. The first
+    # time anyone saves this screen, set_values() writes every field —
+    # including the ones nobody touched — so those ten literals land in
+    # ir.config_parameter and are emitted from then on. The effect is
+    # that picking a green Primary repaints the theme but leaves the
+    # Save button, the current app in the sidebar and the login action
+    # in the old indigo, with nothing on screen to explain why.
+    #
+    # So: while one of these still holds exactly the value it shipped
+    # with, it is emitted as the *alias* variables.scss declares for it
+    # rather than as the literal — which is what an unset picker would
+    # have produced. A picker still holding its shipped default is not
+    # a choice, it is the absence of one; the moment an admin picks
+    # anything else, the literal wins again and this map stops applying
+    # to it.
+    #
+    # The one visible consequence: an admin who deliberately re-picks
+    # the shipped indigo gets the derived brand instead. That is the
+    # same colour on a default install, and on a customised one it is
+    # the more likely intent.
+    _THEME_BRAND_FOLLOWERS = {
+        "theme_color_button": "var(--cmt-primary)",
+        "theme_color_button_text": "var(--cmt-on-primary)",
+        "theme_color_active_app": "var(--cmt-primary)",
+        "theme_color_auth_action_bg": "var(--cmt-on-primary-container)",
+        "theme_color_auth_action_text": "var(--cmt-on-primary)",
+        "theme_color_button_dark": "var(--cmt-primary)",
+        "theme_color_button_text_dark": "var(--cmt-on-primary)",
+        "theme_color_active_app_dark": "var(--cmt-primary)",
+        "theme_color_auth_action_bg_dark": "var(--cmt-on-primary-container)",
+        "theme_color_auth_action_text_dark": "var(--cmt-on-primary)",
+    }
 
     # ── Numbers, not colours ─────────────────────────────────────
     # The hero typography controls. A third map because they are neither
@@ -571,6 +612,7 @@ class ResConfigSettings(models.TransientModel):
                 ("--cmt-sidebar-brand-image", BRAND_IMAGE_NAME),
                 ("--cmt-login-bg-image", LOGIN_BG_IMAGE_NAME),
             ),
+            self._brand_derived_vars("theme_color_primary"),
         )
 
     @api.model
@@ -604,6 +646,7 @@ class ResConfigSettings(models.TransientModel):
                 ("--cmt-sidebar-brand-image", BRAND_IMAGE_NAME),
                 ("--cmt-login-bg-image", LOGIN_BG_IMAGE_DARK_NAME),
             ),
+            self._brand_derived_vars("theme_color_primary_dark", dark=True),
         )
 
     @api.model
@@ -651,7 +694,97 @@ class ResConfigSettings(models.TransientModel):
         return Markup(":root {\n%s\n}" % "\n".join(declarations))
 
     @api.model
-    def _render_theme_css(self, selector, color_vars, image_vars):
+    def _field_default(self, fname):
+        """The colour a field ships with, as a plain string.
+
+        `Field.default` is whatever was passed to the field — a value
+        here, but Odoo permits a callable and other modules do use one,
+        so both shapes are handled. default_get() would be the tidier
+        call, but on res.config.settings it walks every field on the
+        model and reads the whole config table to do it; this runs on
+        every page load.
+        """
+        default = self._fields[fname].default
+        if callable(default):
+            try:
+                default = default(self)
+            except Exception:  # noqa: BLE001 - a broken default is not fatal here
+                _logger.warning("Could not evaluate default for %s", fname)
+                return ""
+        return default.strip() if isinstance(default, str) else ""
+
+    @api.model
+    def _stored_color(self, fname):
+        """The validated colour stored for one field, or "".
+
+        Same two checks _render_theme_css() applies on the way out —
+        present, and matching COLOR_RE — factored out because
+        _brand_derived_vars() below needs a value it can do arithmetic
+        on *before* the rendering loop runs, and feeding
+        `#fff; } html {` to a colour parser is no better than feeding it
+        to a stylesheet.
+        """
+        param = self._fields[fname].config_parameter
+        value = (self.env["ir.config_parameter"].sudo().get_param(param) or "").strip()
+        if not value:
+            return ""
+        if not COLOR_RE.match(value):
+            _logger.warning("Ignoring invalid colour %r stored in %s", value, param)
+            return ""
+        return value
+
+    @api.model
+    def _brand_derived_vars(self, primary_field, dark=False):
+        """Everything the Primary picker repaints *besides* --cmt-primary.
+
+        The picker used to move one token, and the theme has a dozen
+        colours that are supposed to be the same brand: the hover and
+        pressed fills (--cmt-primary-dark), the active-row and
+        list-hover wash (--cmt-primary-light), the focus rings
+        (--cmt-primary-soft, --cmt-primary-rgb), the sidebar's app-icon
+        tints, and — outside this theme entirely — Bootstrap's
+        --bs-primary-rgb and --bs-link-color-rgb, which are what paint
+        the "Enterprise" badge and every link in the backend. All of
+        them were compiled indigo literals, so a green Primary produced
+        a green button next to a blue sidebar hover and a blue badge.
+
+        Derived rather than turned into a dozen more pickers: they are
+        one decision, not twelve, and a settings screen that makes an
+        admin hand-tune a coordinated ramp is how the ramp stops being
+        coordinated. See models/theme_color.py for the arithmetic and
+        for why it is done in HSL.
+
+        :param str primary_field: which Primary field this scheme reads
+            — the light block derives from theme_color_primary, the
+            dark block from theme_color_primary_dark
+        :param bool dark: pick the dark scheme's ramp direction
+        :returns: ``{css property: value}``, empty when Primary is
+            untouched — an unset picker still means "use the compiled
+            default", exactly as it does for the field map
+
+        Note that the app-icon tints come from the *light* Primary in
+        both blocks, the way the semantic colours do (see
+        _THEME_SHARED_COLOR_FIELDS). The rail is deliberately identical
+        in the two schemes — variables.scss says so and dark_mode.scss
+        leaves it alone — but the light block's
+        `:not([data-cmt-theme="dark"])` stops matching in dark mode, so
+        "identical" has to be written twice.
+        """
+        derived = {}
+
+        primary = self._stored_color(primary_field)
+        if primary:
+            derived.update(theme_color.derive_brand_vars(primary, dark=dark))
+
+        light_primary = self._stored_color("theme_color_primary")
+        if light_primary:
+            derived.update(theme_color.derive_icon_vars(light_primary))
+
+        return derived
+
+    @api.model
+    def _render_theme_css(self, selector, color_vars, image_vars,
+                          derived_vars=None):
         """Body shared by the light and dark emitters above.
 
         One implementation, two callers: the only differences between
@@ -662,10 +795,18 @@ class ResConfigSettings(models.TransientModel):
         :param str selector: CSS selector the declarations are scoped to
         :param dict color_vars: field name → CSS custom property
         :param image_vars: iterable of (CSS custom property, attachment name)
+        :param dict derived_vars: CSS custom property → value, computed
+            rather than stored (see _brand_derived_vars). Emitted first
+            so that a picker always outranks a shade derived from one:
+            no name is in both sets today, and if one ever is, the
+            explicit choice should be the one that survives.
         :returns: Markup, or "" when nothing has been customised
         """
         icp = self.env["ir.config_parameter"].sudo()
-        declarations = []
+        declarations = [
+            "    %s: %s;" % (css_var, value)
+            for css_var, value in (derived_vars or {}).items()
+        ]
 
         for fname, css_var in color_vars.items():
             param = self._fields[fname].config_parameter
@@ -675,6 +816,14 @@ class ResConfigSettings(models.TransientModel):
             # already provides — so emit nothing rather than re-stating
             # it here in a second place.
             if not value:
+                continue
+            # Still holding the brand colour it shipped with? Emit the
+            # alias instead of the literal, so it tracks Primary — see
+            # _THEME_BRAND_FOLLOWERS for why a stored default is not the
+            # same thing as a choice.
+            follows = self._THEME_BRAND_FOLLOWERS.get(fname)
+            if follows and value.lower() == self._field_default(fname).lower():
+                declarations.append("    %s: %s;" % (css_var, follows))
                 continue
             # Re-checked on the way out, not just on the way in: a value
             # could have been written straight to ir.config_parameter by
