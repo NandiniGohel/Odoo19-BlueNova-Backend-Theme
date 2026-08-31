@@ -93,7 +93,22 @@ No data is modified.
             # so it has to land after core's rules (any position in this
             # bundle does that) but must not sit in front of a theme rule
             # that deliberately paints the same surface something else.
+            #
+            # This file is what makes the Primary picker work in *light*
+            # mode. Dark mode never needed it: dark_mode.scss already
+            # restates core's surfaces in --cmt-* tokens, so the picker
+            # reaches them through the token. Light mode has no such
+            # sweep — core's light surfaces are compiled literals baked
+            # from $o-brand-primary at build time, which no runtime
+            # custom property can reach. Drop this entry and the picker
+            # silently goes back to working in one scheme only.
             'bluenova_backend_theme/static/src/scss/brand_bridge.scss',
+
+            # Then device rules. Every file above states the desktop
+            # case; this one adapts those surfaces down to tablet/phone
+            # and up to wide screens, so it has to follow them all.
+            # Before dark_mode.scss, which only swaps colour and must
+            # keep winning at every size.
             'bluenova_backend_theme/static/src/scss/responsive.scss',
             # Last: overrides every surface above once dark mode is on.
             'bluenova_backend_theme/static/src/scss/dark_mode.scss',
