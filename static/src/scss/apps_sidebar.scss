@@ -63,12 +63,20 @@ $cmt-navbar-height: $o-navbar-height;
     font-family: var(--cmt-font-sans);
 
     // ── Workspace header ─────────────────────────────────────
-    // Doubles as the brand area: Settings > Theme Settings can upload
-    // a background image for it, which arrives as --cmt-sidebar-brand-image
-    // (a url(), injected per-page by views/theme_styles.xml). No image
-    // uploaded means the token is never declared, `background-image`
-    // falls back to `none`, and the flat primary-light fill below is all
-    // that shows — which is how the block looked before this existed.
+    // A flat primary-light fill. This used to also carry
+    // `background-image: var(--cmt-sidebar-brand-image, none)` and the
+    // four background-* longhands that positioned it, so an image
+    // uploaded under Settings > Theme Settings showed through behind
+    // the workspace name. That upload has been removed from the
+    // settings screen, so the token has no way to arrive and the
+    // declarations only described a state that can no longer happen —
+    // the fallback `none` was always what applied.
+    //
+    // The model side is deliberately left in place
+    // (theme_sidebar_brand_image, and the attachment behind it): the
+    // login page still reads that image directly, by URL, whenever
+    // "Use Brand Image As Login Logo" is ticked. That path never went
+    // through this custom property.
     .cmt-app-sidebar__workspace {
         display: flex;
         align-items: center;
@@ -77,10 +85,6 @@ $cmt-navbar-height: $o-navbar-height;
         margin-bottom: 12px;
         border-radius: var(--cmt-radius-md);
         background-color: var(--cmt-primary-light);
-        background-image: var(--cmt-sidebar-brand-image, none);
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
         overflow: hidden;
     }
 

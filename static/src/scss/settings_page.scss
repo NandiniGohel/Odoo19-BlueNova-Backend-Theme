@@ -98,6 +98,77 @@
         margin: 4px 0 12px;
     }
 
+    // ── Paired image uploads, side by side ───────────────────
+    // The light/dark background pair. Stacked, the two thumbnails are a
+    // scroll apart, which is the one comparison this box exists to
+    // support; in a row they read as the pair they are.
+    //
+    // `flex-wrap` rather than a media query: the cell is sized by its
+    // own thumbnail, so the row breaks itself exactly when the box gets
+    // too narrow to hold both — which depends on the settings panel's
+    // column width, not on the viewport.
+    .cmt-setting-images {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 8px 24px;
+    }
+
+    // Each label stays welded to its own thumbnail. Without the cell the
+    // two labels and two images are four siblings of one flex row, and a
+    // wrap puts a label under the wrong picture.
+    .cmt-setting-image {
+        // `0 0 auto`, not `0 1 auto`. With shrink enabled, each cell's
+        // basis is its own content — and the two captions are different
+        // lengths ("Login Background Image" against the same plus
+        // " (Dark)"). As soon as the pair is wider than the settings
+        // column, flex takes the overflow out of both cells *in
+        // proportion to those basis widths*, so the two frames ended up
+        // visibly different sizes with nothing but the caption length
+        // deciding which was bigger. Cells that cannot shrink cannot
+        // shrink unequally; flex-wrap on the row handles the narrow
+        // case instead, which is what it was already there for.
+        flex: 0 0 auto;
+
+        > label {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        // The frame, pinned rather than merely capped.
+        //
+        // `.oe_avatar` from the view's `class` lands on the field's own
+        // .o_field_widget div, and the rule above it in this file only
+        // gives that div a *max*, so its real size came from whatever
+        // width the cell happened to have. A fixed box is the thing
+        // that actually makes the two equal, and it holds no matter
+        // what is uploaded into them.
+        //
+        // The margin reset stays: the 12px below .oe_avatar separates a
+        // *column* of uploads, and in a row the gap does that job.
+        .oe_avatar {
+            width: 120px;
+            height: 120px;
+            margin: 0;
+        }
+
+        // Odoo builds the picture as `.img.img-fluid`, i.e.
+        // `max-width: 100%; height: auto` — which keeps its intrinsic
+        // aspect and leaves a wide background photo floating in the
+        // middle of a 120px-tall frame, so the two boxes look unequal
+        // again the moment real images go in. Filling the frame and
+        // letting object-fit letterbox keeps them identical.
+        //
+        // `contain` rather than `cover`: this is a preview of a
+        // full-page background, and cropping it to a square would hide
+        // the part of the picture the admin is trying to judge.
+        .oe_avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    }
+
     // ── Narrow screens ───────────────────────────────────────
     // Below sm the boxes are already full-width, but the label and its
     // control still sit on one line, which is where the longest labels

@@ -29,7 +29,15 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        // 100vh on a mobile browser is the viewport with the URL bar
+        // *hidden* — a height the page does not actually have on load.
+        // The panel is centred against that phantom height, so it sits
+        // low, and the bar's collapse on scroll makes it jump. 100dvh
+        // is the live height and tracks the bar; it is declared second
+        // so a browser that does not know the unit keeps the vh line
+        // above (Safari <15.4, Chrome <108) and nothing regresses.
         min-height: 100vh;
+        min-height: 100dvh;
         padding: 32px 16px;
     }
 
@@ -137,6 +145,19 @@
 :root[data-cmt-theme="dark"] {
     --cmt-home-title: #f8fafc;
     --cmt-home-lead: #94a3b8;
+}
+
+// Landscape phone: ~360px of height, against a panel whose padding
+// alone is 96px. Width queries do not see it — the device is 780px
+// wide — so the vertical rhythm is compressed on the height axis.
+@media (max-height: 500px) and (orientation: landscape) {
+    .o_bluenova_public_home .cmt-public-home {
+        padding: 16px;
+    }
+
+    .o_bluenova_public_home .cmt-public-home__panel {
+        padding: 24px 32px;
+    }
 }
 
 @media (max-width: 575.98px) {

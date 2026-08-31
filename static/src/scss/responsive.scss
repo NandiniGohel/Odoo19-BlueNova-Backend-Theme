@@ -1,10 +1,223 @@
 // ============================================================
-// Responsive adjustments
-// Breakpoints mirror Bootstrap (used internally by Odoo's web client):
-// >=1200 desktop, 992-1199 small desktop/large tablet,
-// 768-991 tablet, 576-767 large phone, <576 phone
+// Device rules
+//
+// Every other stylesheet in this bundle states the desktop case.
+// This one adapts those surfaces to the machine actually rendering
+// them, along three independent axes:
+//
+//   1. Width      — the Bootstrap breakpoints Odoo's own web client
+//                   uses, so the theme changes shape at exactly the
+//                   points core does (`ui.isSmall` is `size <= SM`,
+//                   i.e. the same 768px as `d-md-*`).
+//                     >=1600   wide desktop / ultrawide
+//                     >=1200   desktop
+//                     992-1199 small desktop, large tablet landscape
+//                     768-991  tablet
+//                     576-767  large phone
+//                     <576     phone
+//   2. Height     — a phone held landscape is a *wide* viewport, so
+//                   width alone never catches it. Anything that eats
+//                   vertical space has to stand down under ~500px of
+//                   height whatever the width says.
+//   3. Input      — `hover: hover` / `pointer: fine` is a mouse;
+//                   `hover: none` / `pointer: coarse` is a finger.
+//                   A :hover style on a touchscreen latches after the
+//                   tap and has to be tapped away, so the hover
+//                   language is fenced off from touch and re-expressed
+//                   as :active, which clears on release.
+//
+// Loaded second-to-last in web.assets_backend: after every file whose
+// desktop rules it adapts, before dark_mode.scss, which only swaps
+// colour and has to keep winning at every size.
 // ============================================================
 
+
+// ============================================================
+// 1. Cross-device foundations — no breakpoint, every screen
+// ============================================================
+
+// Mobile Safari and Chrome on Android "boost" text in blocks they
+// judge too narrow, silently overriding the type scale this theme
+// sets — a 13px label lands at 16px on a phone and the control panel
+// wraps to three rows. `100%` keeps the declared sizes and leaves the
+// user's own browser zoom alone (`none` would break pinch-zoom, which
+// is an accessibility regression, so it is not used).
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+// A single overflowing child — a wide table, a long breadcrumb — makes
+// the whole document scroll sideways on a phone, and the fixed navbar
+// then detaches from the content under it. Clipping at the root keeps
+// the page itself still; the panes below opt back in to their own
+// horizontal scroll where the content genuinely needs it.
+html, body.o_web_client {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+// No safe-area-inset padding here, deliberately.
+//
+// `env(safe-area-inset-*)` only resolves to anything once the page's
+// viewport meta carries `viewport-fit=cover`, and Odoo's does not.
+// Without that token iOS uses `viewport-fit=auto`, which already lays
+// the page out *inside* the safe area — the cutout and the home
+// indicator get the background colour and nothing is ever covered.
+//
+// So the insets would buy edge-to-edge background under the notch, at
+// the price of overriding two core templates' <meta> tags with a
+// hardcoded copy of Odoo's own content string — a copy that goes stale
+// silently the next time core edits that tag. Not worth it for a
+// cosmetic gain on one family of devices, when the default behaviour
+// is already correct.
+
+
+// ============================================================
+// 2. Input capability — finger vs. mouse
+// ============================================================
+
+// ── Touch: no hover language ─────────────────────────────────
+// On a touchscreen :hover latches on after a tap and stays until
+// something else is tapped, so a lift-and-shadow reads as "this tile
+// is stuck". Everything that moves or glows on hover is neutralised
+// here and re-expressed as :active, which fires on touch-down and
+// clears on release.
+@media (hover: none) {
+    .cmt-dashboard .cmt-dashboard__tile:hover {
+        transform: none;
+        box-shadow: var(--cmt-shadow-sm), var(--cmt-chrome-inset);
+
+        &::before {
+            opacity: 0;
+        }
+    }
+
+    .cmt-dashboard .cmt-dashboard__tile:not([disabled]):active {
+        background: var(--cmt-surface-highest);
+
+        &::before {
+            opacity: 1;
+        }
+    }
+
+    // The icon lighting up is part of the same latched state.
+    .cmt-dashboard .cmt-dashboard__tile:not([disabled]):hover
+    .cmt-dashboard__tile-icon {
+        background-color: var(--cmt-app-icon);
+    }
+
+    .cmt-dashboard .cmt-dashboard__tile:not([disabled]):active
+    .cmt-dashboard__tile-icon {
+        background-color: var(--cmt-app-icon-hover);
+    }
+
+    // Only a box-shadow upstream, no transform — so only the shadow is
+    // put back. Qualified with .cmt-stats-banner because that is how
+    // stats_banner.scss declares it; the bare class would lose.
+    .cmt-stats-banner .cmt-stat-card:hover {
+        box-shadow: var(--cmt-shadow-sm), var(--cmt-chrome-inset);
+    }
+
+    // kanban.scss's own selector, verbatim: six simple selectors deep,
+    // and anything shorter never reaches the declaration it cancels.
+    .o_kanban_view .o_kanban_renderer .o_kanban_record:not(.o_kanban_ghost):hover:not(.o_dragged) {
+        background: var(--cmt-glass-bg);
+        border-left-color: var(--cmt-border) !important;
+        box-shadow: var(--cmt-shadow-md);
+        transform: none;
+    }
+
+    .o_kanban_view .o_kanban_renderer
+    .o_kanban_record:not(.o_kanban_ghost):active:not(.o_dragged) {
+        background: var(--cmt-glass-bg-hover);
+        box-shadow: var(--cmt-shadow-lg);
+    }
+}
+
+// ── Touch: reachable targets ─────────────────────────────────
+// `pointer: coarse` is the finger, whatever the screen size — this
+// catches tablets and touch laptops, which the width queries below
+// would treat as desktops. 44px is the WCAG 2.5.5 / Apple HIG
+// minimum; `min-height` rather than `height` so a control that is
+// already taller is left alone.
+//
+// Scoped to the theme's own surfaces plus the navbar. Core's dense
+// list and form controls are deliberately not resized: Odoo lays
+// those out itself at the same breakpoints, and inflating a row here
+// makes the two disagree.
+@media (pointer: coarse) {
+    .o_main_navbar .cmt-apps-toggle,
+    .o_main_navbar .o_menu_toggle,
+    .o_main_navbar .dropdown-toggle {
+        min-width: 44px;
+    }
+
+    .cmt-app-sidebar .cmt-app-sidebar__app {
+        min-height: 44px;
+    }
+
+    .cmt-dashboard .cmt-dashboard__tile {
+        min-height: 96px;
+    }
+
+    // A 6px scrollbar is a mouse affordance; a finger drags the pane
+    // itself, and on iOS the bar is an overlay occupying no width at
+    // all. Widened so it stays grabbable on a touch laptop, where both
+    // input methods are live at once.
+    .o_content::-webkit-scrollbar,
+    .cmt-app-sidebar__apps::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+}
+
+// ── Motion ───────────────────────────────────────────────────
+// An OS-level accessibility setting on every current platform. The
+// theme's transforms and 20px blurs are the exact class of effect it
+// asks to be spared. `!important` because the declarations being
+// cancelled are spread across a dozen files at varying specificity.
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .cmt-dashboard .cmt-dashboard__tile:hover,
+    .o_kanban_view .o_kanban_renderer .o_kanban_record:not(.o_kanban_ghost):hover:not(.o_dragged) {
+        transform: none;
+    }
+}
+
+
+// ============================================================
+// 3. Width — wide desktop and up
+// ============================================================
+
+// On a 27-inch monitor `auto-fill` keeps manufacturing 220px columns
+// until the dashboard is a wall of eight small tiles. Widening the
+// track minimum and capping the grid turns the extra pixels into
+// bigger cards instead of more of them.
+@media (min-width: 1600px) {
+    .cmt-dashboard {
+        padding: 40px;
+
+        .cmt-dashboard__tiles {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            max-width: 1680px;
+            gap: 20px;
+        }
+    }
+}
+
+
+// ============================================================
+// 4. Width — small desktop / large tablet (<=1199.98px)
+// ============================================================
 @media (max-width: 1199.98px) {
     .o_kanban_view.o_kanban_small_column .o_kanban_renderer.o_kanban_grouped,
     .o_kanban_view .o_kanban_renderer.o_kanban_grouped {
@@ -14,6 +227,10 @@
     }
 }
 
+
+// ============================================================
+// 5. Width — tablet (<=991.98px)
+// ============================================================
 @media (max-width: 991.98px) {
     // Tablets: keep the app rail, but give the width back to the board.
     // Below md it disappears entirely (d-none) in favour of Odoo's own
@@ -48,8 +265,26 @@
     .o_main_navbar .o_menu_brand {
         font-size: 21px;
     }
+
+    // Settings is a two-column layout upstream. Below the breakpoint
+    // its left nav becomes a scrolling strip above the panes rather
+    // than a column stealing a third of the width.
+    .o_form_view .settings .settings_tab {
+        flex-direction: row;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+    }
 }
 
+
+// ============================================================
+// 6. Width — large phone and below (<=767.98px)
+//
+// The breakpoint where Odoo itself switches to its mobile web client:
+// the app rail is `d-none`, and the navbar swaps its app dropdown for
+// the slide-in menu.
+// ============================================================
 @media (max-width: 767.98px) {
     // Stack pipeline columns vertically instead of horizontal scroll
     .o_kanban_renderer.o_kanban_grouped {
@@ -69,8 +304,62 @@
     .o_searchview {
         width: 100%;
     }
+
+    // The rail is hidden here, so there is nothing left to clear — but
+    // `cmt-has-sidebar` stays on <body> across a resize, and without
+    // this the inset from apps_sidebar.scss survives with it and the
+    // content sits 208px off the left edge of a phone.
+    body.o_web_client.cmt-has-sidebar > .o_action_manager {
+        margin-left: 0;
+    }
+
+    // A list view cannot usefully reflow — its columns mean what their
+    // header says. It gets its own horizontal scroller instead, so the
+    // table slides under a still page rather than dragging the whole
+    // document sideways (the root clips it, at the top of this file).
+    // `-webkit-overflow-scrolling` restores momentum on older iOS.
+    .o_list_renderer {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    // Same problem, same shape — but these two are chrome, not content,
+    // so they scroll without showing a bar.
+    .o_control_panel .o_cp_buttons,
+    .o_form_view .o_form_statusbar {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    // Odoo renders dialogs full-screen below sm; the theme's radius and
+    // shadow then draw a floating card edge against the screen edge.
+    .modal-dialog .modal-content {
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    // Backdrop blur is the most expensive effect in the theme, and a
+    // mid-range phone drops frames scrolling a column of blurred cards
+    // — which is exactly what the stacking rule above produces, since
+    // every group is now in one vertical scroll instead of off-screen
+    // in its own column. --cmt-glass-bg is already a near-opaque fill
+    // (rgba(255,255,255,.7) light, #16203a dark), so dropping the blur
+    // costs the frost and nothing else.
+    .o_kanban_renderer .o_kanban_record:not(.o_kanban_ghost) {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
 }
 
+
+// ============================================================
+// 7. Width — phone (<=575.98px)
+// ============================================================
 @media (max-width: 575.98px) {
     .o_kanban_view .o_kanban_record {
         padding: 12px;
@@ -82,5 +371,119 @@
 
     .o_list_view .o_list_table thead th {
         font-size: 10px;
+    }
+
+    .o_control_panel {
+        padding: 10px 10px 6px;
+
+        .o_breadcrumb .o_last_breadcrumb_item,
+        .o_breadcrumb .o_last_breadcrumb_item.fs-4 {
+            font-size: 19px !important;
+            line-height: 26px;
+        }
+    }
+
+    // iOS zooms the whole viewport when a focused input's text is under
+    // 16px, and does not zoom back out afterwards. This is the one
+    // place the type scale is overridden rather than respected.
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="search"],
+    select,
+    textarea,
+    .o_searchview_input {
+        font-size: 16px !important;
+    }
+
+    // Multi-layer shadows under a full-bleed card on a small screen
+    // read as haze rather than depth.
+    .cmt-dashboard .cmt-dashboard__tile,
+    .cmt-stats-banner .cmt-stat-card {
+        box-shadow: var(--cmt-shadow-sm);
+    }
+}
+
+
+// ============================================================
+// 8. Height — short viewports
+//
+// A phone in landscape is 780x360: wide enough that every width query
+// above treats it as a tablet, and short enough that a 64px navbar
+// plus a 56px control panel leaves nothing for the record. Height is
+// the only axis that catches it. It is also the split-screen and
+// browser-devtools-docked case on a desktop.
+// ============================================================
+@media (max-height: 500px) and (orientation: landscape) {
+    .cmt-dashboard {
+        padding: 16px;
+
+        .cmt-dashboard__header {
+            margin-bottom: 16px;
+        }
+
+        .cmt-dashboard__greeting {
+            font-size: 19px;
+            line-height: 26px;
+        }
+
+        // Landscape is wide, so two or three tiles fit across — unlike
+        // the single column home_dashboard.scss gives a portrait phone
+        // of the same width.
+        .cmt-dashboard__tiles {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+
+        .cmt-dashboard__tile {
+            padding: 14px;
+        }
+
+        .cmt-dashboard__tile-icon {
+            margin-bottom: 8px;
+        }
+    }
+
+    .o_control_panel {
+        padding: 8px 12px 4px;
+    }
+
+    // The rail's app list scrolls; its workspace header does not, so on
+    // a short screen the header eats the space the apps need.
+    .cmt-app-sidebar .cmt-app-sidebar__workspace {
+        margin-bottom: 6px;
+        padding: 4px 8px;
+    }
+}
+
+
+// ============================================================
+// 9. Print
+//
+// Paper is a device too. The theme's fixed chrome, shadows and dark
+// surfaces all cost ink and none of them carry information here.
+// ============================================================
+@media print {
+    .cmt-app-sidebar,
+    .o_main_navbar,
+    .cmt-apps-toggle {
+        display: none !important;
+    }
+
+    body.o_web_client.cmt-has-sidebar > .o_action_manager {
+        margin-left: 0 !important;
+    }
+
+    .cmt-dashboard,
+    .o_content {
+        background: #fff !important;
+    }
+
+    .cmt-dashboard .cmt-dashboard__tile,
+    .cmt-stats-banner .cmt-stat-card,
+    .o_kanban_view .o_kanban_record {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        break-inside: avoid;
     }
 }

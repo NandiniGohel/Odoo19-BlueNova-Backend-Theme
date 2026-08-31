@@ -111,9 +111,9 @@
         tertiary-bg: #1e293b,
         border-color: #243149,
         border-color-translucent: rgba(255, 255, 255, 0.1),
-        link-color: #7c9aff,
-        link-color-rgb: "124, 154, 255",
-        link-hover-color: #a5b8ff,
+        link-color: var(--cmt-primary),
+        link-color-rgb: var(--cmt-primary-rgb),
+        link-hover-color: var(--cmt-primary-dark),
         code-color: #f9a8d4,
 
         // <mark>. Reboot reads the pair, but Bootstrap seeds
@@ -186,8 +186,8 @@
             dropdown-link-color: #e2e8f0,
             dropdown-link-hover-color: #e2e8f0,
             dropdown-link-hover-bg: #1e293b,
-            dropdown-link-active-color: #7c9aff,
-            dropdown-link-active-bg: #1c2949,
+            dropdown-link-active-color: var(--cmt-on-primary-container),
+            dropdown-link-active-bg: var(--cmt-primary-light),
             dropdown-link-disabled-color: #64748b,
         ));
     }
@@ -219,8 +219,8 @@
             list-group-action-color: #e2e8f0,
             list-group-action-hover-bg: #1e293b,
             list-group-action-hover-color: #e2e8f0,
-            list-group-active-bg: #1c2949,
-            list-group-active-color: #7c9aff,
+            list-group-active-bg: var(--cmt-primary-light),
+            list-group-active-color: var(--cmt-on-primary-container),
             list-group-active-border-color: #243149,
         ));
     }
@@ -284,8 +284,8 @@
             accordion-color: #e2e8f0,
             accordion-border-color: #243149,
             accordion-btn-color: #e2e8f0,
-            accordion-active-bg: #1c2949,
-            accordion-active-color: #7c9aff,
+            accordion-active-bg: var(--cmt-primary-light),
+            accordion-active-color: var(--cmt-on-primary-container),
         ));
     }
 
@@ -294,7 +294,7 @@
     .nav, .nav-tabs {
         @include cmt-bs-vars((
             nav-link-color: #94a3b8,
-            nav-link-hover-color: #7c9aff,
+            nav-link-hover-color: var(--cmt-primary),
             nav-tabs-border-color: #243149,
             nav-tabs-link-hover-border-color: #243149,
             nav-tabs-link-active-color: #e2e8f0,
@@ -321,9 +321,9 @@
             table-border-color: #243149,
             table-striped-bg: #172038,
             table-striped-color: #e2e8f0,
-            table-hover-bg: #1c2949,
+            table-hover-bg: var(--cmt-primary-light),
             table-hover-color: #e2e8f0,
-            table-active-bg: #1c2949,
+            table-active-bg: var(--cmt-primary-light),
             table-active-color: #e2e8f0,
             table-accent-bg: transparent,
         ));
@@ -475,7 +475,7 @@
 
         .o_data_row.o_data_row_selected,
         .o_selected_row {
-            --table-bg: #1c2949;
+            --table-bg: var(--cmt-primary-light);
         }
 
         .o_data_row:hover > td {

@@ -1,0 +1,637 @@
+// ============================================================
+// Brand bridge — core's compiled literals, pointed at the token
+//
+// scss/primary_variables.scss sets $o-brand-primary at *build* time,
+// which is what makes an untouched install look like this theme rather
+// than like Odoo. But a build-time value is frozen: Settings > Theme
+// Settings writes custom properties into a <style> at page load, and
+// no amount of writing --cmt-primary reaches a rule that was compiled
+// against a hex.
+//
+// Three kinds of rule are affected, and only the third needs this file:
+//
+//   • Anything reading a Bootstrap :root variable — .text-bg-primary
+//     (the "Enterprise" badge), .bg-/.text-/.border-primary, reboot's
+//     `a`, and every .btn-link (Bootstrap 5.3 defines $btn-link-color
+//     as var(--bs-link-color), so those follow for free). Handled in
+//     models/theme_color.py, which derives --bs-primary,
+//     --bs-primary-rgb and --bs-link-color-rgb from the picker.
+//
+//   • The theme's own stylesheets, which read --cmt-* directly.
+//
+//   • Everything below: core compiled the brand into a literal, or
+//     scoped it to a custom property of its own. Neither is reachable
+//     from :root, so each is claimed here.
+//
+// ── The token each core colour maps to ───────────────────────
+//
+// Core spells its brand five or six different ways — $o-brand-primary,
+// $o-action, $o-brand-odoo, $o-enterprise-action-color, $primary,
+// $o-component-active-bg — and derives washes and shades from them
+// inline with mix(), tint-color() and rgba(). This file collapses all
+// of that onto the theme's existing token set, by *role*:
+//
+//   solid brand fill ................ --cmt-primary
+//   ink on that fill ................ --cmt-on-primary
+//   pale "selected / active" wash ... --cmt-primary-light
+//   ink on that wash ................ --cmt-on-primary-container
+//   deeper hover / pressed fill ..... --cmt-primary-dark
+//   translucent ring / outline ...... --cmt-primary-soft
+//   channels, for rgba() with a
+//     core-supplied opacity var ..... --cmt-primary-rgb
+//   link text ....................... --bs-link-color
+//
+// That is not a new vocabulary. dark_mode.scss already made exactly
+// these mappings for the dark scheme — the settings screen simply never
+// had a path to them in light mode, and the shades themselves were
+// hardcoded until theme_color.py started deriving them.
+//
+// ── What belongs here ────────────────────────────────────────
+//
+// Only rules whose colour is *meant* to be the brand. Core's greens,
+// ambers and reds are semantic and have their own pickers; retinting
+// them brand-coloured would lose the meaning, not gain consistency.
+//
+// Prefer overriding a custom property over re-declaring a rule: it is
+// one line, it cannot lose a specificity fight it does not enter, and
+// it survives core changing the rule that reads it. Where core exposes
+// nothing, the selector is restated at exactly the specificity core
+// used — matching it, then winning on document order, rather than
+// escalating with !important, which would then have to be fought again
+// by dark_mode.scss.
+//
+// Every value here is a --cmt-* token, so one line serves light mode,
+// dark mode and any colour an admin picks: the token flips with the
+// scheme (variables.scss / dark_mode.scss / the settings <style>) and
+// nothing in this file has to know which scheme is on.
+//
+// Loaded near the end of the bundle; see the entry in __manifest__.py.
+// ============================================================
+
+// ── Bootstrap component variables ────────────────────────────
+// Bootstrap 5.3 declares each component's palette as --bs-* properties
+// on the component's own root class, seeded from the SCSS variables
+// Odoo binds to the brand in bootstrap_overridden.scss. They are scoped
+// to the component, not to :root, which is why the settings <style>
+// cannot reach them and they are restated here instead.
+// ── A note on the property names below ───────────────────────
+// Every block here goes through the cmt-bs-vars mixin (base.scss)
+// rather than writing `--bs-…` by hand. The mixin emits *both*
+// spellings — `--name` and `--bs-name` — because which one Bootstrap
+// reads is a build-time decision this file cannot see:
+// web/static/src/scss/bootstrap_overridden.scss sets
+// `$variable-prefix: ''`, so on this Odoo the shipped properties are
+// --primary, --list-group-active-bg, --dropdown-link-active-bg… with
+// no prefix at all, while stock Bootstrap and older Odoo use --bs-.
+//
+// A hand-written --bs-* line on Odoo 19 names a property nothing reads.
+// It compiles, it ships, and it does exactly nothing — which is how the
+// search panel kept Odoo's blue selection after the brand had moved.
+// Emitting both costs one extra declaration and is version-proof.
+
+.nav-pills {
+    @include cmt-bs-vars((nav-pills-link-active-bg: var(--cmt-primary)));
+}
+
+.progress {
+    @include cmt-bs-vars((progress-bar-bg: var(--cmt-primary)));
+}
+
+.pagination {
+    @include cmt-bs-vars((
+        pagination-color: var(--cmt-primary),
+        pagination-hover-color: var(--cmt-primary-dark),
+        pagination-active-bg: var(--cmt-primary),
+        pagination-active-border-color: var(--cmt-primary),
+    ));
+}
+
+// The ink on a solid brand fill — the "Enterprise" pill on the settings
+// screen is .text-bg-primary. Bootstrap reads the *fill* from
+// --bs-primary-rgb (so it already follows the picker) but compiles the
+// *text* as color-contrast($primary), frozen against whatever the brand
+// was at build time, so a pale pick would keep white text on it.
+// --cmt-on-primary is the same choice made at page load against the
+// colour actually picked. !important because Bootstrap's utilities
+// carry it and would otherwise win.
+.text-bg-primary {
+    color: var(--cmt-on-primary) !important;
+}
+
+// ── .text-primary / .text-action ─────────────────────────────
+// The APPS and CATEGORIES folder glyphs on the Apps screen, and every
+// other brand-coloured icon core marks up with a utility class
+// (search_panel.xml gives the section icon `text-primary` whenever the
+// section carries no colour of its own, which is the default).
+//
+// This one cannot be fixed by moving a variable, and that is worth
+// being precise about, because the rest of this file is variables.
+// Bootstrap's colour utilities are *supposed* to be indirect —
+// `rgba-css-var()` in _functions.scss builds them as
+// `rgba(var(--primary-rgb), var(--text-opacity))` — but Odoo compiles
+// the utility API with its own $utilities map, and what actually ships
+// in web.assets_web is
+//
+//   .text-primary { --color: RGBA(57, 89, 176, var(--text-opacity, 1));
+//                   color: var(--color) !important; }
+//
+// — the brand frozen into the rule as three literal channels. There is
+// no property left on the other side for the settings <style> to move,
+// so the only way through is to restate the declaration against the
+// token. `!important` because core's carries it.
+//
+// dark_mode.scss has had exactly this rule since it was written
+// (`.text-primary, .text-action { color: var(--cmt-primary) !important }`
+// under :root[data-cmt-theme="dark"]). That asymmetry — a dark override
+// with no light counterpart — is the whole reason the Primary picker
+// appeared to work in dark mode and not in light: in dark the icon read
+// the token, in light it read the frozen channels.
+//
+// .text-action rides along because Odoo derives it from $o-action,
+// which primary_variables.scss already pins to the same brand.
+.text-primary,
+.text-action {
+    color: var(--cmt-primary) !important;
+}
+
+// ── Selection surfaces ───────────────────────────────────────
+// "This row is the one you picked": the search panel's chosen category,
+// the settings screen's chosen app, a selected day in a date picker, an
+// open dropdown button, the active row of any list group. Core paints
+// all of them from one of two build-time literals —
+//
+//   $o-component-active-bg:  mix($o-action, $o-gray-100, 20%)
+//   $o-list-group-active-bg: lighten(saturate(adjust-hue($o-info, 15), 1.8), 50)
+//
+// — a pale wash of the brand, and a pale wash of the *info* blue, which
+// is why the search panel's selection stayed a cyan that matched
+// nothing else on screen even after the brand moved.
+.list-group {
+    @include cmt-bs-vars((
+        list-group-active-bg: var(--cmt-primary-light),
+        list-group-active-border-color: var(--cmt-primary-light),
+        list-group-active-color: var(--cmt-on-primary-container),
+    ));
+}
+
+.accordion {
+    @include cmt-bs-vars((
+        accordion-active-bg: var(--cmt-primary-light),
+        accordion-active-color: var(--cmt-on-primary-container),
+        accordion-btn-focus-border-color: var(--cmt-primary),
+    ));
+}
+
+.nav, .nav-tabs {
+    @include cmt-bs-vars((
+        nav-link-hover-color: var(--cmt-primary),
+        nav-tabs-link-active-color: var(--cmt-on-primary-container),
+    ));
+}
+
+.dropdown-menu, .o-dropdown--menu {
+    @include cmt-bs-vars((
+        dropdown-link-active-bg: var(--cmt-primary-light),
+        dropdown-link-active-color: var(--cmt-on-primary-container),
+    ));
+}
+
+// The Apps screen's search panel: "All" under APPS and under
+// CATEGORIES. The row is a .list-group-item.active, so the block above
+// already carries the fill — but core's template also stamps a
+// `text-black` utility on it, which is !important and would keep the
+// ink black on a wash that is dark in dark mode. Matching the class
+// raises this above the utility.
+//
+// The section headers beside it (the APPS / CATEGORIES folders) need
+// nothing: they are `text-primary`, which Bootstrap reads from
+// --bs-primary-rgb, and the settings block redeclares that.
+.o_search_panel .o_search_panel_category_value .list-group-item.active,
+.o_search_panel .o_search_panel_filter_value .list-group-item.active {
+    color: var(--cmt-on-primary-container);
+}
+
+// The settings screen's app rail — General Settings, CRM, Sales…
+// Core prints --settings__tab-bg--active from $o-component-active-bg on
+// the form renderer, and dark_mode.scss already redeclares it for dark;
+// this is the light half of the same line.
+.o_base_settings_view .o_form_renderer {
+    --settings__tab-bg--active: var(--cmt-primary-light);
+}
+
+// The 2px spine down the left edge of that selected row, and the mobile
+// layout's own version of it. Separate rules because core writes them
+// as box-shadow / background with no property in front, at the full
+// selector — anything shorter loses.
+.o_base_settings_view .o_form_renderer .o_setting_container .settings_tab .selected {
+    box-shadow: inset 2px 0 0 var(--cmt-primary);
+}
+
+@include media-breakpoint-down(md) {
+    .o_base_settings_view .o_form_renderer .o_setting_container .settings_tab .tab:after {
+        background: var(--cmt-primary);
+    }
+}
+
+// Date picker: the selected day, the hovered cell, and the two ends of
+// a selected range. The range ends restate the whole `background`
+// shorthand rather than just --selected-day-color, because core
+// composes the literal and the gradient in one declaration — overriding
+// the property alone would leave the wash underneath at the old blue.
+.o_datetime_picker {
+    .o_selected,
+    .o_date_item_picker .o_datetime_button.o_selected:not(.o_select_start, .o_select_end) {
+        background: var(--cmt-primary-light);
+        color: var(--cmt-on-primary-container);
+    }
+
+    .o_date_item_cell {
+        --DateTimePicker__date-cell-border-color-hover: var(--cmt-primary);
+    }
+
+    .o_select_start,
+    .o_select_end {
+        --selected-day-color: var(--cmt-primary-soft);
+        background:
+            var(--cmt-primary-light)
+            radial-gradient(
+                circle,
+                var(--selected-day-color) 0% var(--percent),
+                transparent var(--percent) 100%
+            );
+    }
+}
+
+// The command palette's highlighted row (Ctrl-K).
+.o_command_palette_listbox .o_command.focused {
+    background: var(--cmt-primary-light);
+}
+
+// An open dropdown's button. Core builds the pressed state from the
+// $o-btns-bs-outline-override map, whose active-background is the same
+// $o-component-active-bg literal — so every control-panel dropdown lit
+// up blue the moment it was opened.
+.o-dropdown.btn-secondary.show,
+.o-dropdown.btn-outline-secondary.show {
+    background-color: var(--cmt-primary-light);
+    border-color: var(--cmt-primary-soft);
+    color: var(--cmt-on-primary-container);
+}
+
+// The kanban column drag-over highlight, and the settings screen's
+// search-result highlight. Both are tint-color($o-action, 90%) in core,
+// which is what --cmt-primary-light is.
+.o_kanban_renderer {
+    --KanbanColumn__highlight-background: var(--cmt-primary-light);
+    --KanbanColumn__highlight-border: var(--cmt-primary);
+    --KanbanColumn__highlight-selected-border: var(--cmt-primary-soft);
+}
+
+.o_searchable_setting {
+    --SearchableSetting__highlight-background: var(--cmt-primary-light);
+    --SearchableSetting__highlight-border: var(--cmt-primary);
+}
+
+// ── Links ────────────────────────────────────────────────────
+// Reboot's `a` and every .btn-link already follow --bs-link-color, but
+// core also hardcodes $link-color in a dozen places where the element
+// is not an anchor. --bs-link-color is used rather than --cmt-primary
+// because a link is not the brand: Odoo derives it as
+// darken($o-brand-primary, 5%), theme_color.py reproduces that, and
+// Bootstrap declares the property on :root unconditionally, so the
+// var() resolves whether or not anything has been customised.
+.o_form_view .o_form_uri {
+    color: var(--bs-link-color);
+
+    &:hover, &:focus, &.focus,
+    > span:first-child:hover,
+    > span:first-child:focus {
+        color: var(--bs-link-hover-color);
+    }
+}
+
+.o-autocomplete .ui-menu-item .o_m2o_dropdown_option > a,
+.o-autocomplete .ui-menu-item .o_calendar_dropdown_option > a {
+    color: var(--bs-link-color);
+}
+
+// The tick and caret core draws on an active dropdown item.
+:not(.dropstart) > .dropdown-item.active:not(.dropdown-item_active_noarrow):before,
+:not(.dropstart) > .dropdown-item.selected:not(.dropdown-item_active_noarrow):before,
+.o-dropdown.dropstart > .dropdown-item.dropdown-toggle:not(.dropdown-item_active_noarrow).active::after,
+.o-dropdown.dropstart > .dropdown-item.dropdown-toggle:not(.dropdown-item_active_noarrow).selected::after {
+    color: var(--bs-link-color);
+}
+
+// Drill-down cells in a pivot, and the "+2 more" link in a month
+// calendar cell.
+.o_pivot table.o_enable_linking .o_pivot_cell_value:not(.o_empty):hover,
+.o_pivot table.o_enable_linking .o_pivot_cell_value:not(.o_empty):focus {
+    color: var(--bs-link-color);
+}
+
+.o_calendar_renderer .o_calendar_widget .fc-daygrid-day-bottom .fc-more-link {
+    color: var(--bs-link-color);
+}
+
+// ── Focus and input affordances ──────────────────────────────
+// Bootstrap compiles .form-control:focus / .form-select:focus straight
+// from $input-focus-border-color and $input-focus-box-shadow — the
+// brand literal and an rgba() of it. Every field in the backend flashes
+// this on click, which made it the most visible leftover of all.
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--cmt-primary);
+    box-shadow: 0 0 0 .25rem var(--cmt-primary-soft);
+}
+
+// The focus border and caret on every field in a form view, and the
+// same pair inside the Properties widget.
+.o_field_widget,
+.o_field_properties .o_field_property_definition,
+.o_field_property_definition_value {
+    --o-input-border-color: var(--cmt-primary);
+    --o-caret-color: var(--cmt-primary);
+}
+
+// Range slider thumb.
+.form-range {
+    @include cmt-bs-vars((
+        form-range-thumb-bg: var(--cmt-primary),
+        form-range-thumb-active-bg: var(--cmt-primary-dark),
+    ));
+}
+
+// The A/B toggle switch (month/year on the calendar, and the settings
+// screen's own switches). Core paints the knob as an inline SVG with
+// the brand baked into the `fill` attribute, so the colour lives inside
+// a data: URI and nothing but a whole new image can move it. Written as
+// a --bs-form-check-bg-image override rather than background-image so
+// Bootstrap's own `, var(--bs-gradient)` composition still applies.
+//
+// currentColor in the SVG rather than a hex: it resolves against the
+// element's own `color`, set on the line above from the token, so the
+// knob follows the picked brand with no second copy of the URI.
+.form-switch.o_switch_toggle .form-check-input,
+.form-switch.o_switch_toggle .form-check-input:checked {
+    color: var(--cmt-primary);
+    border-color: var(--cmt-primary);
+
+    &, &:focus, &:checked {
+        @include cmt-bs-vars((form-check-bg-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='currentColor'/%3e%3c/svg%3e")));
+    }
+}
+
+// ── Odoo component variables ─────────────────────────────────
+// Core's own naming (print-variable in web/static/src/scss/utils.scss):
+// a custom property scoped to the widget that owns it, seeded from a
+// brand literal.
+
+// Form-view stat buttons ("12 Invoices") — the figure and its icon.
+// button_box.scss reads var(--o-stat-text-color, #{$o-brand-primary}),
+// so the fallback was the literal and the property was never set.
+.o_form_view {
+    --o-stat-text-color: var(--cmt-primary);
+    --o-stat-button-color: var(--cmt-primary);
+}
+
+.o_field_percent_pie .o_pie {
+    --PercentPieField-color-active: var(--cmt-primary);
+}
+
+.o-EmojiPicker {
+    --EmojiPicker-active: var(--cmt-primary-soft);
+}
+
+// The colour-picker's own "active swatch" ring, which core exposes.
+.o_font_color_selector,
+.o_color_picker_button {
+    --o-color-picker-active-color: var(--cmt-primary);
+}
+
+// The pulse keyframe used by onboarding and by the "record saved" ping.
+.o_web_client {
+    --pulse-color-from: var(--cmt-primary-soft);
+}
+
+// Mobile search header.
+.o_mobile_search {
+    --mobileSearch__header-bg: var(--cmt-primary);
+}
+
+// Only the kanban "examples" dialog binds the notebook's active tab
+// rule to the brand; the notebook elsewhere uses $border-color and is
+// deliberately left neutral.
+.o_kanban_examples_dialog .o_notebook {
+    --Notebook__link-border-top-color--active: var(--cmt-primary);
+}
+
+// ── Views ────────────────────────────────────────────────────
+
+// The onboarding tour pointer's inner ring. base.scss already claims
+// --TourPointer__color; the accent was a literal lightened from the old
+// indigo by hand, and is the half that never followed the picker.
+body .o_tour_pointer {
+    --TourPointer__color-accent: var(--cmt-primary-dark);
+}
+
+// Calendar: the ghost event you are dragging, and the drag mirror. Core
+// composes these as rgba($o-action, var(--o-bg-opacity)) — a literal
+// with a *variable* alpha — which is exactly what --cmt-primary-rgb is
+// for.
+.o_calendar_renderer .fc-event {
+    &.fc-event-mirror, &.fc-dragging {
+        border-color: var(--cmt-primary-soft);
+
+        .fc-bg {
+            background-color: rgba(var(--cmt-primary-rgb), var(--o-bg-opacity));
+        }
+    }
+
+    &.fc-event-mirror {
+        background-color: rgba(var(--cmt-primary-rgb), var(--o-bg-opacity));
+    }
+}
+
+// Properties widget: the highlighted property, the drag group, the
+// drag handle and the "add a property" affordance.
+.o_property_field_highlight {
+    border-color: var(--cmt-primary);
+}
+
+.o_field_properties div:not([columns="1"]) .o_property_drag_group {
+    background-color: var(--cmt-primary-light);
+    border-color: var(--cmt-primary);
+}
+
+.o_field_property_label .oi-draggable:hover {
+    color: var(--cmt-primary);
+}
+
+.o_field_property_tag .o_field_property_dropdown_add * {
+    color: var(--cmt-primary) !important;
+}
+
+// Selected colour swatch, selected selection-badge, and the signature
+// pad's hover ring — all three are $o-enterprise-action-color, which
+// primary_variables.scss points at the brand.
+.o_color_picker_button:not(.selected):hover {
+    outline-color: var(--cmt-primary);
+}
+
+.o_font_color_selector .o_color_picker_button.selected {
+    border-color: var(--cmt-primary) !important;
+}
+
+.o_list_renderer .o_field_selection_badge .o_badge_border {
+    outline-color: var(--cmt-primary);
+}
+
+.o_form_editable .o_signature:hover {
+    outline-color: var(--cmt-primary);
+}
+
+// The copy-to-clipboard field (API keys, share links): border from
+// $primary, text from $o-brand-primary.
+.o_field_widget.o_field_copy {
+    border-color: var(--cmt-primary);
+    color: var(--cmt-primary);
+}
+
+// The overlay strip on an image field, and its "select file" half.
+.o_field_widget .o_form_image_controls {
+    background-color: var(--cmt-primary);
+}
+
+.o_field_widget .o_form_image_controls .fa.o_select_file_button {
+    background: var(--cmt-primary);
+}
+
+// The hover outline on a many2one avatar. Core writes the `outline`
+// shorthand, so only the colour longhand is restated here — the width
+// and style stay core's.
+.o_field_many2one_avatar img:hover {
+    outline-color: var(--cmt-primary);
+}
+
+// Export dialog: the hovered field row in either tree panel.
+.o_export_data_dialog .modal-body .o_export_tree_item:hover:not(.o_expanded) {
+    background: var(--cmt-primary-light);
+}
+
+// ── Discuss and the chatter ──────────────────────────────────
+// Not a dependency of this module, so none of this DOM exists unless
+// mail is installed — which it is in effectively every database, and
+// dark_mode.scss already styles the same components. Rules that match
+// nothing cost nothing.
+
+// Mentions and record links inside a message. Core generates the whole
+// state set through its o-mention-variant mixin from rgba($primary, …);
+// the resting state is restated here and the derived hover/active
+// states follow from it.
+a.o_mail_redirect,
+a.o_channel_redirect,
+a.o-discuss-mention,
+a.o_message_redirect_transformed {
+    color: var(--cmt-on-primary-container) !important;
+    background-color: var(--cmt-primary-light);
+    outline-color: var(--cmt-primary-soft);
+}
+
+// The selected conversation in the Discuss sidebar, the active row in
+// any navigable list (the mention autocomplete), and the active
+// notification in the systray — all three expose a property with a
+// mix($o-view-background-color, $o-action, 90%) fallback.
+.o-mail-DiscussSidebar-item {
+    --mail-DiscussSidebar-itemActiveBgColor: var(--cmt-primary-light);
+    --mail-DiscussSidebar-itemActiveOutlineColor: var(--cmt-primary-soft);
+}
+
+.o-mail-NavigableList-active {
+    --mail-NavigableList-activeBgColor: var(--cmt-primary-light);
+}
+
+.o-mail-NotificationItem.o-active {
+    outline-color: var(--cmt-primary-soft);
+}
+
+// The composer: the send button once there is something to send, and
+// the input's focus ring.
+.o-mail-Composer-actions button.o-sendMessageActive {
+    background-color: var(--cmt-primary);
+    outline-color: var(--cmt-primary);
+    color: var(--cmt-on-primary);
+
+    &:focus-visible {
+        outline-color: var(--cmt-primary-dark);
+    }
+}
+
+.o-mail-Composer-actions button.o-mail-Composer-send.btn-link:not(:disabled) {
+    background-color: var(--cmt-primary);
+    color: var(--cmt-on-primary);
+}
+
+.o-mail-Composer-inputContainer:has(textarea:focus),
+.o-mail-Composer-inputContainer:has(.o-mail-Composer-html:focus) {
+    --border-color: var(--cmt-primary);
+}
+
+.o-mail-AutoresizeInput:not([disabled]):focus {
+    --o-input-border-color: var(--cmt-primary);
+}
+
+// Message states: the open action menu on mobile, the "translated"
+// marker, and the hover ring on a reaction you have not picked.
+.o-mail-Message.o-actionMenuMobileOpen {
+    background-color: var(--cmt-primary-light);
+    outline-color: var(--cmt-primary-soft);
+}
+
+.o-mail-Message-translated {
+    color: var(--cmt-primary);
+}
+
+.o-mail-MessageReaction:not(.o-selfReacted):hover {
+    border-color: var(--cmt-primary-soft) !important;
+}
+
+.o-mail-MessageSeenIndicator.o-hasEveryoneSeen {
+    --mail-MessageSeenIndicator-hasEveryoneSeenColor: var(--cmt-primary);
+}
+
+.o-discuss-inCallIconColor {
+    color: var(--cmt-primary);
+}
+
+.o-discuss-badge:not(.o-muted),
+.o-discuss-badge:not(.o-muted) .o-innerBadge {
+    --o-discuss-badge-bg: var(--cmt-primary);
+}
+
+// ── Chrome ───────────────────────────────────────────────────
+
+// The loading pill that slides in at the top of the screen. Core paints
+// it $o-brand-odoo, which primary_variables.scss points at the brand.
+.o_loading_indicator {
+    background-color: var(--cmt-primary);
+    color: var(--cmt-on-primary);
+}
+
+// Barcode glyph — a masked SVG, so its colour is a background-color.
+.o_barcode {
+    background-color: var(--cmt-primary);
+}
+
+// The hairline outline core draws around pale badges.
+.badge {
+    &.text-bg-default, &.bg-light, &.text-bg-light, &.bg-default, &.text-primary {
+        outline-color: var(--cmt-primary);
+    }
+}
+
+// Upload progress.
+.o-file-upload-progress-bar-value {
+    background-color: var(--cmt-primary);
+    border-right-color: var(--cmt-primary-dark);
+}

@@ -169,6 +169,61 @@
             }
         }
 
+        // ── Record menu (the vertical ellipsis, card top-right) ──
+        // Core keeps it hidden until the card is hovered:
+        //
+        //   .o_kanban_record .o_dropdown_kanban { visibility: hidden }
+        //   .o_kanban_record:hover .o_dropdown_kanban { visibility: visible }
+        //
+        // (web/…/kanban/kanban_record.scss), with one escape hatch —
+        // `@include media-breakpoint-down(md) { visibility: visible }`.
+        //
+        // That escape hatch is a *width* query, and the thing it is
+        // standing in for is the absence of a pointer. A touch laptop
+        // or a tablet in landscape sits above md and never fires
+        // :hover, so on those the per-card menu cannot be opened at
+        // all — the same class of bug the `hover: none` block in
+        // responsive.scss exists to catch. Shown always here instead,
+        // which also means a board of cards advertises that the menu
+        // is there rather than hiding it until the pointer stumbles
+        // onto one.
+        //
+        // Quiet at rest, not loud: --cmt-text-muted rather than
+        // --cmt-outline. The muted token clears the 3:1 WCAG 1.4.11
+        // floor for a non-text control in both schemes (7.4:1 on the
+        // light card, 6.3:1 on the dark one); --cmt-outline is #9ca3af,
+        // which is only 2.50:1 against a near-white card and is exactly
+        // the "I can't see it" this block is fixing.
+        //
+        // Every colour is a token, so this one rule serves light mode,
+        // dark mode and whatever the Primary picker is set to — there is
+        // no counterpart needed in dark_mode.scss.
+        .o_dropdown_kanban {
+            visibility: visible;
+
+            .btn {
+                color: var(--cmt-text-muted);
+                // `rounded-0` is on the button in core's template and
+                // Bootstrap generates its utilities with !important, so
+                // the pad below cannot take the theme's corner any
+                // other way.
+                border-radius: var(--cmt-radius-sm) !important;
+                transition: color .15s ease, background-color .15s ease;
+
+                &:hover,
+                &:focus-visible,
+                &.show {
+                    color: var(--cmt-primary);
+                    background-color: var(--cmt-primary-light);
+                }
+
+                &:focus-visible {
+                    outline: none;
+                    box-shadow: 0 0 0 2px var(--cmt-primary-soft);
+                }
+            }
+        }
+
         // Top row: title left, priority stars right
         .o_cmt_card_head {
             margin-bottom: 4px;

@@ -401,8 +401,10 @@
     --cmt-login-card-bg: #131c31;
     --cmt-auth-action-bg: #1e3a8a;
     --cmt-auth-action-text: #ffffff;
-    --cmt-button-bg: #7c9aff;
-    --cmt-button-text: #0b1120;
+    // Aliases, not literals — same value, but they now track the dark
+    // Primary picker instead of restating the shipped periwinkle.
+    --cmt-button-bg: var(--cmt-primary);
+    --cmt-button-text: var(--cmt-on-primary);
 
     // The inputs stay light on the dark panel — the one place this
     // theme's dark scheme deliberately inverts.
@@ -431,7 +433,11 @@
     // the thing that disappears. One set of icons, both modes.
 }
 
-// ── Responsive ───────────────────────────────────────────────
+// ── Devices ──────────────────────────────────────────────────
+// The backend's responsive.scss cannot help here: this file is in
+// web.assets_frontend, a separately compiled bundle, so every device
+// rule the login page needs has to be stated in the file itself.
+
 @media (max-width: 575.98px) {
     .o_bluenova_auth_page {
         .card-body {
@@ -441,5 +447,64 @@
         .o_bluenova_auth_logo {
             max-height: 56px;
         }
+
+        // iOS Safari zooms the viewport in when a focused field's text
+        // is under 16px, and does not zoom back out on blur — so the
+        // login form leaves the visitor on a page scrolled sideways
+        // before they have even signed in. This is the one place the
+        // type scale is overridden rather than respected.
+        //
+        // Only the inputs. The label and helper text around them stay
+        // at their designed sizes, because nothing zooms on those.
+        .form-control,
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        select {
+            font-size: 16px;
+        }
+
+        // WCAG 2.5.5 / Apple HIG minimum for the one control on the
+        // page that matters. 11px of padding around a 16px line is
+        // already close; this guarantees it whatever the font metrics
+        // resolve to.
+        .btn-primary {
+            min-height: 44px;
+        }
+    }
+}
+
+// A phone in landscape is ~360px tall. The card's own padding plus the
+// logo then push the submit button below the fold, and the on-screen
+// keyboard takes another 40% of what is left the moment a field is
+// focused — so the visitor is typing into a field they cannot see.
+// Width queries never catch this: the same device is 780px wide.
+@media (max-height: 500px) and (orientation: landscape) {
+    .o_bluenova_auth_page {
+        .card-body {
+            padding: 20px 24px;
+        }
+
+        .o_bluenova_auth_logo {
+            max-height: 40px;
+            margin-bottom: 8px;
+        }
+    }
+}
+
+// Touch: :hover latches after a tap on a touchscreen and only clears
+// when something else is tapped, so the sign-in button stays brightened
+// and lifted for as long as the page is up — it reads as a control
+// stuck mid-press, on the one screen where a visitor most needs to know
+// whether their tap registered.
+//
+// The button's `&:active { transform: translateY(1px) }` is left alone
+// and becomes the whole feedback story here: :active fires on
+// touch-down and clears on release, which is the behaviour :hover was
+// standing in for.
+@media (hover: none) {
+    .o_bluenova_auth_page .btn-primary:hover {
+        filter: none;
+        box-shadow: var(--cmt-shadow-sm);
     }
 }
