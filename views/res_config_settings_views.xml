@@ -86,17 +86,6 @@
                             </div>
                         </setting>
 
-                        <setting string="Sidebar Brand Asset"
-                                 help="Background image used in the left sidebar brand area. Doubles as the login logo when the option below is ticked.">
-                            <div class="mt-2">
-                                <label for="theme_sidebar_brand_image"
-                                       class="o_light_label"/>
-                                <field name="theme_sidebar_brand_image"
-                                       widget="image"
-                                       class="oe_avatar"/>
-                            </div>
-                        </setting>
-
                     </block>
 
                     <!-- ════════════════════════════════════════════
@@ -216,7 +205,7 @@
                         </setting>
 
                         <setting string="Login Branding"
-                                 help="Applies to the login, signup and reset-password pages. Tick the box to reuse the Sidebar Brand Asset as the logo; leave it clear to keep the company logo.">
+                                 help="Applies to the login, signup and reset-password pages. Tick the box to use the stored brand image as the logo; leave it clear to keep the company logo.">
                             <div class="mt-2">
                                 <div class="cmt-setting-check">
                                     <field name="theme_login_use_brand_image"/>
@@ -233,17 +222,33 @@
 
                         <setting string="Login Background Images"
                                  help="Full-page background behind the login panel, one per colour scheme.">
-                            <div class="mt-2">
-                                <label for="theme_login_background_image"
-                                       class="o_light_label"/>
-                                <field name="theme_login_background_image"
-                                       widget="image"
-                                       class="oe_avatar"/>
-                                <label for="theme_login_background_image_dark"
-                                       class="o_light_label"/>
-                                <field name="theme_login_background_image_dark"
-                                       widget="image"
-                                       class="oe_avatar"/>
+                            <!--
+                                The light and dark uploads sit side by
+                                side rather than stacked: they are one
+                                decision seen twice, and a reader
+                                comparing the two scheme backgrounds
+                                should not have to scroll between them.
+                                Each pair is wrapped in its own cell so
+                                the label stays with its own thumbnail
+                                when the row wraps on a narrow screen —
+                                see .cmt-setting-images in
+                                scss/settings_page.scss.
+                            -->
+                            <div class="mt-2 cmt-setting-images">
+                                <div class="cmt-setting-image">
+                                    <label for="theme_login_background_image"
+                                           class="o_light_label"/>
+                                    <field name="theme_login_background_image"
+                                           widget="image"
+                                           class="oe_avatar"/>
+                                </div>
+                                <div class="cmt-setting-image">
+                                    <label for="theme_login_background_image_dark"
+                                           class="o_light_label"/>
+                                    <field name="theme_login_background_image_dark"
+                                           widget="image"
+                                           class="oe_avatar"/>
+                                </div>
                             </div>
                         </setting>
 
