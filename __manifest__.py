@@ -88,6 +88,12 @@ No data is modified.
             'bluenova_backend_theme/static/src/scss/home_dashboard.scss',
             'bluenova_backend_theme/static/src/scss/settings_page.scss',
             'bluenova_backend_theme/static/src/scss/buttons_misc.scss',
+            # After every stylesheet that styles a component itself: it
+            # only redirects core's compiled brand literals at the token,
+            # so it has to land after core's rules (any position in this
+            # bundle does that) but must not sit in front of a theme rule
+            # that deliberately paints the same surface something else.
+            'bluenova_backend_theme/static/src/scss/brand_bridge.scss',
             'bluenova_backend_theme/static/src/scss/responsive.scss',
             # Last: overrides every surface above once dark mode is on.
             'bluenova_backend_theme/static/src/scss/dark_mode.scss',
