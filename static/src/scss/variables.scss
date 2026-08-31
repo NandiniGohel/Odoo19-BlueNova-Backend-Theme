@@ -7,6 +7,19 @@
 // ============================================================
 :root {
     // ── Brand ────────────────────────────────────────────────
+    //
+    // The values below are the *defaults*. Once someone picks a colour
+    // under Settings > Theme Settings, --cmt-primary comes from the
+    // picker and every shade in this block is re-derived from it at
+    // page load by models/theme_color.py — the ramp stays coordinated
+    // whatever the brand is, and only one of these is a decision an
+    // admin has to make. The derivation is fitted to reproduce exactly
+    // what is written here when fed #3959b0, so an untouched install is
+    // byte-for-byte what it was before the feature existed.
+    //
+    // That means: change one of these by hand and you have changed the
+    // default only. The shipped ramp and the derived ramp have to agree,
+    // so a new default belongs in both places or in neither.
     --cmt-primary: #3959b0;          // Deep Indigo — brand + primary actions
     --cmt-primary-dark: #1e40af;     // on-primary-fixed-variant, hover/pressed
     --cmt-primary-light: #eff6ff;    // primary-container, active nav / hover fills
@@ -34,7 +47,16 @@
     // and the app you are currently in.
     //
     // Not overridden in dark mode on purpose — the rail reads the same in
-    // both themes, so dark_mode.scss leaves this trio alone.
+    // both themes, so dark_mode.scss leaves this trio alone. The settings
+    // block keeps that true the hard way: the hover and active tints are
+    // derived from the *light* Primary and emitted into both the light
+    // and the dark rule, because the light rule's
+    // `:not([data-cmt-theme="dark"])` stops matching when dark mode is on.
+    //
+    // --cmt-app-icon (resting) is a neutral and stays put; the other two
+    // follow the brand, pushed brighter and more saturated than it —
+    // 20px of flat colour with no text on it can carry a tint that would
+    // be unreadable as a button fill.
     --cmt-app-icon: #6b7280;         // resting
     --cmt-app-icon-hover: #3b82f6;   // hovered / focused row
     --cmt-app-icon-active: #2563eb;  // the app currently open

@@ -401,8 +401,10 @@
     --cmt-login-card-bg: #131c31;
     --cmt-auth-action-bg: #1e3a8a;
     --cmt-auth-action-text: #ffffff;
-    --cmt-button-bg: #7c9aff;
-    --cmt-button-text: #0b1120;
+    // Aliases, not literals — same value, but they now track the dark
+    // Primary picker instead of restating the shipped periwinkle.
+    --cmt-button-bg: var(--cmt-primary);
+    --cmt-button-text: var(--cmt-on-primary);
 
     // The inputs stay light on the dark panel — the one place this
     // theme's dark scheme deliberately inverts.

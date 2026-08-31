@@ -66,9 +66,11 @@
 // `body` prefix keeps this above the base declaration regardless
 // of how the bundle happens to be ordered; the pointer is
 // appended to <body>, not inside .o_web_client.
+// The colours themselves moved to brand_bridge.scss, which owns every
+// brand-derived value that has to follow the Primary picker; leaving a
+// second declaration here would mean two places to change.
 body .o_tour_pointer {
     --TourPointer__color: var(--cmt-primary);
-    --TourPointer__color-accent: #4467c7;   // lighten(#3959b0, 7%)
 }
 
 // ── Notification counters ────────────────────────────────────
