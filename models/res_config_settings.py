@@ -508,8 +508,30 @@ class ResConfigSettings(models.TransientModel):
             self._set_theme_attachment(name, self[fname])
 
     # ── Uploaded images ──────────────────────────────────────────
-    # Binary field → attachment name. Both images are handled by the
-    # same pair of helpers below rather than one get/set per picture.
+    # Binary field → attachment name. All three images are handled by
+    # the same pair of helpers below rather than one get/set per
+    # picture.
+    #
+    # theme_sidebar_brand_image has no control on the settings screen
+    # any more — the Sidebar Brand Asset box was removed, and the
+    # sidebar rule that painted it went with it. The entry stays here
+    # on purpose: the login page still serves that attachment as its
+    # logo whenever "Use Brand Image As Login Logo" is ticked, so an
+    # image put there by a data file, a shell session or a restore has
+    # to keep working.
+    #
+    # That makes get_values() load-bearing in a way it did not used to
+    # be. set_values() below feeds self[fname] to
+    # _set_theme_attachment(), which *unlinks* the attachment on a
+    # falsy value — and the web client cannot send a field its form
+    # does not contain. The only reason a save does not wipe the image
+    # is that get_values() reads every entry in this map straight from
+    # its attachment, so default_get() refills the field on the way in
+    # and set_values() writes back what it found.
+    #
+    # So: if this map and get_values() ever stop agreeing, the first
+    # save after that silently deletes the login logo. Keep the two in
+    # step, or give the field a real control again.
 
     _IMAGE_ATTACHMENTS = {
         "theme_sidebar_brand_image": BRAND_IMAGE_NAME,
