@@ -226,7 +226,7 @@ def derive_brand_vars(primary, dark=False):
         link_hover = adjust(rgb, lightness=0.75)
         border_subtle = adjust(rgb, min_sat=0.60, clamp_l=(0.78, 0.86))
 
-    return {
+    derived = {
         # ── The theme's own brand family ─────────────────────────
         # Every one of these is read by rules in apps_sidebar.scss,
         # buttons_misc.scss, navbar.scss, control_panel.scss and
@@ -238,32 +238,43 @@ def derive_brand_vars(primary, dark=False):
         "--cmt-primary-soft": "rgba(%s, %s)" % (triplet, soft_alpha),
         "--cmt-on-primary-container": to_hex(container),
         "--cmt-on-primary": ink,
-
-        # ── Bootstrap's :root brand vars ─────────────────────────
-        # The bridge to core. Bootstrap 5.3 declares these on `:root`
-        # and reads them from the utilities and from reboot, so
-        # redeclaring them here — under a heavier selector, in a
-        # <style> that lands after the bundle — repaints the
-        # "Enterprise" badge (.text-bg-primary), every .bg-primary /
-        # .text-primary / .border-primary, and every plain link.
-        #
-        # The unprefixed twins go out alongside because Odoo's own
-        # cmt-bs-vars mixin (scss/base.scss) writes both, and some
-        # bundled components read the bare name.
-        "--bs-primary": to_hex(rgb),
-        "--primary": to_hex(rgb),
-        "--bs-primary-rgb": triplet,
-        "--primary-rgb": triplet,
-        "--bs-link-color": to_hex(link),
-        "--bs-link-color-rgb": to_triplet(link),
-        "--link-color-rgb": to_triplet(link),
-        "--bs-link-hover-color": to_hex(link_hover),
-        "--bs-link-hover-color-rgb": to_triplet(link_hover),
-        "--link-hover-color-rgb": to_triplet(link_hover),
-        "--bs-primary-bg-subtle": to_hex(tint),
-        "--bs-primary-border-subtle": to_hex(border_subtle),
-        "--bs-primary-text-emphasis": to_hex(container),
     }
+
+    # ── Bootstrap's :root brand vars ─────────────────────────────
+    # The bridge to core. Bootstrap declares these on `:root` and reads
+    # them from the utilities and from reboot, so redeclaring them here
+    # — under a heavier selector, in a <style> that lands after the
+    # bundle — repaints .bg-primary / .border-primary, the
+    # "Enterprise" badge and every plain link.
+    #
+    # Written *unprefixed* and emitted twice, below. Which spelling
+    # Bootstrap actually ships is a build-time decision:
+    # web/static/src/scss/bootstrap_overridden.scss sets
+    # `$variable-prefix: ''`, so on this Odoo the live properties are
+    # --primary, --link-color-rgb, --primary-text-emphasis… with no
+    # prefix, while stock Bootstrap and older Odoo use --bs-.
+    #
+    # Emitting only one spelling means the whole block is inert on half
+    # the versions this theme claims to support, and inert silently —
+    # the CSS is valid, it just names a property nobody reads. Both go
+    # out, exactly as the cmt-bs-vars mixin in scss/base.scss does for
+    # the stylesheet side.
+    bootstrap = {
+        "primary": to_hex(rgb),
+        "primary-rgb": triplet,
+        "link-color": to_hex(link),
+        "link-color-rgb": to_triplet(link),
+        "link-hover-color": to_hex(link_hover),
+        "link-hover-color-rgb": to_triplet(link_hover),
+        "primary-bg-subtle": to_hex(tint),
+        "primary-border-subtle": to_hex(border_subtle),
+        "primary-text-emphasis": to_hex(container),
+    }
+    for name, value in bootstrap.items():
+        derived["--%s" % name] = value
+        derived["--bs-%s" % name] = value
+
+    return derived
 
 
 def derive_icon_vars(primary):
