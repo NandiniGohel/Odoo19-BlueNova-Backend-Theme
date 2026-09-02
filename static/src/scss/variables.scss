@@ -62,10 +62,24 @@
     --cmt-app-icon-active: #2563eb;  // the app currently open
 
     // ── Surfaces ─────────────────────────────────────────────
+    //
+    // Defaults, in the same sense the Brand block above is: --cmt-bg
+    // comes from the Background picker once one is used, and every
+    // token in this block and the Text block below is re-derived from
+    // it at page load by models/theme_color.py. The ramp is fitted to
+    // reproduce exactly what is written here when fed #f8f9fa, and the
+    // dark block of dark_mode.scss when fed #0b1120, so an untouched
+    // install is byte-for-byte what it was before the feature existed.
+    //
+    // Same rule as the brand ramp, then: change one of these by hand
+    // and you have changed the default only — a new default belongs in
+    // both places or in neither.
     --cmt-bg: #f8f9fa;               // background — the main canvas
     // Channel form of the same colour, for the places that need the canvas
-    // at partial alpha — the empty-view scrim in base.scss. Kept in step
-    // with --cmt-bg by hand; CSS cannot decompose a hex into components.
+    // at partial alpha — the empty-view scrim in base.scss. CSS cannot
+    // decompose a hex into components, so this used to be kept in step
+    // with --cmt-bg by hand and silently stopped being in step the moment
+    // anyone picked a canvas; derive_surface_vars() now emits it.
     --cmt-bg-rgb: 248, 249, 250;
     --cmt-surface: #ffffff;          // surface-bright — cards, navbar, panels
     --cmt-surface-dim: #f9fafb;      // inputs, table headers
@@ -76,6 +90,11 @@
     --cmt-scrollbar-thumb: #d1d5db;
 
     // ── Text ─────────────────────────────────────────────────
+    // Both have a picker of their own, but both are also part of the
+    // ramp above: while a picker still holds the value it shipped with,
+    // the ink derived from the canvas wins, so a dark Background comes
+    // with light text instead of this near-black. Pick a colour here
+    // and the pick wins again, in both schemes.
     --cmt-text: #111827;             // on-surface
     --cmt-text-muted: #4b5563;       // on-surface-variant — metadata
 

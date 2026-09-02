@@ -99,17 +99,17 @@
     // bundle compiles Bootstrap with an *empty* variable prefix — see
     // the mixin's comment. Writing --bs-* alone here does nothing.
     @include cmt-bs-vars((
-        body-bg: #0b1120,
-        body-bg-rgb: "11, 17, 32",
-        body-color: #e2e8f0,
+        body-bg: var(--cmt-bg),
+        body-bg-rgb: var(--cmt-bg-rgb),
+        body-color: var(--cmt-text),
         body-color-rgb: "226, 232, 240",
-        emphasis-color: #e2e8f0,
+        emphasis-color: var(--cmt-text),
         emphasis-color-rgb: "226, 232, 240",
-        secondary-color: #94a3b8,
-        secondary-bg: #0f1728,
-        tertiary-color: #64748b,
-        tertiary-bg: #1e293b,
-        border-color: #243149,
+        secondary-color: var(--cmt-text-muted),
+        secondary-bg: var(--cmt-surface-dim),
+        tertiary-color: var(--cmt-outline),
+        tertiary-bg: var(--cmt-surface-highest),
+        border-color: var(--cmt-border),
         border-color-translucent: rgba(255, 255, 255, 0.1),
         link-color: var(--cmt-primary),
         link-color-rgb: var(--cmt-primary-rgb),
@@ -133,7 +133,7 @@
         //
         // 17.0 caveat: declaring it is necessary but not sufficient — see
         // the heading rule just below, which is what actually reads it.
-        heading-color: #e2e8f0,
+        heading-color: var(--cmt-text),
     ));
 
     // 17.0's Bootstrap predates the custom-property reboot, so it compiles
@@ -165,7 +165,7 @@
     // Odoo's own generated utilities read this property, which is
     // Odoo's rather than Bootstrap's and so has never been prefixed
     // (see o-print-color in scss/functions.scss).
-    --o-view-background-color: #131c31;
+    --o-view-background-color: var(--cmt-surface);
 
     // ════ Layer 2b: Bootstrap component variables ════════════
     // Bootstrap declares these on the components themselves, so a
@@ -178,60 +178,60 @@
     // an ancestor: light text landed on the untouched white default.
     .dropdown-menu, .o-dropdown--menu, .o-autocomplete--dropdown-menu {
         @include cmt-bs-vars((
-            dropdown-bg: #131c31,
-            dropdown-color: #e2e8f0,
-            dropdown-border-color: #243149,
-            dropdown-divider-bg: #243149,
-            dropdown-header-color: #94a3b8,
-            dropdown-link-color: #e2e8f0,
-            dropdown-link-hover-color: #e2e8f0,
-            dropdown-link-hover-bg: #1e293b,
+            dropdown-bg: var(--cmt-surface),
+            dropdown-color: var(--cmt-text),
+            dropdown-border-color: var(--cmt-border),
+            dropdown-divider-bg: var(--cmt-border),
+            dropdown-header-color: var(--cmt-text-muted),
+            dropdown-link-color: var(--cmt-text),
+            dropdown-link-hover-color: var(--cmt-text),
+            dropdown-link-hover-bg: var(--cmt-surface-highest),
             dropdown-link-active-color: var(--cmt-on-primary-container),
             dropdown-link-active-bg: var(--cmt-primary-light),
-            dropdown-link-disabled-color: #64748b,
+            dropdown-link-disabled-color: var(--cmt-outline),
         ));
     }
 
     .modal {
         @include cmt-bs-vars((
-            modal-bg: #131c31,
-            modal-color: #e2e8f0,
-            modal-border-color: #243149,
-            modal-header-border-color: #243149,
-            modal-footer-border-color: #243149,
+            modal-bg: var(--cmt-surface),
+            modal-color: var(--cmt-text),
+            modal-border-color: var(--cmt-border),
+            modal-header-border-color: var(--cmt-border),
+            modal-footer-border-color: var(--cmt-border),
         ));
     }
 
     .card {
         @include cmt-bs-vars((
-            card-bg: #131c31,
-            card-color: #e2e8f0,
-            card-border-color: #243149,
-            card-cap-bg: #0f1728,
+            card-bg: var(--cmt-surface),
+            card-color: var(--cmt-text),
+            card-border-color: var(--cmt-border),
+            card-cap-bg: var(--cmt-surface-dim),
         ));
     }
 
     .list-group {
         @include cmt-bs-vars((
-            list-group-bg: #131c31,
-            list-group-color: #e2e8f0,
-            list-group-border-color: #243149,
-            list-group-action-color: #e2e8f0,
-            list-group-action-hover-bg: #1e293b,
-            list-group-action-hover-color: #e2e8f0,
+            list-group-bg: var(--cmt-surface),
+            list-group-color: var(--cmt-text),
+            list-group-border-color: var(--cmt-border),
+            list-group-action-color: var(--cmt-text),
+            list-group-action-hover-bg: var(--cmt-surface-highest),
+            list-group-action-hover-color: var(--cmt-text),
             list-group-active-bg: var(--cmt-primary-light),
             list-group-active-color: var(--cmt-on-primary-container),
-            list-group-active-border-color: #243149,
+            list-group-active-border-color: var(--cmt-border),
         ));
     }
 
     .popover {
         @include cmt-bs-vars((
-            popover-bg: #131c31,
-            popover-body-color: #e2e8f0,
-            popover-header-bg: #1e293b,
-            popover-header-color: #e2e8f0,
-            popover-border-color: #243149,
+            popover-bg: var(--cmt-surface),
+            popover-body-color: var(--cmt-text),
+            popover-header-bg: var(--cmt-surface-highest),
+            popover-header-color: var(--cmt-text),
+            popover-border-color: var(--cmt-border),
         ));
     }
 
@@ -254,8 +254,8 @@
     // ancestor, to outrank the component's own defaults on that element.
     .tooltip, .o-tooltip {
         @include cmt-bs-vars((
-            tooltip-bg: #1e293b,
-            tooltip-color: #e2e8f0,
+            tooltip-bg: var(--cmt-surface-highest),
+            tooltip-color: var(--cmt-text),
             tooltip-opacity: 1,
         ));
     }
@@ -266,24 +266,24 @@
     // the shell does carry) loses to it. Repointed here or the bubble
     // goes dark and leaves a light triangle behind.
     .o-tooltip + .popover-arrow {
-        @include cmt-bs-vars((popover-bg: #1e293b));
+        @include cmt-bs-vars((popover-bg: var(--cmt-surface-highest)));
     }
 
     .offcanvas, .offcanvas-start, .offcanvas-end,
     .offcanvas-top, .offcanvas-bottom {
         @include cmt-bs-vars((
-            offcanvas-bg: #131c31,
-            offcanvas-color: #e2e8f0,
-            offcanvas-border-color: #243149,
+            offcanvas-bg: var(--cmt-surface),
+            offcanvas-color: var(--cmt-text),
+            offcanvas-border-color: var(--cmt-border),
         ));
     }
 
     .accordion {
         @include cmt-bs-vars((
-            accordion-bg: #131c31,
-            accordion-color: #e2e8f0,
-            accordion-border-color: #243149,
-            accordion-btn-color: #e2e8f0,
+            accordion-bg: var(--cmt-surface),
+            accordion-color: var(--cmt-text),
+            accordion-border-color: var(--cmt-border),
+            accordion-btn-color: var(--cmt-text),
             accordion-active-bg: var(--cmt-primary-light),
             accordion-active-color: var(--cmt-on-primary-container),
         ));
@@ -293,13 +293,13 @@
     // selected tab ("Invoice Lines") white: Odoo sets it to $white.
     .nav, .nav-tabs {
         @include cmt-bs-vars((
-            nav-link-color: #94a3b8,
+            nav-link-color: var(--cmt-text-muted),
             nav-link-hover-color: var(--cmt-primary),
-            nav-tabs-border-color: #243149,
-            nav-tabs-link-hover-border-color: #243149,
-            nav-tabs-link-active-color: #e2e8f0,
-            nav-tabs-link-active-bg: #131c31,
-            nav-tabs-link-active-border-color: #243149,
+            nav-tabs-border-color: var(--cmt-border),
+            nav-tabs-link-hover-border-color: var(--cmt-border),
+            nav-tabs-link-active-color: var(--cmt-text),
+            nav-tabs-link-active-bg: var(--cmt-surface),
+            nav-tabs-link-active-border-color: var(--cmt-border),
         ));
     }
 
@@ -309,22 +309,22 @@
     .breadcrumb {
         @include cmt-bs-vars((
             breadcrumb-bg: transparent,
-            breadcrumb-divider-color: #64748b,
-            breadcrumb-item-active-color: #94a3b8,
+            breadcrumb-divider-color: var(--cmt-outline),
+            breadcrumb-item-active-color: var(--cmt-text-muted),
         ));
     }
 
     .table {
         @include cmt-bs-vars((
-            table-bg: #131c31,
-            table-color: #e2e8f0,
-            table-border-color: #243149,
+            table-bg: var(--cmt-surface),
+            table-color: var(--cmt-text),
+            table-border-color: var(--cmt-border),
             table-striped-bg: #172038,
-            table-striped-color: #e2e8f0,
+            table-striped-color: var(--cmt-text),
             table-hover-bg: var(--cmt-primary-light),
-            table-hover-color: #e2e8f0,
+            table-hover-color: var(--cmt-text),
             table-active-bg: var(--cmt-primary-light),
-            table-active-color: #e2e8f0,
+            table-active-color: var(--cmt-text),
             table-accent-bg: transparent,
         ));
     }
@@ -450,9 +450,9 @@
     }
 
     .o_list_renderer .o_list_table {
-        --table-bg: #131c31;
-        --ListRenderer-thead-bg-color: #0f1728;
-        --ListRenderer-tfoot-bg-color: #0f1728;
+        --table-bg: var(--cmt-surface);
+        --ListRenderer-thead-bg-color: var(--cmt-surface-dim);
+        --ListRenderer-tfoot-bg-color: var(--cmt-surface-dim);
 
         color: var(--cmt-text);
 
@@ -469,7 +469,7 @@
         }
 
         tbody > tr.o_group_header {
-            --table-bg: #1e293b;
+            --table-bg: var(--cmt-surface-highest);
             color: var(--cmt-text);
         }
 
@@ -625,7 +625,7 @@
 
         .o_searchview_facet_label {
             background-color: var(--cmt-primary) !important;
-            color: #0b1120 !important;
+            color: var(--cmt-on-primary) !important;
         }
     }
 
