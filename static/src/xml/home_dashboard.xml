@@ -6,19 +6,28 @@
 
         OWL 2 markup rendered by the HomeDashboard client action, so `this`
         is the component: state lives under `state`, clicks are `t-on-*`
-        handlers, and the tile loop carries a t-key.
+        handlers, and every loop carries a t-key.
 
-        Every tile in `state.tiles` was already filtered server-side to
-        apps that are installed *and* readable by this user, so there is
-        no visibility logic here — an empty list simply falls through to
-        the empty state, which is what a bare database with no business
-        apps installed sees.
+        Structure follows screen.png / DESIGN.md — three bands, each its
+        own grid so it lays out on its own terms rather than fighting a
+        shared column count:
 
-        The tiles are <button>s rather than divs because they are click
-        targets: that is what makes them reachable and activatable from
-        the keyboard for free. A tile whose action could not be resolved
-        arrives with action_id false and is rendered disabled — it still
-        shows its figure, it just does not navigate.
+          __top      two gradient hero cards + the activity panel
+          __tiles    the remaining figures, as metric cards
+          cmt-dash-chart  a day-by-day column chart, one app at a time
+          __bottom   quick actions + the preview panel
+
+        Every band is guarded by its own t-if. The server drops a region
+        it cannot fill — no readable model, no create rights, no records —
+        so a band with nothing in it is a normal state, not an error, and
+        a database where *no* figure could be built falls through to the
+        empty state at the end.
+
+        Click targets are <button>s rather than divs: that is what makes
+        them reachable and activatable from the keyboard for free. A card
+        whose action could not be resolved arrives with action_id false
+        and is rendered disabled — it still shows its figure, it just does
+        not navigate.
     -->
     <t t-name="bluenova_backend_theme.HomeDashboard">
         <div class="cmt-dashboard">
@@ -30,19 +39,269 @@
                 <p class="cmt-dashboard__sub" t-esc="state.companyName"/>
             </header>
 
-            <div class="cmt-dashboard__tiles" t-if="state.tiles.length">
-                <button type="button"
-                        class="cmt-dashboard__tile"
-                        t-foreach="state.tiles" t-as="tile" t-key="tile.key"
-                        t-att-disabled="tile.action_id ? null : 'disabled'"
-                        t-on-click="() => this.onTileClick(tile)">
-                    <span class="cmt-dashboard__tile-icon"
-                          t-attf-style="--cmt-icon-url: url('{{ tile.icon }}')"/>
-                    <span class="cmt-dashboard__tile-value" t-esc="tile.value"/>
-                    <span class="cmt-dashboard__tile-label" t-esc="tile.label"/>
-                    <span class="cmt-dashboard__tile-sub" t-esc="tile.sub"/>
-                </button>
-            </div>
+            <t t-if="!isEmpty">
+
+                <!-- ── Band 1: heroes + activity ──────────────── -->
+                <div class="cmt-dashboard__top">
+
+                    <!--
+                        The two largest figures. `hero_index` picks the
+                        gradient: the variants are defined in
+                        home_dashboard.scss against the brand tokens, so
+                        both follow the colour an admin picks under
+                        Settings > Theme Settings.
+                    -->
+                    <button type="button"
+                            t-foreach="state.heroes" t-as="hero" t-key="hero.key"
+                            t-attf-class="cmt-dash-hero cmt-dash-hero--{{ hero_index % 2 }}"
+                            t-att-disabled="hero.action_id ? null : 'disabled'"
+                            t-on-click="() => this.onTileClick(hero)">
+
+                        <!--
+                            Decorative only — the same artwork already
+                            names the card in the chip below, so it is
+                            hidden from assistive tech rather than read
+                            out twice.
+                        -->
+                        <span class="cmt-dash-hero__glyph" aria-hidden="true"
+                              t-attf-style="--cmt-icon-url: url('{{ hero.icon }}')"/>
+
+                        <span class="cmt-dash-hero__head">
+                            <span class="cmt-dash-hero__chip"
+                                  t-attf-style="--cmt-icon-url: url('{{ hero.icon }}')"/>
+                            <span class="cmt-dash-hero__label" t-esc="hero.label"/>
+                        </span>
+
+                        <span class="cmt-dash-hero__value" t-esc="formatValue(hero.value)"/>
+
+                        <!--
+                            The trend is absent when the server had no
+                            baseline to compare against, rather than
+                            rendered as "+0.0%" — see _trend() in
+                            models/theme_dashboard.py. The card's own
+                            subtitle takes the line instead, so a hero on
+                            a young database is still a finished card
+                            rather than a number over dead space.
+                        -->
+                        <span t-if="hero.trend"
+                              t-attf-class="cmt-dash-hero__trend cmt-dash-hero__trend--{{ hero.trend.dir }}">
+                            <i t-attf-class="fa fa-arrow-{{ hero.trend.dir }} me-1" role="img" aria-hidden="true"/>
+                            <t t-esc="hero.trend.text"/>
+                        </span>
+                        <span t-else="" class="cmt-dash-hero__trend cmt-dash-hero__trend--muted"
+                              t-esc="hero.sub"/>
+                    </button>
+
+                    <section class="cmt-dash-panel cmt-dash-panel--activity"
+                             t-if="state.activity.length">
+                        <h2 class="cmt-dash-panel__title">Recent Activity</h2>
+                        <ul class="cmt-dash-activity">
+                            <li t-foreach="state.activity" t-as="entry" t-key="entry.key">
+                                <button type="button" class="cmt-dash-activity__row"
+                                        t-on-click="() => this.openRecord(entry.model, entry.res_id)">
+                                    <span class="cmt-dash-activity__icon"
+                                          t-attf-style="--cmt-icon-url: url('{{ entry.icon }}')"/>
+                                    <span class="cmt-dash-activity__body">
+                                        <span class="cmt-dash-activity__text" t-esc="entry.text"/>
+                                        <span class="cmt-dash-activity__time" t-esc="entry.time_ago"/>
+                                    </span>
+                                </button>
+                            </li>
+                        </ul>
+                    </section>
+                </div>
+
+                <!-- ── Band 2: metric cards ───────────────────── -->
+                <div class="cmt-dashboard__tiles" t-if="state.tiles.length">
+                    <button type="button"
+                            class="cmt-dashboard__tile"
+                            t-foreach="state.tiles" t-as="tile" t-key="tile.key"
+                            t-att-disabled="tile.action_id ? null : 'disabled'"
+                            t-on-click="() => this.onTileClick(tile)">
+
+                        <span class="cmt-dashboard__tile-head">
+                            <span class="cmt-dashboard__tile-icon"
+                                  t-attf-style="--cmt-icon-url: url('{{ tile.icon }}')"/>
+                            <span class="cmt-dashboard__tile-label" t-esc="tile.label"/>
+                        </span>
+
+                        <span class="cmt-dashboard__tile-figure">
+                            <span class="cmt-dashboard__tile-value" t-esc="formatValue(tile.value)"/>
+
+                            <!--
+                                Seven bars, one per day, heights already
+                                normalised to the tallest day by
+                                sparkBars(). Decorative: the figure above
+                                is the number, this is only its shape.
+                            -->
+                            <span class="cmt-dashboard__spark" t-if="tile.spark.length" aria-hidden="true">
+                                <span t-foreach="sparkBars(tile.spark)" t-as="bar" t-key="bar_index"
+                                      class="cmt-dashboard__spark-bar"
+                                      t-attf-style="height: {{ bar }}%"/>
+                            </span>
+                        </span>
+
+                        <!--
+                            Pills replace the subtitle when the tile has
+                            them: "12 IN / 6 OUT" already says what the
+                            figure is made of, and both lines together
+                            crowd the card.
+                        -->
+                        <span class="cmt-dashboard__pills" t-if="tile.pills.length">
+                            <span t-foreach="tile.pills" t-as="pill" t-key="pill.label"
+                                  t-attf-class="cmt-dashboard__pill cmt-dashboard__pill--{{ pill.dir }}">
+                                <i t-attf-class="fa fa-arrow-{{ pill.dir == 'in' ? 'down' : 'up' }}"
+                                   role="img" aria-hidden="true"/>
+                                <t t-esc="pill.value"/> <t t-esc="pill.label"/>
+                            </span>
+                        </span>
+                        <span class="cmt-dashboard__tile-sub" t-else="" t-esc="tile.sub"/>
+                    </button>
+                </div>
+
+                <!-- ── Band 3: the trend chart ────────────────── -->
+                <!--
+                    One series at a time, chosen by the chips in the
+                    header — see the note on chartSeries in
+                    home_dashboard.js for why this is not one chart with
+                    every app on it.
+
+                    The plot carries role="img" and a written summary
+                    rather than thirty focusable columns: the tooltip is
+                    a pointer affordance, and a reader who cannot use it
+                    gets the same three facts — what is plotted, how
+                    much of it, and when it peaked — as a sentence.
+                -->
+                <section class="cmt-dash-panel cmt-dash-chart" t-if="chartSeries">
+
+                    <div class="cmt-dash-chart__head">
+                        <div>
+                            <h2 class="cmt-dash-panel__title">
+                                Created — last <t t-esc="state.chart.days"/> days
+                            </h2>
+                            <p class="cmt-dash-chart__figure">
+                                <span class="cmt-dash-chart__total"
+                                      t-esc="formatValue(chartSeries.total)"/>
+                                <span class="cmt-dash-chart__unit" t-esc="chartSeries.label"/>
+                            </p>
+                        </div>
+
+                        <!--
+                            Absent rather than disabled when only one app
+                            has anything in the window: a single chip is
+                            a label pretending to be a control.
+                        -->
+                        <div class="cmt-dash-chart__tabs" t-if="state.chart.series.length > 1">
+                            <button type="button"
+                                    t-foreach="state.chart.series" t-as="series" t-key="series.key"
+                                    t-attf-class="cmt-dash-chart__tab {{ series.key === chartSeries.key ? 'cmt-dash-chart__tab--on' : '' }}"
+                                    t-att-aria-pressed="series.key === chartSeries.key ? 'true' : 'false'"
+                                    t-on-click="() => this.onSelectSeries(series_index)">
+                                <span class="cmt-dash-chart__tab-icon"
+                                      t-attf-style="--cmt-icon-url: url('{{ series.icon }}')"/>
+                                <t t-esc="series.label"/>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="cmt-dash-chart__plot" role="img"
+                         t-attf-aria-label="{{ chartSeries.total }} {{ chartSeries.label }} created over the last {{ state.chart.days }} days, by day.">
+
+                        <!--
+                            Gridlines and their y-axis ticks in one
+                            element per line: the tick has to sit on the
+                            line it labels, and positioning both off the
+                            same `top` is what keeps them together at
+                            any panel height.
+                        -->
+                        <div class="cmt-dash-chart__grid" aria-hidden="true">
+                            <span t-foreach="chartTicks" t-as="tick" t-key="tick.key"
+                                  class="cmt-dash-chart__gridline"
+                                  t-attf-style="top: {{ tick.offset }}%">
+                                <span class="cmt-dash-chart__tick" t-esc="tick.label"/>
+                            </span>
+                        </div>
+
+                        <div class="cmt-dash-chart__bars">
+                            <!--
+                                The column is the hover target, not the
+                                bar: a day with two records is a 6px
+                                stub, and a hit area that small is one
+                                nobody lands on.
+                            -->
+                            <span class="cmt-dash-chart__col"
+                                  t-foreach="chartBars" t-as="bar" t-key="bar.index">
+                                <span class="cmt-dash-chart__bar"
+                                      t-attf-style="height: {{ bar.height }}%"/>
+                                <span class="cmt-dash-chart__tip">
+                                    <span class="cmt-dash-chart__tip-day" t-esc="bar.label"/>
+                                    <span class="cmt-dash-chart__tip-value"
+                                          t-esc="formatValue(bar.value)"/>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="cmt-dash-chart__axis" aria-hidden="true">
+                        <span t-foreach="chartAxis" t-as="day" t-key="day_index" t-esc="day"/>
+                    </div>
+                </section>
+
+                <!-- ── Band 4: quick actions + preview ────────── -->
+                <div class="cmt-dashboard__bottom"
+                     t-if="state.quickActions.length || state.preview">
+
+                    <section class="cmt-dash-panel cmt-dash-panel--actions"
+                             t-if="state.quickActions.length">
+                        <h2 class="cmt-dash-panel__title">Quick Actions</h2>
+                        <div class="cmt-dash-actions">
+                            <button type="button" class="cmt-dash-actions__item"
+                                    t-foreach="state.quickActions" t-as="quick" t-key="quick.key"
+                                    t-on-click="() => this.onQuickAction(quick)">
+                                <span class="cmt-dash-actions__icon"
+                                      t-attf-style="--cmt-icon-url: url('{{ quick.icon }}')"/>
+                                <span class="cmt-dash-actions__label" t-esc="quick.label"/>
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="cmt-dash-panel cmt-dash-panel--preview" t-if="state.preview">
+                        <div class="cmt-dash-panel__bar">
+                            <h2 class="cmt-dash-panel__title" t-esc="state.preview.title"/>
+                            <!--
+                                Only when the list has an action behind
+                                it: "View All" that goes nowhere is worse
+                                than no link at all.
+                            -->
+                            <button type="button" class="cmt-dash-panel__link"
+                                    t-if="state.preview.action_id"
+                                    t-on-click="() => this.onTileClick(state.preview)">View All</button>
+                        </div>
+                        <ul class="cmt-dash-preview">
+                            <li t-foreach="state.preview.items" t-as="item" t-key="item.id">
+                                <button type="button" class="cmt-dash-preview__row"
+                                        t-on-click="() => this.openRecord(state.preview.model, item.id)">
+                                    <!--
+                                        A marker, not a checkbox. The
+                                        reference design draws a checkbox
+                                        here, but nothing on this page can
+                                        complete a task — the row opens
+                                        the record where that is done — and
+                                        a checkbox that does not tick is a
+                                        promise the panel cannot keep.
+                                    -->
+                                    <span class="cmt-dash-preview__marker" aria-hidden="true"/>
+                                    <span class="cmt-dash-preview__body">
+                                        <span class="cmt-dash-preview__name" t-esc="item.name"/>
+                                        <span class="cmt-dash-preview__sub" t-if="item.sub" t-esc="item.sub"/>
+                                    </span>
+                                </button>
+                            </li>
+                        </ul>
+                    </section>
+                </div>
+            </t>
+
             <div class="cmt-dashboard__empty" t-else="">
                 <i class="fa fa-th-large cmt-dashboard__empty-icon" role="img"/>
                 <p>No apps to summarise yet. Install an app and its figures appear here.</p>
