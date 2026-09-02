@@ -84,13 +84,26 @@ lets an admin recolour the theme without touching SCSS or rebuilding assets:
   `--bs-link-color`), covering selection surfaces, links, focus rings, form fields, the kanban and
   calendar renderers, the properties and colour-picker widgets, Discuss/chatter, and the loading
   indicator.
-- **Pickers that ship with a brand colour follow Primary until they are chosen.** Button, Button
-  Text, Active App and the three login-action colours (plus their dark twins) all have a brand hex
-  as their field default, and a `default=` on a `config_parameter` field is *written to the
-  database* on the first save — so they used to pin themselves to the shipped indigo behind the
-  admin's back. While one still holds exactly the value it shipped with it is emitted as an alias
-  of the brand instead; picking anything else makes the literal win again. See
-  `_THEME_BRAND_FOLLOWERS`.
+- **Background drives the neutrals, the way Primary drives the brand.** The picker used to move
+  one token, `--cmt-bg`, while the panels, sheets, table rows, hairlines, scrollbars and ink around
+  it stayed the compiled Tailwind grey — and `--cmt-bg-rgb`, the channel form the empty-view scrim
+  reads, stayed `248, 249, 250` however far the canvas moved, because CSS cannot decompose a hex
+  and nothing kept it in step. A pick now re-derives the whole neutral ramp in HSL, plus
+  Bootstrap's `:root` neutrals and the surfaces Odoo compiles from Sass literals, so a tinted
+  canvas comes with sheets, borders and text that belong to it. The ramp is fitted to reproduce
+  `variables.scss` exactly when fed `#f8f9fa` and `dark_mode.scss` exactly when fed `#0b1120`, and
+  it flips direction on a dark pick — choose a near-black canvas for light mode and the ink goes
+  light with it. How far the panels travel toward the canvas scales with how much colour is in it:
+  a near-neutral pick keeps white paper (there is nothing to tint with), a saturated one gets
+  sheets, inputs and chips that visibly belong to it. See `theme_color.derive_surface_vars`.
+- **Pickers that ship with a copy of another token follow it until they are chosen.** Button,
+  Button Text, Active App and the login-action colours have a brand hex as their field default;
+  Sidebar, Top Bar, Search and the login panel have the shipped white, hairline and ink. A
+  `default=` on a `config_parameter` field is *written to the database* on the first save — so they
+  used to pin themselves to the shipped values behind the admin's back, leaving a green Primary
+  next to an indigo Save button and a tinted canvas under a pure-white sidebar. While one still
+  holds exactly the value it shipped with it is emitted as an alias of the token it copies;
+  picking anything else makes the literal win again. See `_THEME_DEFAULT_FOLLOWERS`.
 - An uploadable **sidebar brand image** and a **login background image** (light and dark), stored
   as `ir.attachment` records rather than in `ir.config_parameter`, so no base64 payload rides along
   on every request.
