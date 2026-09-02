@@ -86,7 +86,7 @@ html, body.o_web_client {
 @media (hover: none) {
     .cmt-dashboard .cmt-dashboard__tile:hover {
         transform: none;
-        box-shadow: var(--cmt-shadow-sm), var(--cmt-chrome-inset);
+        box-shadow: var(--cmt-shadow-sm);
 
         &::before {
             opacity: 0;
@@ -98,6 +98,49 @@ html, body.o_web_client {
 
         &::before {
             opacity: 1;
+        }
+    }
+
+    // The hero cards have the same latched-hover problem: they lift and
+    // deepen their shadow, and neither belongs to a finger.
+    .cmt-dashboard .cmt-dash-hero:hover {
+        transform: none;
+        box-shadow: var(--cmt-shadow-md);
+    }
+
+    .cmt-dashboard .cmt-dash-hero:not([disabled]):active {
+        box-shadow: var(--cmt-shadow-lg);
+    }
+
+    // Rows and quick actions only tint on hover — no transform — so
+    // the fill is simply moved from :hover to :active.
+    .cmt-dashboard .cmt-dash-activity__row:hover,
+    .cmt-dashboard .cmt-dash-preview__row:hover,
+    .cmt-dashboard .cmt-dash-actions__item:hover {
+        background: transparent;
+    }
+
+    .cmt-dashboard .cmt-dash-activity__row:active,
+    .cmt-dashboard .cmt-dash-preview__row:active,
+    .cmt-dashboard .cmt-dash-actions__item:active {
+        background: var(--cmt-surface-dim);
+    }
+
+    // The quick action's icon bubble is part of that same latched
+    // state, so it moves across with it.
+    .cmt-dashboard .cmt-dash-actions__item:hover .cmt-dash-actions__icon {
+        background: var(--cmt-surface-highest);
+
+        &::before {
+            background-color: var(--cmt-text-muted);
+        }
+    }
+
+    .cmt-dashboard .cmt-dash-actions__item:active .cmt-dash-actions__icon {
+        background: var(--cmt-primary-light);
+
+        &::before {
+            background-color: var(--cmt-primary);
         }
     }
 
@@ -188,6 +231,7 @@ html, body.o_web_client {
     }
 
     .cmt-dashboard .cmt-dashboard__tile:hover,
+    .cmt-dashboard .cmt-dash-hero:hover,
     .o_kanban_view .o_kanban_renderer .o_kanban_record:not(.o_kanban_ghost):hover:not(.o_dragged) {
         transform: none;
     }
@@ -198,18 +242,37 @@ html, body.o_web_client {
 // 3. Width — wide desktop and up
 // ============================================================
 
-// On a 27-inch monitor `auto-fill` keeps manufacturing 220px columns
-// until the dashboard is a wall of eight small tiles. Widening the
-// track minimum and capping the grid turns the extra pixels into
-// bigger cards instead of more of them.
+// On a 27-inch monitor `auto-fit` keeps stretching three cards across
+// two thousand pixels, and DESIGN.md's fixed-fluid model says content
+// stops at a readable width while the canvas behind it does not. So the
+// bands get a shared cap and a wider gutter rather than more columns.
+//
+// The cap goes on all three bands, not just the metric row: capping one
+// and letting the others run to the viewport edge would step the page
+// in and out down its own left margin.
 @media (min-width: 1600px) {
     .cmt-dashboard {
         padding: 40px;
 
-        .cmt-dashboard__tiles {
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        .cmt-dashboard__top,
+        .cmt-dashboard__tiles,
+        .cmt-dash-chart,
+        .cmt-dashboard__bottom {
             max-width: 1680px;
             gap: 20px;
+        }
+
+        .cmt-dashboard__top,
+        .cmt-dashboard__tiles,
+        .cmt-dash-chart {
+            margin-bottom: 20px;
+        }
+
+        // The plot grows with the page: at 40px of padding the panel is
+        // over 1600px wide, and a 200px chart across that reads as a
+        // strip rather than as a shape.
+        .cmt-dash-chart__plot {
+            height: 240px;
         }
     }
 }
@@ -400,6 +463,8 @@ html, body.o_web_client {
     // Multi-layer shadows under a full-bleed card on a small screen
     // read as haze rather than depth.
     .cmt-dashboard .cmt-dashboard__tile,
+    .cmt-dashboard .cmt-dash-hero,
+    .cmt-dashboard .cmt-dash-panel,
     .cmt-stats-banner .cmt-stat-card {
         box-shadow: var(--cmt-shadow-sm);
     }
@@ -428,19 +493,36 @@ html, body.o_web_client {
             line-height: 26px;
         }
 
-        // Landscape is wide, so two or three tiles fit across — unlike
+        // Landscape is wide, so two or three cards fit across — unlike
         // the single column home_dashboard.scss gives a portrait phone
         // of the same width.
+        .cmt-dashboard__top,
         .cmt-dashboard__tiles {
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         }
 
+        .cmt-dash-hero,
         .cmt-dashboard__tile {
+            min-height: 0;
             padding: 14px;
         }
 
-        .cmt-dashboard__tile-icon {
-            margin-bottom: 8px;
+        // The figures are the only thing worth the vertical room here,
+        // so the decorative half of each card steps aside.
+        .cmt-dash-hero__glyph,
+        .cmt-dashboard__spark {
+            display: none;
+        }
+
+        // The chart stays — it is the one thing on the page that is not
+        // a number, so hiding it would leave a screen of nothing but
+        // figures — but at the height a 360px-tall viewport can spare.
+        .cmt-dash-chart__plot {
+            height: 110px;
+        }
+
+        .cmt-dash-hero__value {
+            font-size: 28px;
         }
     }
 
@@ -480,6 +562,8 @@ html, body.o_web_client {
     }
 
     .cmt-dashboard .cmt-dashboard__tile,
+    .cmt-dashboard .cmt-dash-hero,
+    .cmt-dashboard .cmt-dash-panel,
     .cmt-stats-banner .cmt-stat-card,
     .o_kanban_view .o_kanban_record {
         box-shadow: none !important;

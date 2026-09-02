@@ -109,6 +109,49 @@
     --cmt-warning: #d97706;
     --cmt-danger: #ef4444;
 
+    // ── Dashboard hero cards ─────────────────────────────────
+    // The two gradient cards that lead the landing dashboard
+    // (screen.png). Built out of the brand ramp rather than out of
+    // literals, so they follow the Primary picker like everything else:
+    // pick green and the heroes become a green ramp, with no second
+    // colour to choose.
+    //
+    // Two directions, not one repeated: the cards sit side by side, and
+    // the same gradient twice reads as one wide card cut in half.
+    --cmt-hero-gradient-a: linear-gradient(135deg,
+                                           var(--cmt-primary-dark) 0%,
+                                           var(--cmt-tertiary) 100%);
+    --cmt-hero-gradient-b: linear-gradient(135deg,
+                                           var(--cmt-primary) 0%,
+                                           var(--cmt-primary-dark) 100%);
+    // Ink on those fills. --cmt-on-primary, not white: it is already the
+    // "what sits on a brand fill" decision, and theme_color.py flips it
+    // to the canvas colour when someone picks a pale brand — which is
+    // exactly when white would stop being readable here too.
+    --cmt-hero-ink: var(--cmt-on-primary);
+    // The icon chip on a hero card. A white veil rather than a colour,
+    // so it lifts whatever gradient is underneath by the same amount.
+    --cmt-hero-chip: rgba(255, 255, 255, 0.18);
+
+    // ── Charts ───────────────────────────────────────────────
+    // The dashboard's trend chart. One series is plotted at a time, so
+    // there is no categorical palette to keep apart here — the bars
+    // wear the brand and the chrome around them is drawn from the same
+    // hairline and muted-ink tokens as every other panel, which is what
+    // stops the chart from looking like a widget dropped onto the page.
+    --cmt-chart-bar: var(--cmt-primary);
+    --cmt-chart-bar-hover: var(--cmt-primary-dark);
+    // Gridlines and axis rules: the standard hairline, deliberately not
+    // a colour of their own. They carry no data and must stay behind
+    // the bars.
+    --cmt-chart-grid: var(--cmt-border);
+    // The hover tooltip, inverted against the page so it reads as an
+    // overlay rather than as another card. Dark mode restates both —
+    // inverting a dark canvas gives a white chip, which is a flashbulb
+    // on a night-mode page.
+    --cmt-chart-tip-bg: var(--cmt-text);
+    --cmt-chart-tip-ink: var(--cmt-surface);
+
     // ── Shape ────────────────────────────────────────────────
     // Per the spec's component notes: 8px for buttons/inputs,
     // 12px for cards, 16px for high-interaction surfaces.
@@ -116,6 +159,9 @@
     --cmt-radius-md: 8px;            // buttons, inputs, KPI cards
     --cmt-radius-lg: 12px;           // kanban cards
     --cmt-radius-xl: 16px;
+    // Status pills and other capsules. Per DESIGN.md they take a full
+    // radius so they never read as buttons, which do not.
+    --cmt-radius-full: 9999px;
 
     // ── Elevation ────────────────────────────────────────────
     --cmt-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.02);

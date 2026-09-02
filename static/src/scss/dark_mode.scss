@@ -70,6 +70,42 @@
     --cmt-text: #e2e8f0;
     --cmt-text-muted: #94a3b8;
 
+    // ── Dashboard hero cards ─────────────────────────────────
+    // The light-mode gradients run from the brand to the accent, which
+    // in dark mode are both *lifted* colours — periwinkle into sky —
+    // and a card painted in those is a slab of light on a near-black
+    // page. So the dark heroes are mixed down towards the canvas
+    // instead: the brand keeps its hue and saturation, and only its
+    // lightness comes back to something a white figure can sit on.
+    //
+    // The first attempt at this used --cmt-primary-light and
+    // --cmt-tertiary-container — the container tints — and the cards
+    // came out within a few percent of --cmt-surface: two flat slabs
+    // that read as unstyled panels rather than the page's lead. The
+    // mix percentages below are what put the brand back on them.
+    //
+    // color-mix() rather than a second set of hand-picked hex values,
+    // because these have to follow the Primary picker: a green brand
+    // has to produce green heroes, and no static value can do that.
+    --cmt-hero-gradient-a: linear-gradient(135deg,
+                                           color-mix(in srgb, var(--cmt-primary) 42%, var(--cmt-bg)) 0%,
+                                           color-mix(in srgb, var(--cmt-tertiary) 40%, var(--cmt-bg)) 100%);
+    --cmt-hero-gradient-b: linear-gradient(135deg,
+                                           color-mix(in srgb, var(--cmt-primary) 48%, var(--cmt-bg)) 0%,
+                                           color-mix(in srgb, var(--cmt-primary-dark) 24%, var(--cmt-bg)) 100%);
+    --cmt-hero-ink: var(--cmt-text);
+    --cmt-hero-chip: rgba(255, 255, 255, 0.12);
+
+    // ── Charts ───────────────────────────────────────────────
+    // The bars and gridlines follow --cmt-primary and --cmt-border,
+    // both already lifted above, so they need no restatement. The
+    // tooltip does: light mode inverts it against the page, and
+    // inverting a near-black canvas produces a white chip that flares
+    // on a dark dashboard. So it steps *up* the dark surface ramp
+    // instead, the way every other floating surface here does.
+    --cmt-chart-tip-bg: var(--cmt-surface-highest);
+    --cmt-chart-tip-ink: var(--cmt-text);
+
     // ── Status ───────────────────────────────────────────────
     --cmt-success: #34d399;
     --cmt-warning: #fbbf24;

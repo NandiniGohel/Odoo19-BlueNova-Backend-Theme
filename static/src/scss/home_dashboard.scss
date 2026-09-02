@@ -1,70 +1,484 @@
 // ============================================================
 // Home dashboard — the themed landing client action
 //
+// The layout in screen.png, expressed against DESIGN.md's system: a
+// 16px rhythm, 16px card radius, a single hairline border on every
+// elevated surface, and label-caps for all secondary metadata.
+//
+// Four bands stacked vertically, each laid out on its own terms:
+//
+//   __top            the two gradient hero cards + the activity panel
+//   __tiles          the remaining figures, as metric cards
+//   cmt-dash-chart   a day-by-day column chart, one app at a time
+//   __bottom         quick actions + the preview panel
+//
+// Bands rather than one 12-column grid because the number of cards is
+// not known here — it depends on which apps are installed and what the
+// user may read — and a fixed column count leaves holes in the rows
+// the moment a card is missing. Each band uses auto-fit tracks with a
+// minimum width, so one card or five lay out sensibly with no media
+// query per case.
+//
 // Deliberately built on the same two mixins the rest of the backend
 // uses rather than restating their declarations: cmt-label-sm from
 // base.scss and cmt-masked-icon from apps_sidebar.scss. Both files are
-// appended to web.assets_backend before this one in views/assets.xml,
+// appended to web.assets_backend before this one in __manifest__.py,
 // and Odoo compiles a bundle as one SCSS document, so a mixin defined
 // earlier in the bundle is in scope here.
 //
-// The card treatment is the same brushed-metal language as
-// stats_banner.scss's .cmt-stat-card — chrome border, inset white
-// reflection, shadow lifting on hover. Not shared through a mixin
-// because the banner's cards are laid out inside the kanban's control
-// panel and these are a standalone page grid; only the surface
-// treatment is common, and that is already carried by the tokens.
+// Every colour is a --cmt-* token, which is what makes the page follow
+// Settings > Theme Settings: the pickers repaint the tokens at runtime
+// (views/theme_styles.xml), and a literal here would be the one thing
+// on the dashboard that ignored the configured brand.
 // ============================================================
+
+// The band gap and the card padding, in one place: three grids and a
+// dozen cards read them, and the rhythm only holds if they agree.
+$cmt-dash-gap: 16px;
+$cmt-dash-pad: 20px;
+
 .cmt-dashboard {
     padding: 32px;
-    min-height: 100%;
     background: var(--cmt-bg);
     font-family: var(--cmt-font-sans);
+
+    // ── The page's scroll container ──────────────────────────
+    // Not `min-height: 100%`, which is what this was and why the page
+    // could not be scrolled: core lays the web client out as
+    // `.o_web_client > .o_action_manager { height: 100%; overflow:
+    // hidden }` (web/static/src/webclient/webclient_layout.scss), and
+    // the scrolling underneath that belongs to `> .o_action`, a class
+    // this component never wears — the action service passes it as the
+    // `className` prop and the template renders its own root. So a tall
+    // dashboard grew past the action manager and was simply clipped:
+    // the last band was cut off mid-card with no way to reach it.
+    //
+    // Taking the scroll here rather than adding `o_action` to the root
+    // is deliberate. That class comes with core's own
+    // `overflow: hidden` at a specificity this file cannot outrank
+    // without !important, so the fix would have to be undone again to
+    // work.
+    //
+    // overflow-x stays hidden: the bands are grids that reflow, so any
+    // horizontal overflow is a bug rather than content, and letting it
+    // scroll sideways would hide that instead of showing it.
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    // Reaching the end of the dashboard should not start scrolling the
+    // page behind it.
+    overscroll-behavior: contain;
 
     // ── Header ───────────────────────────────────────────────
     .cmt-dashboard__header {
         margin-bottom: 28px;
     }
 
+    // DESIGN.md's headline-lg: 32px, 600, tight tracking. The greeting
+    // is the page's only display-scale type, so nothing else competes
+    // with it.
     .cmt-dashboard__greeting {
         margin: 0;
-        font-size: 27px;
-        line-height: 36px;
+        font-size: 32px;
+        line-height: 1.2;
         font-weight: 600;
+        letter-spacing: -0.01em;
         color: var(--cmt-text);
     }
 
     .cmt-dashboard__sub {
         @include cmt-label-sm;
-        margin: 4px 0 0;
+        margin: 6px 0 0;
         text-transform: uppercase;
         letter-spacing: 0.1em;
         color: var(--cmt-text-muted);
     }
 
-    // ── Tiles ────────────────────────────────────────────────
-    // auto-fill rather than a fixed column count: the number of tiles
-    // depends on which apps are installed, so anything from one to
-    // seven has to lay out sensibly without a media query per case.
+    // ── Bands ────────────────────────────────────────────────
+    .cmt-dashboard__top,
     .cmt-dashboard__tiles {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 16px;
+        gap: $cmt-dash-gap;
+        margin-bottom: $cmt-dash-gap;
     }
 
-    .cmt-dashboard__tile {
+    // Two hero cards and the activity panel. 300px, not 260: these are
+    // the page's lead, and at the narrower track they start wrapping
+    // into a second row on screens wide enough to hold all three.
+    .cmt-dashboard__top {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+
+    // The metric row takes a smaller minimum than the band above it,
+    // and the difference is doing real work rather than being a taste
+    // call: `auto-fit` collapses a track that holds no items at all, so
+    // as long as the width allows *at least as many tracks as there are
+    // cards*, the cards share one full row and none is left over. At a
+    // 300px minimum a 1600px page fits exactly four, which is how five
+    // metric cards ended up as a row of four and one lonely card beside
+    // a screen of empty canvas.
+    //
+    // The minimum is only the wrap threshold, not the card width: the
+    // 1fr still stretches five cards to ~300px each on that page, so
+    // nothing here turns them into the strip of chips the wider
+    // minimum was guarding against.
+    //
+    // Below about 1300px the count no longer fits and a row breaks
+    // again — unavoidable without knowing how many cards there are,
+    // which depends on which apps are installed. It degrades the right
+    // way though: the narrower the page, the smaller the gap left over.
+    .cmt-dashboard__tiles {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    // The bottom band is two panels of unequal weight — a row of action
+    // buttons wants more room than a three-line list — so it states its
+    // tracks instead of dividing the width evenly. minmax(0, …) rather
+    // than a bare fr: a grid item's default min-width is auto, and a
+    // long record name in the preview list would otherwise push the
+    // track wider than its share.
+    .cmt-dashboard__bottom {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+        gap: $cmt-dash-gap;
+    }
+
+    // ── Hero cards ───────────────────────────────────────────
+    // The two largest figures, on the brand gradient. `overflow: hidden`
+    // is what lets the decorative glyph bleed off the corner without
+    // widening the card.
+    .cmt-dash-hero {
+        position: relative;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
         text-align: left;
-        padding: 20px;
+        min-height: 168px;
+        padding: $cmt-dash-pad + 2px $cmt-dash-pad + 4px;
 
-        background: var(--cmt-surface);
-        border: var(--cmt-chrome-border);
-        border-radius: var(--cmt-radius-lg);
-        box-shadow: var(--cmt-shadow-sm), var(--cmt-chrome-inset);
+        border: 0;
+        border-radius: var(--cmt-radius-xl);
+        background: var(--cmt-hero-gradient-a);
+        color: var(--cmt-hero-ink);
+        box-shadow: var(--cmt-shadow-md);
         // The element is a <button>, so the browser's own control
         // styling has to be cleared before the theme's can show.
+        appearance: none;
+        cursor: pointer;
+        transition: box-shadow .3s ease, transform .15s ease;
+
+        &:hover {
+            box-shadow: var(--cmt-shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--cmt-shadow-lg),
+                        0 0 0 3px rgba(var(--cmt-primary-rgb), 0.45);
+        }
+
+        // No resolvable action behind it: still informative, but it is
+        // not pretending to be a link.
+        &[disabled] {
+            cursor: default;
+
+            &:hover {
+                box-shadow: var(--cmt-shadow-md);
+                transform: none;
+            }
+        }
+
+        // A soft corner sheen, behind the watermark below. This is the
+        // card's depth: a radial gradient rather than a bitmap, so it
+        // stays clean at any card size and costs nothing to scale.
+        //
+        // ::before, not ::after: among positioned siblings at the same
+        // z-index the painter follows document order, and ::after would
+        // put this translucent white *over* the watermark and wash it
+        // out instead of lifting it.
+        &::before {
+            content: "";
+            position: absolute;
+            top: -90px;
+            right: -70px;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            background: radial-gradient(circle,
+                                        rgba(255, 255, 255, 0.16) 0%,
+                                        rgba(255, 255, 255, 0) 70%);
+            pointer-events: none;
+        }
+
+        // The ring the corner watermark sits inside: 116px across,
+        // centred on the 48px glyph (top 22 + 24 = 46, right 24 + 24 =
+        // 48, less half the ring), drawn in the card's own ink.
+        //
+        // On the card and not on .cmt-dash-hero__glyph, where it
+        // belongs by geometry: that element carries a CSS mask, and a
+        // mask clips the element's pseudo-elements along with its
+        // background — a ring drawn there would be cut to the shape of
+        // the app icon and disappear.
+        //
+        // This is what lets the bitmap stay at its clean 2x size
+        // without the top-right of a tall card reading as empty: the
+        // ring is a border, so it is sharp at any size the card takes.
+        &::after {
+            content: "";
+            position: absolute;
+            top: -12px;
+            right: -10px;
+            width: 116px;
+            height: 116px;
+            border: 1px solid currentColor;
+            border-radius: 50%;
+            opacity: 0.14;
+            pointer-events: none;
+        }
+    }
+
+    // The second card takes the other gradient direction — see the
+    // token comment in variables.scss.
+    .cmt-dash-hero--1 {
+        background: var(--cmt-hero-gradient-b);
+    }
+
+    // The app's own artwork, as a watermark in the top-right corner.
+    //
+    // The size is set by the source file, not by the space available.
+    // Everything in static/src/image/icons is a 24x24 PNG, so 48px is
+    // exactly 2x — the largest whole-number step, and the last one that
+    // still resamples cleanly. This started at 132px, bleeding off the
+    // right edge: a 5.5x upscale of a 24px bitmap, which rendered as a
+    // blurred smear cropped in half by the card, and putting it past
+    // the edge made the blur read as a mistake rather than as
+    // decoration. A fractional step (56px, 64px) is the same problem
+    // one notch quieter — the resampler has no pixel grid to land on
+    // and every edge in the artwork softens.
+    //
+    // The corner still carries weight, because the sheen behind it and
+    // the ring below are vector: they scale with the card, the bitmap
+    // does not, and only one of the three had to be sharp.
+    //
+    // currentColor, so it is the card's own ink and needs no token.
+    .cmt-dash-hero__glyph {
+        @include cmt-masked-icon;
+        position: absolute;
+        top: 22px;
+        right: 24px;
+        width: 48px;
+        height: 48px;
+        background-color: currentColor;
+        opacity: 0.22;
+        pointer-events: none;
+    }
+
+    .cmt-dash-hero__head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    // The chip's fill and its artwork cannot live on one element — a
+    // CSS mask clips the element's own background — so the veil is the
+    // chip and the masked icon is its ::before. The --cmt-icon-url set
+    // on the chip inline is inherited by the pseudo-element, which is
+    // what the mask reads.
+    .cmt-dash-hero__chip {
+        position: relative;
+        flex: 0 0 auto;
+        width: 34px;
+        height: 34px;
+        border-radius: var(--cmt-radius-md);
+        background: var(--cmt-hero-chip);
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 8px;
+            @include cmt-masked-icon;
+            background-color: currentColor;
+        }
+    }
+
+    .cmt-dash-hero__label {
+        @include cmt-label-sm;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+        // Opacity, not a lighter colour: the ink flips between white and
+        // the canvas with the brand, and one alpha reads correctly on
+        // both where a second hardcoded tint would not.
+        opacity: 0.88;
+    }
+
+    // margin-top: auto pins the figure to the bottom of the card, so two
+    // heroes whose labels wrap differently still line their numbers up.
+    // Proportional figures, deliberately not tabular-nums. Tabular
+    // gives every digit the width of a zero, which is what keeps a
+    // column of numbers aligned in a list view — and at 44px it makes a
+    // short figure like "3" or "121" sit loose and gappy inside its own
+    // digits. Nothing is aligned under this number, so it takes the
+    // font's real widths. The chart's axis ticks below *are* a column,
+    // and they keep tabular.
+    .cmt-dash-hero__value {
+        margin-top: auto;
+        padding-top: 16px;
+        font-size: 44px;
+        line-height: 1.1;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+
+    // The line under the figure. Either the trend, or — when the server
+    // had no baseline to compute one from — the card's own subtitle, so
+    // the hero is never a label and a number with dead space between
+    // them. Same slot, same type, one notch quieter for the fallback.
+    .cmt-dash-hero__trend {
+        @include cmt-label-sm;
+        display: inline-flex;
+        align-items: center;
+        margin-top: 8px;
+        opacity: 0.85;
+    }
+
+    .cmt-dash-hero__trend--muted {
+        opacity: 0.7;
+    }
+
+    // ── Panels (activity, quick actions, preview) ────────────
+    .cmt-dash-panel {
+        padding: $cmt-dash-pad;
+        background: var(--cmt-surface);
+        border: 1px solid var(--cmt-border);
+        border-radius: var(--cmt-radius-xl);
+        box-shadow: var(--cmt-shadow-sm);
+    }
+
+    .cmt-dash-panel__title {
+        @include cmt-label-sm;
+        margin: 0 0 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+        color: var(--cmt-text-muted);
+    }
+
+    // The preview panel's title shares its line with "View All"; the
+    // title keeps its own bottom margin, so the bar needs none.
+    .cmt-dash-panel__bar {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .cmt-dash-panel__link {
+        padding: 0;
+        border: 0;
+        background: none;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--cmt-primary);
+        cursor: pointer;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    // ── Activity feed ────────────────────────────────────────
+    // "Clean" lists, per DESIGN.md: no rules between rows, a soft hover
+    // fill instead. The negative inline margin lets that fill run to
+    // the panel's padding edge while the text stays aligned with the
+    // title above it.
+    .cmt-dash-activity {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .cmt-dash-activity__row,
+    .cmt-dash-preview__row {
+        display: flex;
+        width: calc(100% + 16px);
+        margin: 0 -8px;
+        padding: 8px;
+        border: 0;
+        background: transparent;
+        border-radius: var(--cmt-radius-md);
+        text-align: left;
+        cursor: pointer;
+        transition: background-color .15s ease;
+
+        &:hover {
+            background: var(--cmt-surface-dim);
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(var(--cmt-primary-rgb), 0.45);
+        }
+    }
+
+    .cmt-dash-activity__row {
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    // Same chip construction as the hero card's, in the brand's soft
+    // container tint rather than a white veil — it sits on a white card
+    // here, not on a gradient.
+    .cmt-dash-activity__icon {
+        position: relative;
+        flex: 0 0 auto;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: var(--cmt-primary-light);
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 7px;
+            @include cmt-masked-icon;
+            background-color: var(--cmt-primary);
+        }
+    }
+
+    .cmt-dash-activity__body {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .cmt-dash-activity__text {
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--cmt-text);
+    }
+
+    .cmt-dash-activity__time {
+        @include cmt-label-sm;
+        color: var(--cmt-text-muted);
+    }
+
+    // ── Metric cards ─────────────────────────────────────────
+    .cmt-dashboard__tile {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        text-align: left;
+        gap: 10px;
+        min-height: 148px;
+        padding: $cmt-dash-pad;
+
+        background: var(--cmt-surface);
+        border: 1px solid var(--cmt-border);
+        border-radius: var(--cmt-radius-xl);
+        box-shadow: var(--cmt-shadow-sm);
         appearance: none;
         cursor: pointer;
         // Anchors the accent bar below.
@@ -78,15 +492,10 @@
         // the tile's contents 4px sideways every time the pointer
         // crosses it. This is out of flow, so nothing moves.
         //
-        // The 1px negative offsets bleed it over the chrome border so
-        // the bar sits flush with the tile's outer edge, and the radius
+        // The 1px negative offsets bleed it over the card border so the
+        // bar sits flush with the tile's outer edge, and the radius
         // matches the tile's own left corners so it reads as part of
         // the card rather than a stripe laid on top.
-        //
-        // Painted with --cmt-primary, which is already #3959b0 in light
-        // and #7c9aff in dark — the two colours the reference designs
-        // use — so one declaration covers both schemes and it follows
-        // the configured Primary if an admin changes it.
         &::before {
             content: "";
             position: absolute;
@@ -95,7 +504,7 @@
             left: -1px;
             width: 4px;
             background: var(--cmt-primary);
-            border-radius: var(--cmt-radius-lg) 0 0 var(--cmt-radius-lg);
+            border-radius: var(--cmt-radius-xl) 0 0 var(--cmt-radius-xl);
             opacity: 0;
             transition: opacity .2s ease;
         }
@@ -110,7 +519,7 @@
         // The shadow is kept because it still does the work in light.
         &:hover {
             background: var(--cmt-surface-highest);
-            box-shadow: var(--cmt-shadow-md), var(--cmt-chrome-inset);
+            box-shadow: var(--cmt-shadow-md);
             transform: translateY(-2px);
 
             &::before {
@@ -120,19 +529,18 @@
 
         &:focus-visible {
             outline: none;
-            box-shadow: var(--cmt-shadow-md), var(--cmt-chrome-inset),
+            box-shadow: var(--cmt-shadow-md),
                         0 0 0 3px rgba(var(--cmt-primary-rgb), 0.35);
         }
 
-        // No resolvable action behind it: still informative, but it is
-        // not pretending to be a link — so it opts out of all three
+        // No resolvable action behind it: it opts out of all three
         // hover signals, not just the two it used to.
         &[disabled] {
             cursor: default;
 
             &:hover {
                 background: var(--cmt-surface);
-                box-shadow: var(--cmt-shadow-sm), var(--cmt-chrome-inset);
+                box-shadow: var(--cmt-shadow-sm);
                 transform: none;
 
                 &::before {
@@ -142,15 +550,20 @@
         }
     }
 
+    .cmt-dashboard__tile-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
     // Single-colour artwork painted through a CSS mask, exactly as the
     // app rail does it — the colour then lives here and can follow
     // hover state instead of being baked into the PNG.
     .cmt-dashboard__tile-icon {
         @include cmt-masked-icon;
-        display: block;
-        width: 28px;
-        height: 28px;
-        margin-bottom: 14px;
+        flex: 0 0 auto;
+        width: 16px;
+        height: 16px;
         background-color: var(--cmt-app-icon);
         transition: background-color .2s ease;
     }
@@ -161,23 +574,513 @@
         background-color: var(--cmt-app-icon-hover);
     }
 
-    .cmt-dashboard__tile-value {
-        font-size: 31px;
-        line-height: 40px;
+    .cmt-dashboard__tile-label {
+        @include cmt-label-sm;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
         font-weight: 600;
-        font-variant-numeric: tabular-nums;
-        color: var(--cmt-text);
+        color: var(--cmt-text-muted);
     }
 
-    .cmt-dashboard__tile-label {
-        font-size: 13px;
-        font-weight: 500;
+    // margin-top: auto here does for the metric row what it does on the
+    // heroes: figures line up across the band whatever the labels do.
+    .cmt-dashboard__tile-figure {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: auto;
+    }
+
+    // Proportional figures, for the reason given on the hero value.
+    .cmt-dashboard__tile-value {
+        font-size: 34px;
+        line-height: 1.1;
+        font-weight: 700;
+        letter-spacing: -0.02em;
         color: var(--cmt-text);
     }
 
     .cmt-dashboard__tile-sub {
         @include cmt-label-sm;
-        margin-top: 2px;
+        color: var(--cmt-text-muted);
+    }
+
+    // ── Sparkline ────────────────────────────────────────────
+    // Seven bars, one per day, heights set inline from sparkBars(). A
+    // flexbox rather than an SVG or a chart library: the shape carries
+    // no axis, no scale and no tooltip, so anything more is weight for
+    // a decoration.
+    // A drawn baseline, so a day with no records reads as a gap in a
+    // series that has a floor rather than as a missing bar. This is
+    // what lets sparkBars() give an empty day zero height instead of
+    // the minimum-height stub it used to, which turned a quiet week
+    // into a dashed line.
+    .cmt-dashboard__spark {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        flex: 0 0 auto;
+        // The surface gap, the same 2px the trend chart uses.
+        gap: 2px;
+        height: 38px;
+        width: 82px;
+        border-bottom: 1px solid var(--cmt-chart-grid);
+    }
+
+    .cmt-dashboard__spark-bar {
+        flex: 1 1 0;
+        min-width: 0;
+        // Rounded data end, square foot on the baseline — the chart's
+        // spec at the chart's scale. 3px and not 4px: these bars are
+        // about 8px wide, and a 4px radius on one is a dome.
+        border-radius: 3px 3px 0 0;
+        background: var(--cmt-primary);
+        opacity: 0.45;
+
+        // Today, at full strength. The one bar in the series a reader
+        // actually looks for, and the ramp gives the shape a direction.
+        &:last-child {
+            opacity: 1;
+        }
+    }
+
+    // ── Status pills ─────────────────────────────────────────
+    // Full radius, per DESIGN.md, so they never read as buttons. Both
+    // tints come off the brand ramp rather than red/green: an outbound
+    // transfer is not an error, and the semantic colours would say it
+    // was.
+    .cmt-dashboard__pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .cmt-dashboard__pill {
+        @include cmt-label-sm;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: var(--cmt-radius-full);
+        font-weight: 600;
+    }
+
+    .cmt-dashboard__pill--in {
+        background: var(--cmt-surface-highest);
+        color: var(--cmt-text-muted);
+    }
+
+    .cmt-dashboard__pill--out {
+        background: var(--cmt-primary-light);
+        color: var(--cmt-on-primary-container);
+    }
+
+    // ── Trend chart ──────────────────────────────────────────
+    // A column per day over the window the server sends, one app's
+    // series at a time, switched by the chips in the header.
+    //
+    // Laid out in CSS rather than drawn in an SVG. The bars are a flex
+    // row inside an absolutely-positioned plot, so the chart reflows
+    // with the panel at any width with no viewBox to keep in step and
+    // no charting library pulled into the backend bundle for a single
+    // series of counts. Everything the geometry needs — the height of
+    // each bar and where each gridline sits — arrives from
+    // home_dashboard.js as a percentage.
+    //
+    // The specs the marks follow: bars capped at 24px so the band's
+    // leftover width stays as air, a 4px radius on the data end and a
+    // square foot at the baseline, a 2px gap in the surface colour
+    // between neighbours, and hairline solid gridlines a step off the
+    // surface. Nothing here is dashed: a dashed gridline reads as a
+    // series.
+    .cmt-dash-chart {
+        margin-bottom: $cmt-dash-gap;
+    }
+
+    // 40px of clearance under the header, not the 16px the rhythm would
+    // suggest. The hover tooltip is anchored to the top of the plot —
+    // the one place it can sit that does not move with the value it is
+    // reporting, and does not cover the bar the reader is pointing at —
+    // so the space it rises into has to be reserved here. Without it
+    // the tooltip lands on the series chips.
+    .cmt-dash-chart__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 40px;
+    }
+
+    // The headline number for whatever is plotted. Smaller than a
+    // metric card's figure on purpose — the chart under it is the
+    // subject here, and two things cannot both lead.
+    .cmt-dash-chart__figure {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .cmt-dash-chart__total {
+        font-size: 28px;
+        line-height: 1.1;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--cmt-text);
+    }
+
+    .cmt-dash-chart__unit {
+        @include cmt-label-sm;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+        color: var(--cmt-text-muted);
+    }
+
+    // ── Series chips ─────────────────────────────────────────
+    // A filter row above the plot, per the interaction spec: the
+    // controls sit on one line over the chart they change, not beside
+    // it or below it.
+    .cmt-dash-chart__tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .cmt-dash-chart__tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border: 1px solid var(--cmt-border);
+        border-radius: var(--cmt-radius-full);
+        background: var(--cmt-surface);
+        color: var(--cmt-text-muted);
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 18px;
+        cursor: pointer;
+        appearance: none;
+        transition: background-color .15s ease, color .15s ease,
+                    border-color .15s ease;
+
+        &:hover {
+            background: var(--cmt-surface-dim);
+            color: var(--cmt-text);
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(var(--cmt-primary-rgb), 0.45);
+        }
+    }
+
+    // The selected series. A filled chip rather than an underline: the
+    // row can wrap onto two lines on a narrow panel, and an underline
+    // on the second row reads as a heading rule.
+    .cmt-dash-chart__tab--on {
+        border-color: transparent;
+        background: var(--cmt-primary-light);
+        color: var(--cmt-on-primary-container);
+    }
+
+    .cmt-dash-chart__tab-icon {
+        @include cmt-masked-icon;
+        flex: 0 0 auto;
+        width: 14px;
+        height: 14px;
+        background-color: currentColor;
+    }
+
+    // ── Plot ─────────────────────────────────────────────────
+    // The left padding is the gutter the y-axis ticks live in; the grid
+    // and the bars are both inset by it, so a tick and the line it
+    // labels are measured from the same edge.
+    $cmt-chart-gutter: 44px;
+
+    .cmt-dash-chart__plot {
+        position: relative;
+        height: 200px;
+        padding-left: $cmt-chart-gutter;
+    }
+
+    .cmt-dash-chart__grid {
+        position: absolute;
+        inset: 0 0 0 $cmt-chart-gutter;
+        pointer-events: none;
+    }
+
+    // Zero height and a top border, not a 1px-tall block: a border is
+    // the one that lands on a device pixel at any zoom level, and a
+    // gridline that renders as a 2px smear at 125% is the first thing
+    // that makes a chart look homemade.
+    .cmt-dash-chart__gridline {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 0;
+        border-top: 1px solid var(--cmt-chart-grid);
+    }
+
+    // The tick sits in the gutter, centred on its own line.
+    .cmt-dash-chart__tick {
+        position: absolute;
+        right: 100%;
+        top: 0;
+        transform: translateY(-50%);
+        padding-right: 10px;
+        @include cmt-label-sm;
+        color: var(--cmt-text-muted);
+    }
+
+    .cmt-dash-chart__bars {
+        position: absolute;
+        inset: 0 0 0 $cmt-chart-gutter;
+        display: flex;
+        align-items: flex-end;
+        // The surface gap between neighbouring bars. One consistent
+        // width, and it is the surface showing through rather than a
+        // stroke drawn around each bar.
+        gap: 2px;
+    }
+
+    // Full-height, so the hover target is the whole column. The bar
+    // itself is what carries the value, but a quiet day is a 6px stub
+    // and a hit area that small is one nobody lands on.
+    .cmt-dash-chart__col {
+        position: relative;
+        flex: 1 1 0;
+        min-width: 0;
+        height: 100%;
+
+        // The hover backdrop — this chart's crosshair. A pseudo-element
+        // so it paints before the bar (it is the element's first child
+        // in paint order) and the bar stays on top of it.
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: var(--cmt-radius-sm);
+            background: var(--cmt-surface-dim);
+            opacity: 0;
+            transition: opacity .15s ease;
+        }
+
+        &:hover::before {
+            opacity: 1;
+        }
+    }
+
+    // Capped at 24px and centred in its column: on a wide monitor the
+    // columns are 40px each, and a bar that fills its slot turns the
+    // series into a solid block with no air in it.
+    .cmt-dash-chart__bar {
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 24px;
+        background: var(--cmt-chart-bar);
+        // Rounded data end, square foot at the baseline.
+        border-radius: 4px 4px 0 0;
+        transition: background-color .15s ease;
+    }
+
+    .cmt-dash-chart__col:hover .cmt-dash-chart__bar {
+        background: var(--cmt-chart-bar-hover);
+    }
+
+    // ── Tooltip ──────────────────────────────────────────────
+    // Anchored to the top of the plot rather than to the top of its
+    // bar, so it appears in the same place whatever the day's value is
+    // — including a zero day, which has no bar to sit on and is exactly
+    // the reading the tooltip is there to give.
+    .cmt-dash-chart__tip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 6px;
+        padding: 6px 10px;
+        border-radius: var(--cmt-radius-md);
+        background: var(--cmt-chart-tip-bg);
+        color: var(--cmt-chart-tip-ink);
+        box-shadow: var(--cmt-shadow-md);
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity .12s ease, visibility .12s ease;
+        z-index: 2;
+    }
+
+    // The two ends of the series have no room to centre into, so they
+    // hang off their own edge instead of over the panel border.
+    .cmt-dash-chart__col:first-child .cmt-dash-chart__tip {
+        left: 0;
+        transform: none;
+    }
+
+    .cmt-dash-chart__col:last-child .cmt-dash-chart__tip {
+        left: auto;
+        right: 0;
+        transform: none;
+    }
+
+    .cmt-dash-chart__col:hover .cmt-dash-chart__tip {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .cmt-dash-chart__tip-day {
+        @include cmt-label-sm;
+        opacity: 0.75;
+    }
+
+    // tabular-nums here and not on the big figures above: the tooltip
+    // moves from column to column under a still pointer, and
+    // proportional digits make the number jitter as it goes.
+    .cmt-dash-chart__tip-value {
+        font-size: 14px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // ── X axis ───────────────────────────────────────────────
+    // First, middle and last day only. At a column every ~30px a date
+    // label is wider than the column it belongs to, so one per day
+    // would either collide or have to be rotated — and the tooltip
+    // already gives the exact day for any column the reader points at.
+    .cmt-dash-chart__axis {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0 0 $cmt-chart-gutter;
+        @include cmt-label-sm;
+        color: var(--cmt-text-muted);
+    }
+
+    // ── Quick actions ────────────────────────────────────────
+    .cmt-dash-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    // flex-basis 88px with grow: five actions spread across the panel,
+    // and a narrower panel wraps them into two rows instead of
+    // squeezing the labels.
+    .cmt-dash-actions__item {
+        flex: 1 1 88px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 6px;
+        border: 0;
+        background: transparent;
+        border-radius: var(--cmt-radius-lg);
+        cursor: pointer;
+        transition: background-color .15s ease;
+
+        &:hover {
+            background: var(--cmt-surface-dim);
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(var(--cmt-primary-rgb), 0.45);
+        }
+    }
+
+    .cmt-dash-actions__icon {
+        position: relative;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: var(--cmt-surface-highest);
+        transition: background-color .15s ease;
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 13px;
+            @include cmt-masked-icon;
+            background-color: var(--cmt-text-muted);
+            transition: background-color .15s ease;
+        }
+    }
+
+    .cmt-dash-actions__item:hover .cmt-dash-actions__icon {
+        background: var(--cmt-primary-light);
+
+        &::before {
+            background-color: var(--cmt-primary);
+        }
+    }
+
+    .cmt-dash-actions__label {
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.3;
+        text-align: center;
+        color: var(--cmt-text);
+    }
+
+    // ── Preview list ─────────────────────────────────────────
+    .cmt-dash-preview {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .cmt-dash-preview__row {
+        align-items: center;
+        gap: 12px;
+    }
+
+    // A marker, not a checkbox — see the note in the template. It still
+    // sits where the reference design's checkbox does, so the rows keep
+    // the same rhythm, and it picks up the brand on hover to show the
+    // row is live.
+    .cmt-dash-preview__marker {
+        flex: 0 0 auto;
+        width: 18px;
+        height: 18px;
+        border: 1.5px solid var(--cmt-border);
+        border-radius: var(--cmt-radius-sm);
+        transition: border-color .15s ease, background-color .15s ease;
+    }
+
+    .cmt-dash-preview__row:hover .cmt-dash-preview__marker {
+        border-color: var(--cmt-primary);
+        background: var(--cmt-primary-light);
+    }
+
+    .cmt-dash-preview__body {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .cmt-dash-preview__name {
+        font-size: 14px;
+        line-height: 1.4;
+        color: var(--cmt-text);
+        // The row is a fixed track in the bottom band's grid, so a long
+        // record name has to end somewhere rather than widen the panel.
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .cmt-dash-preview__sub {
+        @include cmt-label-sm;
         color: var(--cmt-text-muted);
     }
 
@@ -197,23 +1100,76 @@
 }
 
 // ── Responsive ───────────────────────────────────────────────
+// DESIGN.md's mobile rule: 24px side margins compress to 16px and
+// multi-column layouts reflow into a single vertical stack. The band
+// grids already collapse on their own through auto-fit; the bottom
+// band states its tracks, so it is the one that needs telling.
+@media (max-width: 1099.98px) {
+    .cmt-dashboard .cmt-dashboard__bottom {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 @media (max-width: 767.98px) {
     .cmt-dashboard {
         padding: 20px 16px;
 
         .cmt-dashboard__greeting {
-            font-size: 21px;
-            line-height: 30px;
+            font-size: 28px;   // headline-lg-mobile
         }
 
+        .cmt-dashboard__top,
         .cmt-dashboard__tiles {
             grid-template-columns: 1fr;
             gap: 12px;
         }
 
+        .cmt-dashboard__bottom {
+            gap: 12px;
+        }
+
+        .cmt-dash-hero {
+            min-height: 156px;
+        }
+
+        .cmt-dash-hero__value {
+            font-size: 34px;
+        }
+
         .cmt-dashboard__tile-value {
-            font-size: 25px;
-            line-height: 34px;
+            font-size: 28px;
+        }
+
+        // ── The chart on a phone ─────────────────────────────
+        // Thirty columns across ~330px is about 9px each once the
+        // gutter and the gaps are taken out. That still reads as a
+        // shape — the point of the panel here — but the y gutter has
+        // to give up room for it, and the plot loses height so the
+        // chart does not become the whole screen.
+        .cmt-dash-chart__plot {
+            height: 150px;
+            padding-left: 32px;
+        }
+
+        .cmt-dash-chart__grid,
+        .cmt-dash-chart__bars {
+            left: 32px;
+        }
+
+        .cmt-dash-chart__bars {
+            gap: 1px;
+        }
+
+        .cmt-dash-chart__axis {
+            margin-left: 32px;
+        }
+
+        .cmt-dash-chart__tick {
+            padding-right: 6px;
+        }
+
+        .cmt-dash-chart__total {
+            font-size: 24px;
         }
     }
 }
