@@ -118,14 +118,36 @@ lets an admin recolour the theme without touching SCSS or rebuilding assets:
 
 ### Themed dashboard
 
-An optional landing page (`bluenova_dashboard` client action) showing KPI tiles — open
-opportunities, quotations, RFQs, posted invoices, open tasks, transfers to process, active
-employees — for whichever of those apps are installed. Each tile:
+An optional landing page (`bluenova_dashboard` client action), laid out to the reference design in
+[`DESIGN.md`](DESIGN.md) and `screen.png`. Six regions, each built from whichever apps are
+installed:
 
-- is dropped silently if its model isn't installed or the current user can't read it;
-- counts records as the **current user**, never `sudo()`, so record rules apply exactly as they
-  do in the underlying list view;
-- can optionally be set (under Settings) as the page a user lands on right after login.
+| Region | What it shows |
+| --- | --- |
+| Hero cards | The two largest figures, on the brand gradient, with a 30-day trend where there is a baseline to compare against |
+| Metric cards | The remaining figures — open opportunities, quotations, RFQs, posted invoices, open tasks, transfers, employees — each with a seven-day sparkline, and IN/OUT pills on Transfers |
+| Trend chart | A column per day over the last 30 days, one app at a time — chips above the plot switch between the apps that saw any activity, and hovering a column reads out that day |
+| Recent activity | The newest records across everything the user can read; a row opens that record |
+| Quick actions | "New …" shortcuts, one per model the user may **create**, plus Settings for an administrator |
+| Preview | The user's own open tasks — falling back to their pipeline, then their quotations — with a *View All* into the underlying action |
+
+Throughout:
+
+- a card, panel or row is dropped silently if its model isn't installed or the current user can't
+  read it, so every region degrades on its own and a bare database falls through to the empty state;
+- records are counted as the **current user**, never `sudo()`, so record rules apply exactly as
+  they do in the underlying list view;
+- every colour is a `--cmt-*` token — including the hero gradients, which are derived from the
+  brand ramp — so the page follows whatever is picked under **Settings → Theme Settings**, in both
+  light and dark mode;
+- anything counted **by creation date** — the hero trend, the sparklines, the chart and the
+  activity feed — is counted against a tile's `history` domain rather than its needs-attention
+  one, so records that have since been confirmed, closed or validated stay in the history they
+  belong to (see `_history_domain` in `models/theme_dashboard.py`);
+- the page takes its own scrolling: the client action's root is not core's `.o_action`, whose
+  ancestor is `overflow: hidden`, so a dashboard taller than the viewport would otherwise be
+  clipped rather than scrolled;
+- it can optionally be set (under Settings) as the page a user lands on right after login.
 
 ### Themed login, signup and public pages
 
@@ -251,10 +273,21 @@ Apps with no entry fall back to their own Odoo icon, then to `generic-app.svg`.
 ### Add a tile to the dashboard
 
 Tiles are declared as plain data in the `_TILES` list in
-[`models/theme_dashboard.py`](models/theme_dashboard.py) — model, domain, icon and the action to
-open on click. A new entry follows the same read-access and try/except guards as the existing
-ones, so a tile for a model that isn't installed, or that the viewing user can't read, is simply
-dropped rather than shown broken.
+[`models/theme_dashboard.py`](models/theme_dashboard.py) — model, domain, singular noun, icon and
+the action to open on click, plus optional `pills` for an in/out style breakdown. A new entry
+follows the same read-access and try/except guards as the existing ones, so a tile for a model
+that isn't installed, or that the viewing user can't read, is simply dropped rather than shown
+broken. One entry feeds five regions at once: it is a candidate for a hero card (the two largest
+figures win), a metric card, a series on the trend chart, the activity feed and a quick action.
+
+If the tile's `domain` filters on **state** rather than on what the record *is*, give the entry a
+`history` domain with those clauses removed. That is the domain every by-creation-date reading
+uses, and without it the record leaves its own history behind as it progresses — which does not
+merely lose rows, it loses more of them the further back you look, sagging the chart to the left
+and reporting growth in the trend line on a database where nothing changed.
+
+The preview panel has its own list, `_PREVIEW_SOURCES`, in preference order — the first source
+that is installed, readable and non-empty wins.
 
 ## Project structure
 
