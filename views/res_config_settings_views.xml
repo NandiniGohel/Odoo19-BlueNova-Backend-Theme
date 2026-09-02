@@ -260,7 +260,7 @@
                     <block title="Light Mode Colors" name="cmt_light_block">
 
                         <setting string="Core Colors"
-                                 help="Global theme foundation colors used throughout backend views. Primary also drives its own hover, pressed, tint and focus-ring shades, the sidebar app-icon highlights, and the brand color Odoo's own components use — badges, links and progress bars — so one pick repaints the whole brand. Button and Active App follow Primary until you pick a colour for them yourself.">
+                                 help="Global theme foundation colors used throughout backend views. Primary also drives its own hover, pressed, tint and focus-ring shades, the sidebar app-icon highlights, and the brand color Odoo's own components use — badges, links and progress bars — so one pick repaints the whole brand. Background drives the neutrals the same way: the panels, sheets, table rows, hairlines and scrollbars are re-derived from it, and the text colours follow it too — including flipping to light ink if you choose a dark canvas — until you pick a Text colour yourself. Button and Active App follow Primary until you pick a colour for them yourself.">
                             <div class="mt-2">
                                 <div class="cmt-setting-row">
                                     <label for="theme_color_primary" class="o_light_label mb-0"/>

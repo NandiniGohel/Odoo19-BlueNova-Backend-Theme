@@ -39,6 +39,280 @@ METRIC_BOUNDS = {
     "weight": (100, 900),  # CSS font-weight keywords, numeric form
 }
 
+# ── The light-mode tint layer ────────────────────────────────────
+#
+# Moving the tokens is not enough on its own. Odoo compiles a great
+# many backend surfaces from `$o-view-background-color`,
+# `$o-webclient-background-color` and `$body-bg` — Sass literals,
+# resolved at build time, that no custom property can reach. In dark
+# mode that is what scss/dark_mode.scss's "Layer 3" exists to fix, and
+# the light scheme never needed the same treatment because its
+# literals *were* the theme's colours: core paints white, and
+# --cmt-surface was white.
+#
+# That stops being true the moment someone picks a canvas. The tokens
+# below it all follow (see theme_color.derive_surface_vars), but the
+# form sheet, the chatter, the list table and the dialogs keep the
+# compiled white, and the result is the mismatch this feature was
+# reported for: a tinted canvas with white panels floating on it and
+# black ink that no longer belongs to either.
+#
+# So the two groups below mirror dark_mode.scss's Layer 3 for the
+# light scheme — same selectors, same reasons, written against the
+# same tokens, and !important for the same reason it is there: these
+# override compiled core rules whose specificity and !important flags
+# are not knowable from here.
+#
+# Emitted from Python rather than added to the bundle because it must
+# be *conditional*. A permanent `.o_content { background: var(--cmt-bg) }`
+# in the SCSS would repaint an untouched install — core's .o_content is
+# white, the token is #f8f9fa — and "a default install looks exactly as
+# it did" is the invariant this whole feature is built around. The
+# block is only rendered when a Background has actually been picked,
+# so an untouched theme never sees a byte of it.
+#
+# Everything is scoped under .o_web_client on purpose: _get_theme_css()
+# is also rendered into the login and public pages, which have their
+# own surface tokens (--cmt-login-bg, --cmt-login-card-bg) and their
+# own .card and .modal-content to lose to an unscoped rule.
+
+# Regions that read as the canvas the record sits on.
+_TINT_CANVAS_SELECTORS = (
+    "",                        # .o_web_client itself
+    " .o_action_manager",
+    " .o_view_controller",
+    " .o_content",
+    " .o_form_view_container",
+    " .o_form_view .o_form_sheet_bg",
+    " .o_list_view",
+    " .o_list_renderer",
+    " .o_kanban_view",
+    " .o_kanban_renderer",
+    " .o_pivot_view",
+    " .o_activity_view",
+    " .o_attachment_preview",
+    " .o_calendar_sidebar_container",
+    " .o_pivot",
+    " .settings",
+    " .o-bg-body",
+    # The chatter sits directly on the record background rather than on
+    # a raised surface — the strips either side of the thread and the
+    # band under the last message are the scrolling element's own
+    # background, so they show this and nothing else. Discuss is built
+    # the same way, one level up.
+    " .o-mail-ChatterContainer",
+    " .o-mail-Form-chatter",
+    " .o-mail-Thread",
+    " .o-mail-Discuss-core",
+    " .o-mail-DiscussContent-core",
+)
+
+# Regions that read as raised paper on top of it.
+_TINT_SURFACE_SELECTORS = (
+    " .o_form_view .o_form_sheet",
+    # A form declared without a <sheet> gets .o_form_nosheet on the
+    # renderer instead and that class does the sheet's job — different
+    # class, same surface (see the same pair in dark_mode.scss).
+    " .o_form_view.o_form_nosheet",
+    " .o_form_view .o_form_nosheet",
+    " .o_form_view .o_form_statusbar",
+    " .o_notebook > .o_notebook_headers",
+    # The one place this parts company with dark_mode.scss, which puts
+    # an x2many list on the canvas. There the two differ by a shade and
+    # the choice barely reads; here the canvas is whatever was picked,
+    # and a list embedded in a sheet is *inside* the paper — sending it
+    # to the canvas paints a slab of raw brand colour across the middle
+    # of the record, under the rows and out to the edges of the
+    # notebook page. Higher specificity than the bare .o_list_renderer
+    # in the canvas group above, so this wins for the embedded case
+    # and the standalone list view keeps the canvas.
+    " .o_field_x2many .o_list_renderer",
+    " .o_search_panel",
+    " .o_cp_pager",
+    " .o-mail-Chatter-top",
+    " .o_dialog .modal-content",
+    " .modal-content",
+    " .o_popover",
+    " .popover",
+    " .o_notification",
+    " .card",
+    " .dropdown-menu",
+    " .o-dropdown--menu",
+    " .o-autocomplete--dropdown-menu",
+    " .o_datetime_picker",
+    " .o_technical_modal .modal-content",
+    " .o_settings_container",
+    " .o_setting_box",
+    " .settings_tab",
+    " .list-group",
+    " .list-group-item:not(.active)",
+    " .o_kanban_quick_create",
+    " .o_column_quick_create .o_quick_create_folded",
+    " .o_column_quick_create .o_quick_create_unfolded",
+    " .o_field_html .note-editable",
+    " .fc-scroller-harness",
+    " .fc-popover",
+    " .o-mail-Discuss-header",
+    " .o-mail-DiscussContent-header",
+    " .o-mail-Discuss-threadContainerHeader",
+    " .o-mail-Message.o-card",
+    " .o-mail-NotificationItem",
+    # Odoo's and Bootstrap's own white utilities. These are the reason
+    # a white box survives in places no component selector reaches —
+    # they are sprinkled through core markup as plain classes, and each
+    # one is a literal white compiled into the bundle. dark_mode.scss
+    # retints exactly these four for the same reason.
+    #
+    # Their dark counterparts (.bg-black, .bg-900, .bg-800) are
+    # deliberately absent: dark mode inverts those because a
+    # near-black utility on a near-black canvas is invisible, while in
+    # a light scheme they are doing their job already.
+    " .bg-view",
+    " .bg-white",
+    " .bg-light",
+    " .bg-100",
+)
+
+
+# Recessed fills: table headers and footers, folded columns, the
+# disabled cells of a calendar.
+_TINT_DIM_SELECTORS = (
+    " thead > tr > th",
+    " .o_pivot table thead th",
+    " .o_pivot_header_cell_closed",
+    " .o_pivot_header_cell_opened",
+    " .o_kanban_group.o_column_folded",
+    " .o_calendar_disabled",
+    " .fc-daygrid-week-number",
+    " .o_activity_view_table_footer",
+)
+
+# Hover and emphasis fills — the step above a surface, not below it.
+# Rows, menu items and message cards under the pointer, and the few
+# chips core paints a shade darker than their container.
+_TINT_HIGHEST_SELECTORS = (
+    " .dropdown-item:hover",
+    " .dropdown-item:focus",
+    " .o-dropdown--menu .dropdown-item:hover",
+    " .o-dropdown--menu .dropdown-item.focus",
+    " .o_data_row:hover > td",
+    " .settingSearchHeader",
+    " .o_column_progress",
+    " .o_kanban_counter .progress",
+    " .o-mail-DiscussSidebar-item:hover",
+    " .o-mail-Message:hover",
+    " .o-mail-NotificationItem:hover",
+    " .o_activity_record:hover",
+    " .fc-popover-header",
+    " .fc-list-day-cushion",
+    " .o_record_selection_tooltip",
+)
+
+# The breadcrumb strip, which gets neither: it is structure, not a
+# surface, and every part of it should let the control panel's canvas
+# through. Core hands some of these a white utility class, which is
+# what leaves a white slab around the parent crumb once the canvas is
+# no longer white — and painting them a surface colour instead would
+# only trade a white box for a pale one. They are listed after the
+# utilities above and carry more class selectors than the bare
+# .bg-white, so they win where the two meet.
+_TINT_TRANSPARENT_SELECTORS = (
+    " .o_control_panel .o_control_panel_main",
+    " .o_control_panel .o_control_panel_breadcrumbs",
+    " .o_control_panel .o_control_panel_main_buttons",
+    " .o_control_panel .o_control_panel_breadcrumbs_actions",
+    " .o_control_panel .o_breadcrumb",
+    " .o_control_panel .breadcrumb",
+    " .o_control_panel .breadcrumb-item",
+    " .o_control_panel .o_last_breadcrumb_item",
+)
+
+
+def _tint_rule(scope, selectors, declarations):
+    """One rule: every selector under ``scope``, sharing a body."""
+    return "%s {\n%s\n}" % (
+        ",\n".join("%s%s" % (scope, sel) for sel in selectors),
+        "\n".join("    %s" % decl for decl in declarations),
+    )
+
+
+def _render_dark_tint_css(selector):
+    """The one correction the dark scheme needs on a picked canvas.
+
+    Dark mode has carried its own Layer 3 all along, and now that its
+    literals are written against the tokens (see the Surfaces block in
+    scss/dark_mode.scss) a picked canvas reaches all of it without any
+    help from here. One placement does not survive the move, though:
+    dark_mode.scss puts an x2many list inside a form on the *canvas*,
+    which is right when canvas and surface are one shade apart, and
+    turns into a slab of raw colour across the middle of the record
+    when someone picks a saturated one.
+
+    Emitted here rather than changed in the stylesheet because the
+    shipped dark theme is not wrong — #0b1120 under those rows is a
+    deliberate, near-invisible step down from #131c31, and rewriting it
+    would change how an untouched install looks in order to fix a case
+    it does not have.
+    """
+    return _tint_rule(
+        "%s .o_web_client" % selector,
+        (" .o_field_x2many .o_list_renderer",),
+        ("background-color: var(--cmt-surface) !important;",),
+    )
+
+
+def _render_surface_tint_css(selector):
+    """The light scheme's Layer 3, for a canvas that has been picked.
+
+    Nothing here is interpolated from stored data — every value is a
+    var() naming one of this module's own tokens — so unlike the
+    declaration blocks this is a constant, and the validation the
+    colours go through has already happened by the time they reach the
+    custom properties these rules read.
+
+    :param str selector: the scheme's root selector, so the block
+        cannot leak into the scheme it was not rendered for
+    :returns: str, ready to concatenate onto the token block
+    """
+    scope = "%s .o_web_client" % selector
+    return "\n\n".join((
+        _tint_rule(scope, _TINT_CANVAS_SELECTORS, (
+            "background-color: var(--cmt-bg) !important;",
+            "color: var(--cmt-text);",
+        )),
+        _tint_rule(scope, _TINT_SURFACE_SELECTORS, (
+            "background-color: var(--cmt-surface) !important;",
+            "color: var(--cmt-text);",
+            "border-color: var(--cmt-border);",
+        )),
+        # The list table paints through variables of its own, which is
+        # the only reason its rows and its sticky header do not need
+        # the !important the two groups above do.
+        _tint_rule(scope, (" .o_list_renderer .o_list_table",), (
+            "--table-bg: var(--cmt-surface);",
+            "--ListRenderer-thead-bg-color: var(--cmt-surface-dim);",
+            "--ListRenderer-tfoot-bg-color: var(--cmt-surface-dim);",
+            "color: var(--cmt-text);",
+        )),
+        _tint_rule(scope, (" .o_list_renderer .o_list_table thead > tr > th",), (
+            "background-color: var(--cmt-surface-dim) !important;",
+            "color: var(--cmt-text-muted) !important;",
+            "border-color: var(--cmt-border);",
+        )),
+        _tint_rule(scope, _TINT_DIM_SELECTORS, (
+            "background-color: var(--cmt-surface-dim) !important;",
+        )),
+        _tint_rule(scope, _TINT_HIGHEST_SELECTORS, (
+            "background-color: var(--cmt-surface-highest) !important;",
+        )),
+        _tint_rule(scope, _TINT_TRANSPARENT_SELECTORS, (
+            "background-color: transparent !important;",
+        )),
+        _tint_rule(scope, (" .dropdown-divider", " hr"), (
+            "border-color: var(--cmt-border);",
+        )),
+    ))
+
 
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
@@ -157,19 +431,25 @@ class ResConfigSettings(models.TransientModel):
         "theme_color_danger",
     )
 
-    # ── Pickers that follow Primary until they are chosen ────────
-    # Ten of the pickers above ship with a *brand* colour as their
-    # field default: Button and Active App are the shipped indigo,
-    # Login Button is its container shade, and the three text fields
-    # are the ink that goes on them.
+    # ── Pickers that follow a base token until they are chosen ───
+    # Most of the pickers above ship with a field default that is not a
+    # value of its own but a *copy* of one: Button and Active App are
+    # the shipped indigo, Login Button its container shade, Sidebar and
+    # Top Bar Background the shipped white, Search Border the shipped
+    # hairline, Home Title the shipped ink. Every one of them is
+    # declared in variables.scss as an alias of the token it copies,
+    # which is why an untouched install has never needed them.
     #
-    # A `default=` on a config_parameter field is not inert. The first
-    # time anyone saves this screen, set_values() writes every field —
-    # including the ones nobody touched — so those ten literals land in
-    # ir.config_parameter and are emitted from then on. The effect is
-    # that picking a green Primary repaints the theme but leaves the
-    # Save button, the current app in the sidebar and the login action
-    # in the old indigo, with nothing on screen to explain why.
+    # A `default=` on a config_parameter field is not inert, though.
+    # The first time anyone saves this screen, set_values() writes every
+    # field — including the ones nobody touched — so all of those
+    # literals land in ir.config_parameter and are emitted from then on,
+    # frozen at whatever the theme happened to ship. The effect is that
+    # picking a green Primary repaints the theme but leaves the Save
+    # button, the current app in the sidebar and the login action in the
+    # old indigo, and picking a canvas repaints the theme but leaves the
+    # sidebar, the top bar and the login panel a pure white that now
+    # belongs to nothing on the screen — with nothing to explain why.
     #
     # So: while one of these still holds exactly the value it shipped
     # with, it is emitted as the *alias* variables.scss declares for it
@@ -180,10 +460,21 @@ class ResConfigSettings(models.TransientModel):
     # to it.
     #
     # The one visible consequence: an admin who deliberately re-picks
-    # the shipped indigo gets the derived brand instead. That is the
-    # same colour on a default install, and on a customised one it is
-    # the more likely intent.
-    _THEME_BRAND_FOLLOWERS = {
+    # the shipped indigo, or the shipped white, gets the derived value
+    # instead. That is the same colour on a default install, and on a
+    # customised one it is the more likely intent.
+    #
+    # Fields whose CSS property the ramps *themselves* produce
+    # (--cmt-text, --cmt-text-muted) are not here: there is no alias to
+    # emit for a base token, so _render_theme_css() handles that case
+    # by emitting nothing and letting the derived value stand.
+    #
+    # A dark twin does not always follow the same token as its light
+    # one — Search Background is the surface in light and the dim
+    # surface in dark — so the two halves are listed separately rather
+    # than generated from one list of names.
+    _THEME_DEFAULT_FOLLOWERS = {
+        # ── Brand ────────────────────────────────────────────────
         "theme_color_button": "var(--cmt-primary)",
         "theme_color_button_text": "var(--cmt-on-primary)",
         "theme_color_active_app": "var(--cmt-primary)",
@@ -194,6 +485,32 @@ class ResConfigSettings(models.TransientModel):
         "theme_color_active_app_dark": "var(--cmt-primary)",
         "theme_color_auth_action_bg_dark": "var(--cmt-on-primary-container)",
         "theme_color_auth_action_text_dark": "var(--cmt-on-primary)",
+        # ── Neutrals ─────────────────────────────────────────────
+        "theme_color_text_hover": "var(--cmt-text)",
+        "theme_color_topbar_bg": "var(--cmt-surface)",
+        "theme_color_topbar_text": "var(--cmt-text-muted)",
+        "theme_color_search_bg": "var(--cmt-surface)",
+        "theme_color_search_text": "var(--cmt-text)",
+        "theme_color_search_placeholder": "var(--cmt-outline)",
+        "theme_color_search_border": "var(--cmt-border)",
+        "theme_color_sidebar_bg": "var(--cmt-surface)",
+        "theme_color_login_bg": "var(--cmt-bg)",
+        "theme_color_login_card_bg": "var(--cmt-surface)",
+        "theme_color_home_title": "var(--cmt-text)",
+        "theme_color_home_lead": "var(--cmt-text-muted)",
+        "theme_color_topbar_bg_dark": "var(--cmt-surface)",
+        "theme_color_topbar_text_dark": "var(--cmt-text-muted)",
+        "theme_color_search_bg_dark": "var(--cmt-surface-dim)",
+        "theme_color_search_text_dark": "var(--cmt-text)",
+        "theme_color_search_placeholder_dark": "var(--cmt-outline)",
+        "theme_color_search_border_dark": "var(--cmt-border)",
+        "theme_color_sidebar_bg_dark": "var(--cmt-surface)",
+        "theme_color_login_bg_dark": "var(--cmt-bg)",
+        "theme_color_login_card_bg_dark": "var(--cmt-surface)",
+        "theme_color_home_lead_dark": "var(--cmt-text-muted)",
+        # Text Hover and Home Title have no dark entry on purpose:
+        # their dark defaults (#f8fafc) are a deliberate step brighter
+        # than the dark ink token, not a copy of it.
     }
 
     # ── Numbers, not colours ─────────────────────────────────────
@@ -627,15 +944,29 @@ class ResConfigSettings(models.TransientModel):
         `:root[data-cmt-theme="dark"]` blocks would otherwise be beaten
         by a bare `:root` rule arriving later in the document.
         """
-        return self._render_theme_css(
-            ':root:not([data-cmt-theme="dark"])',
+        selector = ':root:not([data-cmt-theme="dark"])'
+        surface = self._surface_derived_vars("theme_color_background")
+        derived = self._brand_derived_vars("theme_color_primary")
+        derived.update(surface)
+
+        css = self._render_theme_css(
+            selector,
             self._THEME_CSS_VARS,
             (
                 ("--cmt-sidebar-brand-image", BRAND_IMAGE_NAME),
                 ("--cmt-login-bg-image", LOGIN_BG_IMAGE_NAME),
             ),
-            self._brand_derived_vars("theme_color_primary"),
+            derived,
         )
+        # A picked canvas needs more than tokens: the surfaces Odoo
+        # compiles from Sass literals cannot read one. See the tint
+        # layer at the top of this module for why that block is
+        # rendered here rather than living in the bundle, and why it
+        # appears for the light scheme only — dark_mode.scss has
+        # carried the dark half of it all along.
+        if css and surface:
+            css = Markup("%s\n\n%s" % (css, _render_surface_tint_css(selector)))
+        return css
 
     @api.model
     def _get_theme_css_dark(self):
@@ -661,15 +992,26 @@ class ResConfigSettings(models.TransientModel):
             fname: self._THEME_CSS_VARS[fname]
             for fname in self._THEME_SHARED_COLOR_FIELDS
         })
-        return self._render_theme_css(
-            ':root[data-cmt-theme="dark"]',
+        selector = ':root[data-cmt-theme="dark"]'
+        surface = self._surface_derived_vars("theme_color_background_dark")
+        derived = self._brand_derived_vars("theme_color_primary_dark", dark=True)
+        derived.update(surface)
+
+        css = self._render_theme_css(
+            selector,
             color_vars,
             (
                 ("--cmt-sidebar-brand-image", BRAND_IMAGE_NAME),
                 ("--cmt-login-bg-image", LOGIN_BG_IMAGE_DARK_NAME),
             ),
-            self._brand_derived_vars("theme_color_primary_dark", dark=True),
+            derived,
         )
+        # Far less than the light scheme needs — dark_mode.scss is
+        # already written against these tokens — but not nothing. See
+        # _render_dark_tint_css.
+        if css and surface:
+            css = Markup("%s\n\n%s" % (css, _render_dark_tint_css(selector)))
+        return css
 
     @api.model
     def _get_theme_metrics_css(self):
@@ -805,6 +1147,44 @@ class ResConfigSettings(models.TransientModel):
         return derived
 
     @api.model
+    def _surface_derived_vars(self, background_field):
+        """Everything the Background picker repaints *besides* --cmt-bg.
+
+        The neutral half of what _brand_derived_vars() does for the
+        brand, and it exists for the same reason: the picker moved one
+        token and the dozen neutrals keyed to it did not follow. A
+        green canvas kept white sheets, the shipped grey hairlines,
+        near-black ink and — the one that gave this its name — a
+        --cmt-bg-rgb still reading 248, 249, 250, because CSS cannot
+        decompose a hex and variables.scss says in as many words that
+        the channel form is kept in step by hand.
+
+        :param str background_field: which Background field this scheme
+            reads — the light block derives from
+            theme_color_background, the dark block from
+            theme_color_background_dark
+        :returns: ``{css property: value}``, empty when the canvas is
+            untouched
+
+        A picker still holding the value it shipped with is treated as
+        untouched, exactly as _THEME_DEFAULT_FOLLOWERS treats one: the
+        first save of this screen writes every field, so an admin who
+        never opened the Background swatch still has "#f8f9fa" in
+        ir.config_parameter, and deriving a ramp from it would be
+        answering a question nobody asked. The ramp reproduces the
+        shipped values from that input anyway — that is the fit the
+        tables in theme_color.py are checked against — but returning
+        nothing here also skips the tint layer, which is the part that
+        would actually change an untouched install.
+        """
+        background = self._stored_color(background_field)
+        if not background:
+            return {}
+        if background.lower() == self._field_default(background_field).lower():
+            return {}
+        return theme_color.derive_surface_vars(background)
+
+    @api.model
     def _render_theme_css(self, selector, color_vars, image_vars,
                           derived_vars=None):
         """Body shared by the light and dark emitters above.
@@ -825,9 +1205,10 @@ class ResConfigSettings(models.TransientModel):
         :returns: Markup, or "" when nothing has been customised
         """
         icp = self.env["ir.config_parameter"].sudo()
+        derived = derived_vars or {}
         declarations = [
             "    %s: %s;" % (css_var, value)
-            for css_var, value in (derived_vars or {}).items()
+            for css_var, value in derived.items()
         ]
 
         for fname, css_var in color_vars.items():
@@ -839,13 +1220,23 @@ class ResConfigSettings(models.TransientModel):
             # it here in a second place.
             if not value:
                 continue
-            # Still holding the brand colour it shipped with? Emit the
-            # alias instead of the literal, so it tracks Primary — see
-            # _THEME_BRAND_FOLLOWERS for why a stored default is not the
-            # same thing as a choice.
-            follows = self._THEME_BRAND_FOLLOWERS.get(fname)
+            # Still holding the value it shipped with? Emit the alias
+            # instead of the literal, so it tracks the token it was a
+            # copy of — see _THEME_DEFAULT_FOLLOWERS for why a stored
+            # default is not the same thing as a choice.
+            follows = self._THEME_DEFAULT_FOLLOWERS.get(fname)
             if follows and value.lower() == self._field_default(fname).lower():
                 declarations.append("    %s: %s;" % (css_var, follows))
+                continue
+            # Same rule, for a token the ramp above already answered: a
+            # field still holding its shipped default is the absence of
+            # a choice, and a derived value is a coordinated one. The
+            # literal would otherwise be emitted second and win at
+            # equal specificity — which is how picking a dark canvas
+            # for the light scheme left #111827 ink on it, untouched
+            # Text picker and all.
+            if css_var in derived and \
+                    value.lower() == self._field_default(fname).lower():
                 continue
             # Re-checked on the way out, not just on the way in: a value
             # could have been written straight to ir.config_parameter by
