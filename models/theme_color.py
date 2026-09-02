@@ -306,3 +306,272 @@ def derive_icon_vars(primary):
         "--cmt-app-icon-active": to_hex(
             adjust(rgb, min_sat=0.88, lightness=1.05, clamp_l=(0.40, 0.58))),
     }
+
+
+# ── The neutral ramp ─────────────────────────────────────────────
+#
+# What derive_surface_vars() below builds out of the Background
+# picker, and the mirror image of the brand ramp above: one decision,
+# a dozen coordinated values.
+#
+# Every entry is ``(css property, Δhue, Δlightness, saturation
+# factor, saturation cap)``, and every Δlightness is measured from
+# *paper* — the
+# lightest surface in the scheme, not from the canvas. That anchor is
+# what makes the ramp survive an arbitrary pick: a mid-green canvas at
+# L .73 still gets a near-white sheet, a hairline border a shade under
+# it and near-black ink, because those three are spaced against each
+# other rather than against whatever the admin chose. Offsets from the
+# canvas would have collapsed the whole ramp into the canvas the
+# moment someone picked something that was not already nearly white.
+#
+# The numbers are fitted, not invented: fed #f8f9fa the light table
+# reproduces the Surfaces and Text blocks of variables.scss, and fed
+# #0b1120 the dark table reproduces the same blocks in dark_mode.scss
+# — both exactly, every channel of every token. That is the check that
+# matters — a theme whose Background is left alone must look exactly
+# as it did before this derivation existed, and the skip in
+# _surface_derived_vars() guarantees the untouched case outright.
+#
+# Saturation is a *factor* on the picked colour's own, capped: the
+# shipped greys carry a little of their hue (Tailwind's slate ramp,
+# not neutral grey), so a factor keeps that relationship at any input,
+# while the cap stops a vivid brand-as-canvas from turning the muted
+# icon colour and the body ink into more of the same shout. Ink runs
+# hotter than the mid-ramp on purpose — #111827 is a saturated
+# near-black next to a barely-tinted #9ca3af, and that is what the
+# 2.36 factor preserves.
+#
+# The light table's paper carries a saturation even though the colour
+# it has to reproduce, #ffffff, has none. At that lightness the
+# saturation is free — hsl(210, 20%, 99.9%) rounds to #ffffff on every
+# channel — so the shipped white is reproduced either way, and the
+# factor is what decides whether a *tinted* canvas gets a sheet that
+# belongs to it or a neutral off-white slab sitting on top of it.
+#
+# The hue column is small and easy to mistake for noise: the shipped
+# ramps are not one hue held constant, they drift about ten degrees
+# from the canvas toward the ink (#f8f9fa is 210°, #111827 is 221°).
+# Reproducing that drift is what takes the fit from "close" to exact,
+# and it carries the same relationship onto whatever hue is picked
+# instead — a colorsys hue is a turn, not degrees, hence the /360.
+_RAMP_ON_LIGHT = (
+    ("--cmt-surface",           0.0, 0.0000, 1.20, 0.35),
+    ("--cmt-surface-dim",       0.0, -0.0184, 1.20, 0.35),
+    ("--cmt-surface-highest",  10.0, -0.0400, 0.86, 0.30),
+    ("--cmt-border",           10.0, -0.0890, 0.78, 0.28),
+    ("--cmt-scrollbar-thumb",   6.0, -0.1596, 0.73, 0.26),
+    ("--cmt-outline",           7.9, -0.3498, 0.64, 0.24),
+    ("--cmt-text-muted",        5.0, -0.6576, 0.83, 0.30),
+    ("--cmt-text",             10.9, -0.8890, 2.36, 0.45),
+)
+_RAMP_ON_DARK = (
+    ("--cmt-surface",          -0.9, 0.0000, 0.90, 0.55),
+    ("--cmt-surface-dim",      -2.1, -0.0255, 0.93, 0.55),
+    ("--cmt-surface-highest",  -5.7, 0.0412, 0.67, 0.45),
+    ("--cmt-border",           -4.0, 0.0804, 0.70, 0.45),
+    ("--cmt-scrollbar-thumb",  -7.6, 0.1333, 0.51, 0.40),
+    ("--cmt-outline",          -7.5, 0.3353, 0.33, 0.30),
+    ("--cmt-text-muted",       -7.9, 0.5177, 0.41, 0.32),
+    ("--cmt-text",             -8.6, 0.7804, 0.65, 0.40),
+)
+
+# How far paper sits from the canvas, as a fraction of the distance to
+# white. The two schemes stack in opposite directions: on a light
+# canvas paper is at the white end and everything else descends from
+# it, while on a dark canvas paper is the first step *up* out of the
+# near-black (.0535 of the way up from #0b1120 lands on #131c31) and
+# the rest of the ramp keeps climbing past it.
+#
+# The light scheme has two, and which one applies is decided by how
+# much colour is actually in the pick. At .95 a canvas of #f8f9fa
+# lands paper on #ffffff, which is the shipped white and the whole
+# reason that number is what it is — but the same .95 applied to a
+# vivid green lands paper on #fafdfa, two or three steps off white per
+# channel. That is a real derivation and an invisible one: every panel
+# in the backend stays white and a deliberately-picked canvas looks
+# like it did nothing to them.
+#
+# So the fraction slides toward .70 as the canvas gains saturation.
+# The window is set so the two shipped canvases sit below it — the
+# light one at S .17 — and a picked colour with any real chroma sits
+# above it, which is what keeps "an untouched install is exactly what
+# it was" and "a picked canvas visibly reaches the panels" from being
+# the same dial pulling in opposite directions. Between the two ends
+# it interpolates, so there is no step where one more click of
+# saturation repaints the whole backend.
+_PAPER_ON_LIGHT = 0.95
+_PAPER_ON_LIGHT_TINTED = 0.70
+_PAPER_ON_DARK = 0.0535
+
+# The saturation window the fraction above slides across: at or below
+# _TINT_FROM_SAT the canvas is a neutral and paper stays at white, at
+# or above _TINT_FULL_SAT it is a colour and paper comes down to meet
+# it.
+_TINT_FROM_SAT = 0.20
+_TINT_FULL_SAT = 0.45
+
+# The kanban card fill, which is not on the ramp above because the two
+# schemes do not build it the same way. On a light canvas it is
+# translucent paper over whatever is behind it — the card reads as
+# glass because you can see the canvas through it — while dark mode
+# makes it opaque on purpose: a translucent fill there composites over
+# surfaces core still paints white and comes out a washed grey-blue,
+# which is the whole reason dark_mode.scss's Surfaces block says
+# "All opaque". So light gets the paper triplet at the two shipped
+# alphas, and dark gets two more fitted steps.
+_GLASS_ALPHA_ON_LIGHT = (
+    ("--cmt-glass-bg", 0.7),
+    ("--cmt-glass-bg-hover", 0.95),
+)
+_GLASS_ON_DARK = (
+    ("--cmt-glass-bg",       0.4, 0.0235, 0.92, 0.55),
+    ("--cmt-glass-bg-hover", 0.0, 0.0627, 0.86, 0.55),
+)
+
+# ...and how far it is allowed to end up from the ink that has to be
+# read on it.
+#
+# Both fractions above are measured from the canvas, which is fine at
+# the ends of the range and not fine in the middle: a mid-tone pick
+# like #16a34a sits at L .36, so the dark ramp put paper at .39 and
+# then had nowhere left to go — its ink clamps at white, and white on
+# a .39 green is 3.4:1, under the 4.5:1 floor for body text. The
+# theme's own two canvases are nowhere near that band, which is why
+# the fitted fractions alone looked sufficient.
+#
+# Clamping paper rather than boosting the ink is what fixes it: ink is
+# already at the end of its travel, and every other step in the ramp
+# is spaced from paper, so moving that one number pulls the whole
+# scheme back into contrast at once. .30 is where white reaches 4.8:1.
+#
+# The light floor is its mirror, and it does bind now that paper comes
+# down to meet a saturated canvas: it is what stops a vivid mid-tone
+# pick from pulling the sheet down with it until the form stops
+# reading as paper at all. A canvas at L .55 wants paper at .865 and
+# gets .90.
+_PAPER_FLOOR_ON_LIGHT = 0.90
+_PAPER_CEILING_ON_DARK = 0.30
+
+# Which way the ramp stacks. HSL lightness, not WCAG luminance: this
+# picks a *direction* for a ramp, not readable ink for a fill (that is
+# on_color()'s job, and its threshold is set by a contrast crossover
+# that has no bearing here). A canvas is "light" when there is more
+# room below it than above.
+_CANVAS_IS_LIGHT_ABOVE = 0.5
+
+
+def derive_surface_vars(background):
+    """The whole neutral ramp for one scheme, from the picked canvas.
+
+    The Background picker used to move exactly one token, --cmt-bg,
+    while every neutral around it stayed the compiled Tailwind grey:
+    --cmt-surface white, --cmt-border #e5e7eb, --cmt-text near-black —
+    and --cmt-bg-rgb, which variables.scss keeps in step with --cmt-bg
+    *by hand* because CSS cannot decompose a hex, stayed 248, 249, 250
+    however far the canvas moved. So a green canvas came out with white
+    sheets, grey hairlines and an empty-view scrim still washing the
+    view in the old off-white.
+
+    Which direction the ramp stacks is decided by the picked colour
+    itself, not by which block is being emitted: a dark colour chosen
+    as the *light* scheme's Background gets the dark ramp, so the ink
+    flips to light and the surfaces lift out of the canvas instead of
+    sinking into it. That is the case a scheme-driven flag would get
+    wrong, and it is not a rare one — "light mode" is where an admin
+    who wants one dark theme starts.
+
+    :param str background: the value stored by the Background picker
+    :returns: ``{css property: value}``, or ``{}`` when ``background``
+        could not be parsed
+    """
+    rgb = parse(background)
+    if rgb is None:
+        return {}
+
+    h, s, l = _to_hsl(rgb)
+    on_light = l >= _CANVAS_IS_LIGHT_ABOVE
+    ramp = _RAMP_ON_LIGHT if on_light else _RAMP_ON_DARK
+    if on_light:
+        tint = (s - _TINT_FROM_SAT) / (_TINT_FULL_SAT - _TINT_FROM_SAT)
+        tint = max(0.0, min(1.0, tint))
+        fraction = _PAPER_ON_LIGHT + (
+            _PAPER_ON_LIGHT_TINTED - _PAPER_ON_LIGHT) * tint
+        paper = max(l + (1.0 - l) * fraction, _PAPER_FLOOR_ON_LIGHT)
+    else:
+        paper = min(l + (1.0 - l) * _PAPER_ON_DARK, _PAPER_CEILING_ON_DARK)
+
+    tokens = {
+        name: to_hex(_from_hsl(
+            h + dh / 360.0, min(s * factor, cap), paper + dl))
+        for name, dh, dl, factor, cap in ramp
+    }
+
+    derived = dict(tokens)
+    # The one variables.scss calls out as hand-maintained. This is the
+    # line that stops it being hand-maintained.
+    derived["--cmt-bg-rgb"] = to_triplet(rgb)
+
+    if on_light:
+        paper_rgb = to_triplet(parse(tokens["--cmt-surface"]))
+        for name, alpha in _GLASS_ALPHA_ON_LIGHT:
+            derived[name] = "rgba(%s, %s)" % (paper_rgb, alpha)
+    else:
+        for name, dh, dl, factor, cap in _GLASS_ON_DARK:
+            derived[name] = to_hex(_from_hsl(
+                h + dh / 360.0, min(s * factor, cap), paper + dl))
+    # A hairline drawn *on* the glass, so it lifts on a dark card and
+    # sits as a shadow on a light one — the same reading as
+    # --border-color-translucent below.
+    derived["--cmt-glass-border"] = "1px solid rgba(%s, 0.08)" % (
+        "0, 0, 0" if on_light else "255, 255, 255")
+
+    ink = tokens["--cmt-text"]
+    muted = tokens["--cmt-text-muted"]
+
+    # ── Bootstrap's :root neutrals ───────────────────────────────
+    # The same bridge derive_brand_vars() builds for the brand, for
+    # the same reason: Bootstrap's neutrals are compiled from
+    # $body-bg / $body-color literals that no setting can reach, but
+    # the custom properties it puts on :root and reads back from
+    # reboot and the utilities can be redeclared from here. Without
+    # them a tinted canvas keeps core's white body background showing
+    # through everything this theme does not paint by hand.
+    #
+    # Both spellings again — see the note in derive_brand_vars() and
+    # the cmt-bs-vars mixin in scss/base.scss for why the unprefixed
+    # one is the one that lands on this Odoo.
+    bootstrap = {
+        "body-bg": to_hex(rgb),
+        "body-bg-rgb": to_triplet(rgb),
+        "body-color": ink,
+        "body-color-rgb": to_triplet(parse(ink)),
+        "emphasis-color": ink,
+        "emphasis-color-rgb": to_triplet(parse(ink)),
+        # Reboot compiles `h1…h6 { color: var(--heading-color) }` and
+        # Odoo seeds it from $o-black. Left alone, every heading in the
+        # backend stays pure black whatever the canvas becomes — the
+        # same failure dark_mode.scss documents at its heading rule.
+        "heading-color": ink,
+        "secondary-color": muted,
+        "secondary-bg": tokens["--cmt-surface-dim"],
+        "tertiary-color": tokens["--cmt-outline"],
+        "tertiary-bg": tokens["--cmt-surface-highest"],
+        "border-color": tokens["--cmt-border"],
+        # Follows the ramp direction, not the scheme: the translucent
+        # hairline is a lift on a dark canvas and a shadow on a light
+        # one, and the wrong one of the two is invisible.
+        "border-color-translucent": (
+            "rgba(0, 0, 0, 0.1)" if on_light else "rgba(255, 255, 255, 0.1)"
+        ),
+    }
+    for name, value in bootstrap.items():
+        derived["--%s" % name] = value
+        derived["--bs-%s" % name] = value
+
+    # Odoo's own, never prefixed (see o-print-color in
+    # web/static/src/scss/functions.scss). It is what the `bg-view`
+    # utility and a handful of view surfaces read.
+    derived["--o-view-background-color"] = tokens["--cmt-surface"]
+
+    return derived
