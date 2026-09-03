@@ -130,6 +130,7 @@ installed:
 | Recent activity | The newest records across everything the user can read; a row opens that record |
 | Quick actions | "New …" shortcuts, one per model the user may **create**, plus Settings for an administrator |
 | Preview | The user's own open tasks — falling back to their pipeline, then their quotations — with a *View All* into the underlying action |
+| Chat launcher | A floating bubble in the bottom-right corner. It opens a card listing the conversations the user has pinned in Discuss — last message, time and unread count — and a row opens that conversation **inside the card**: its recent messages, and a composer that posts into it. Because a posted message runs `mail_bot` in the same transaction, OdooBot answers in the same round trip. New messages arrive live over the bus, and *Open Discuss* in the header hands the open conversation over to the real thing |
 
 Throughout:
 
@@ -144,6 +145,18 @@ Throughout:
   activity feed — is counted against a tile's `history` domain rather than its needs-attention
   one, so records that have since been confirmed, closed or validated stay in the history they
   belong to (see `_history_domain` in `models/theme_dashboard.py`);
+- the chat launcher is **absent**, not disabled, on a database without Discuss. The theme depends
+  on `web` and `base_setup` only, so nothing in it imports from `@mail/…` — an import of a module
+  that isn't in the bundle takes the whole backend down rather than one feature. Everything
+  mail-shaped is reached *by name at runtime* instead: the client asks the actions registry whether
+  `mail.action_discuss` exists, live updates come from `bus_service` looked up in `env.services`,
+  and the server guards `get_chat_threads`, `get_chat_messages` and `post_chat_message` the same
+  way it guards every tile;
+- posting is gated on one question, asked as the current user: does this user have a
+  `discuss.channel.member` row for this conversation. That is the same search Discuss's own
+  controllers run, and it is what lets the post itself use `sudo()` — the elevation covers the rows
+  a member cannot write directly (the message, their seen pointer, the channel's
+  `last_interest_dt`), not the decision about whether they may;
 - the page takes its own scrolling: the client action's root is not core's `.o_action`, whose
   ancestor is `overflow: hidden`, so a dashboard taller than the viewport would otherwise be
   clipped rather than scrolled;
@@ -328,6 +341,7 @@ bluenova_backend_theme/
         │   ├── kanban.scss
         │   ├── stats_banner.scss
         │   ├── home_dashboard.scss
+        │   ├── chat_launcher.scss     # the floating chat bubble + its panel
         │   ├── settings_page.scss
         │   ├── buttons_misc.scss
         │   ├── brand_bridge.scss      # core's compiled brand literals → var(--cmt-primary)
@@ -340,6 +354,7 @@ bluenova_backend_theme/
         │   ├── apps_sidebar_state.js      # open/closed rail state
         │   ├── apps_sidebar.js            # the rail component + icon mapping
         │   ├── apps_sidebar_patch.js      # slots it into WebClient / NavBar
+        │   ├── chat_launcher.js           # floating chat panel on the dashboard
         │   ├── home_dashboard.js          # dashboard client action
         │   ├── crm_pipeline_stats.js      # KPI cards, computed in memory
         │   └── crm_pipeline_stats_patch.js
