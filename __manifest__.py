@@ -31,7 +31,11 @@ Key Features:
   pills, a 30-day column chart with one series per app, a recent-activity
   feed, quick "New …" actions and a preview of the user's own open work —
   all for whichever apps are installed and readable by the user, and
-  optionally opened automatically after login.
+  optionally opened automatically after login. A floating chat bubble in
+  the corner lists the user's Discuss conversations and opens any of them
+  in place, with its messages and a composer — OdooBot answers, and new
+  messages arrive live — while "Open Discuss" hands over to the real
+  thing. Present only where Discuss itself is installed.
 • An optional themed public page at / for anonymous visitors. Off by
   default, and it stands down when the `website` module is installed.
 
@@ -90,6 +94,11 @@ No data is modified.
             # cmt-masked-icon and cmt-label-sm mixins they define, and a
             # bundle is compiled as one SCSS document in this order.
             'bluenova_backend_theme/static/src/scss/home_dashboard.scss',
+            # The floating chat bubble the dashboard renders. Its own
+            # file rather than a section of home_dashboard.scss: it is
+            # pinned to the viewport rather than laid out in one of that
+            # file's bands, and it shares none of its grids.
+            'bluenova_backend_theme/static/src/scss/chat_launcher.scss',
             'bluenova_backend_theme/static/src/scss/settings_page.scss',
             'bluenova_backend_theme/static/src/scss/buttons_misc.scss',
             # After every stylesheet that styles a component itself: it
@@ -121,10 +130,13 @@ No data is modified.
             'bluenova_backend_theme/static/src/js/apps_sidebar_state.js',
             'bluenova_backend_theme/static/src/js/apps_sidebar.js',
             'bluenova_backend_theme/static/src/js/apps_sidebar_patch.js',
+            # Before home_dashboard.js, which imports it.
+            'bluenova_backend_theme/static/src/js/chat_launcher.js',
             'bluenova_backend_theme/static/src/js/home_dashboard.js',
 
             'bluenova_backend_theme/static/src/xml/apps_sidebar.xml',
             'bluenova_backend_theme/static/src/xml/home_dashboard.xml',
+            'bluenova_backend_theme/static/src/xml/chat_launcher.xml',
         ],
 
         # ── Login, signup, reset-password and the public page ────
