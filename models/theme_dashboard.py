@@ -2,6 +2,7 @@ import logging
 from datetime import timedelta
 
 from odoo import _, api, fields, models
+from odoo.tools.mail import html_sanitize, plaintext2html
 from odoo.tools.misc import format_date
 
 _logger = logging.getLogger(__name__)
@@ -27,6 +28,22 @@ CHART_WINDOW = TREND_WINDOW
 # grouped query on page load, and a strip of eight chips over a chart is
 # a menu rather than a control.
 CHART_SERIES = 4
+
+# How many conversations the floating chat panel lists. The panel is a
+# shortcut into Discuss, not a replacement for its sidebar: eight rows
+# fill the card without scrolling, and anything past them is one click
+# away under "Open Discuss".
+CHAT_THREADS = 8
+
+# How many messages one conversation loads. A chat panel is a running
+# tail, not an archive: thirty covers a working exchange, and anything
+# older is what "Open Discuss" is for.
+CHAT_MESSAGES = 30
+
+# The longest message the panel will post, in characters. Not a limit
+# Discuss itself has — it is a guard on an RPC entry point, so a runaway
+# client cannot write a novel into mail_message.body.
+CHAT_BODY_MAX = 4000
 
 
 class ThemeDashboard(models.AbstractModel):
@@ -756,3 +773,270 @@ class ThemeDashboard(models.AbstractModel):
             return related.display_name if related else ""
         except Exception:
             return ""
+
+    # ────────────────────────────────────────────────────────────
+    # Chat launcher
+    # ────────────────────────────────────────────────────────────
+
+    @api.model
+    def get_chat_threads(self, limit=CHAT_THREADS):
+        """The user's most recent Discuss conversations, newest first.
+
+        Backs the floating chat launcher on the dashboard
+        (static/src/js/chat_launcher.js). Called only when the panel is
+        opened, never on page load: the dashboard already runs a dozen
+        queries to draw itself, and a conversation list nobody looked at
+        is not worth another one.
+
+        `mail` is not a dependency of this theme, so every reading here
+        is behind the same two guards the tiles use — the model exists
+        and the user may read it — and an install without Discuss simply
+        gets an empty list. The launcher does not render at all in that
+        case: the client checks for mail's own action in the registry
+        before it ever calls this.
+
+        Read as the current user, not sudo. `is_self` and `is_pinned`
+        are the membership Discuss itself lists in the sidebar, so the
+        panel shows exactly the conversations the user has open there —
+        pinned, not archived, and theirs.
+        """
+        member_model = "discuss.channel.member"
+        if member_model not in self.env:
+            return []
+
+        members = self.env[member_model]
+        if not members.has_access("read"):
+            return []
+
+        try:
+            # `last_interest_dt` is the member's own — the field Discuss
+            # sorts its sidebar by — so an old channel someone just
+            # posted in comes back to the top, and id is the tiebreak
+            # for the rows that share a timestamp.
+            found = members.search(
+                [("is_self", "=", True), ("is_pinned", "=", True)],
+                order="last_interest_dt desc, id desc",
+                # Clamped, not trusted: this is an RPC entry point, and
+                # each row costs a query for its last message. Nobody
+                # gets to ask for a thousand of them.
+                limit=max(1, min(limit, CHAT_THREADS)),
+            )
+        except Exception:
+            _logger.warning("Skipping dashboard chat threads", exc_info=True)
+            return []
+
+        threads = []
+        for member in found:
+            channel = member.channel_id
+            # `custom_channel_name` is this member's own rename of the
+            # conversation; Discuss shows it in preference to the
+            # channel's name, so the panel does too.
+            name = member.custom_channel_name or channel.display_name
+            # `last_interest_dt` carries a default and is set on join,
+            # so it is only ever missing on a row written around the
+            # ORM. The row is still worth listing without a timestamp.
+            when = member.last_interest_dt or channel.create_date
+            threads.append({
+                "id": channel.id,
+                "name": name,
+                # Two glyph shapes, as in Discuss: a public channel is
+                # a "#", a conversation with people is their initial.
+                "is_channel": channel.channel_type in ("channel", "group"),
+                "initial": (name or "?").strip()[:1].upper(),
+                "preview": self._chat_preview(channel),
+                "time_ago": self._time_ago(when) if when else "",
+                "unread": member.message_unread_counter or 0,
+            })
+        return threads
+
+    def _chat_preview(self, channel):
+        """The last message in a channel, as one line of plain text.
+
+        `mail.message.preview` rather than the body: it is core's own
+        computed plain-text opening of a message, already stripped of
+        markup and shortened, which is the string Discuss shows in its
+        own sidebar.
+
+        Empty rather than raising on a channel whose messages this user
+        cannot read: the row's name and time are still worth listing.
+        """
+        try:
+            message = self.env["mail.message"].search(
+                [("model", "=", "discuss.channel"), ("res_id", "=", channel.id)],
+                order="id desc", limit=1,
+            )
+            return (message.preview or "") if message else ""
+        except Exception:
+            return ""
+
+    def _chat_member(self, channel_id):
+        """This user's own membership row for one conversation.
+
+        The single authorisation gate for everything below: the panel
+        may read and post in a conversation exactly when the user is a
+        member of it, which is the same question Discuss's own
+        controllers ask — see discuss_channel_mark_as_read in
+        mail/controllers/discuss/channel.py, which runs the identical
+        search.
+
+        Read as the user, never sudo, so the record rules on
+        discuss.channel.member decide it rather than this method.
+
+        Returns an empty recordset when there is no such membership, and
+        None on a database with no Discuss at all — both falsy, and
+        neither is worth a distinct branch at the call sites.
+        """
+        member_model = "discuss.channel.member"
+        if member_model not in self.env:
+            return None
+
+        members = self.env[member_model]
+        if not members.has_access("read"):
+            return members
+
+        try:
+            # An RPC argument, so it is coerced rather than trusted: a
+            # string would search fine, but a dict would raise inside
+            # the ORM.
+            channel_id = int(channel_id)
+        except (TypeError, ValueError):
+            return members
+
+        return members.search(
+            [("is_self", "=", True), ("channel_id", "=", channel_id)],
+            limit=1,
+        )
+
+    @api.model
+    def get_chat_messages(self, channel_id, limit=CHAT_MESSAGES):
+        """One conversation's recent messages, oldest first.
+
+        Oldest first because that is the order they are read in: the
+        panel scrolls to the bottom on open, so the newest message is
+        the one in view and the list above it runs backwards in time,
+        the way every chat does.
+
+        Opening a conversation also marks it read, exactly as opening it
+        in Discuss does — the unread badge on the row the user just read
+        would otherwise still be sitting there when they go back to the
+        list. That write is the one thing here allowed to fail quietly:
+        a conversation that will not clear its badge is still worth
+        reading.
+
+        Only `comment` and `email` messages. A channel also carries
+        notifications — "so-and-so joined", tracking rows — and those
+        are chrome rather than conversation; Discuss draws them
+        differently, and this panel has nothing to draw them as.
+        """
+        member = self._chat_member(channel_id)
+        if not member:
+            return []
+
+        try:
+            messages = self.env["mail.message"].search(
+                [
+                    ("model", "=", "discuss.channel"),
+                    ("res_id", "=", member.channel_id.id),
+                    ("message_type", "in", ("comment", "email")),
+                ],
+                # Newest first with a limit, then reversed below: the
+                # tail of a long conversation is what is wanted, and
+                # ordering ascending would fetch its beginning.
+                order="id desc",
+                limit=max(1, min(limit, CHAT_MESSAGES)),
+            )
+        except Exception:
+            _logger.warning("Skipping dashboard chat messages", exc_info=True)
+            return []
+
+        if messages:
+            try:
+                member._mark_as_read(messages[0].id)
+            except Exception:
+                _logger.debug("Dashboard chat: could not mark as read", exc_info=True)
+
+        self_partner = self.env.user.partner_id
+        rows = []
+        for message in reversed(messages):
+            author = message.author_id
+            # email_from covers an inbound mail with no matching
+            # partner; the fallback after it covers a message the system
+            # itself wrote.
+            name = author.display_name or message.email_from or _("System")
+            rows.append({
+                "id": message.id,
+                "author": name,
+                # The partner avatar route rather than the message's own
+                # author_avatar field: a URL costs nothing to serialise
+                # and the browser caches it across every message that
+                # person wrote, where the binary would be re-sent with
+                # each one.
+                "avatar": f"/web/image/res.partner/{author.id}/avatar_128" if author else "",
+                "initial": (name or "?").strip()[:1].upper(),
+                # Sanitised again on the way out even though the field
+                # sanitises on write: this string is handed to the
+                # browser as markup (see chat_launcher.js), and a body
+                # written before a sanitiser rule existed is still in
+                # the table.
+                "body": html_sanitize(message.body or ""),
+                "time_ago": self._time_ago(message.date) if message.date else "",
+                # Which side of the panel the bubble sits on. Compared
+                # by partner rather than by user: OdooBot and inbound
+                # mail have no user at all.
+                "is_self": bool(author) and author == self_partner,
+            })
+        return rows
+
+    @api.model
+    def post_chat_message(self, channel_id, body):
+        """Post one message to a conversation, as the current user.
+
+        Returns the refreshed conversation rather than the new message
+        alone, and does so deliberately: `message_post` runs
+        `_message_post_after_hook` inside this same transaction, and
+        that is where mail_bot answers. By the time the read at the end
+        runs, OdooBot's reply is already a row — so a question and its
+        answer arrive in the panel together, in one round trip, with
+        nothing waiting on the bus for the second half.
+
+        `sudo` on the post, not on the check above it. The membership
+        gate has already established that this user belongs in this
+        conversation; the elevation is only there because posting writes
+        rows — mail.message, the member's seen pointer, the channel's
+        last_interest_dt — that an ordinary member has no direct write
+        access to. It is what mail's own /mail/message/post route does
+        for the same reason, and `sudo()` keeps the uid, so the message
+        is still authored by the user rather than by the system.
+        """
+        member = self._chat_member(channel_id)
+        if not member:
+            return {"ok": False, "messages": []}
+
+        text = (body or "").strip()
+        if not text:
+            # Not an error: an empty composer submitted with Enter is a
+            # no-op, and the caller still wants the thread back.
+            return {"ok": False, "messages": self.get_chat_messages(channel_id)}
+
+        try:
+            member.channel_id.sudo().message_post(
+                # plaintext2html rather than the raw string: it escapes
+                # the user's text and turns their line breaks into
+                # markup, so a message typed with Shift+Enter keeps its
+                # shape and one typed with an angle bracket keeps its
+                # angle bracket.
+                body=plaintext2html(text[:CHAT_BODY_MAX]),
+                # Both are load-bearing. "comment" is what makes this a
+                # message in the conversation rather than a silent log
+                # line — and it is the type mail_bot tests for before it
+                # answers at all.
+                message_type="comment",
+                subtype_xmlid="mail.mt_comment",
+            )
+        except Exception:
+            _logger.warning(
+                "Dashboard chat: posting to channel %s failed", channel_id, exc_info=True
+            )
+            return {"ok": False, "messages": self.get_chat_messages(channel_id)}
+
+        return {"ok": True, "messages": self.get_chat_messages(channel_id)}
