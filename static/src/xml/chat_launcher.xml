@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!--
+        The floating chat launcher — a button pinned to the bottom-right
+        of the dashboard and the card it opens.
+
+        Rendered by static/src/js/chat_launcher.js, and only when Discuss
+        is installed; see the note on isAvailable there.
+
+        The card has two views behind one header: the conversation list,
+        and one conversation with its composer. They are siblings rather
+        than two templates because the header and the panel frame are
+        shared — only the back arrow and the title change between them.
+
+        The panel is kept out of the DOM entirely while closed rather
+        than hidden with a class. Nothing in it is worth rendering
+        before the first open — the rows are not fetched until then —
+        and an unrendered panel cannot be reached by Tab, which a
+        display:none one only avoids by accident.
+    -->
+    <t t-name="bluenova_backend_theme.ChatLauncher">
+        <div class="cmt-chat" t-ref="root">
+
+            <section class="cmt-chat__panel" t-if="state.open"
+                     role="dialog" aria-label="Chat">
+
+                <header class="cmt-chat__head">
+
+                    <!--
+                        Only in a conversation, and it goes back one
+                        level rather than closing: the list is where the
+                        user came from, and Escape and the X are both
+                        still there for leaving altogether.
+                    -->
+                    <button type="button" class="cmt-chat__back"
+                            t-if="state.view === 'thread'"
+                            aria-label="Back to conversations"
+                            t-on-click="backToList">
+                        <i class="fa fa-angle-left" role="img" aria-hidden="true"/>
+                    </button>
+
+                    <h2 class="cmt-chat__title" t-if="state.view === 'thread'"
+                        t-esc="state.thread ? state.thread.name : 'Chat'"/>
+                    <h2 class="cmt-chat__title" t-else="">Chat</h2>
+
+                    <!--
+                        Hands over to the real thing, on the open
+                        conversation when there is one — so leaving the
+                        panel for Discuss lands on the message the user
+                        was reading rather than on Discuss's own idea of
+                        where to start.
+                    -->
+                    <button type="button" class="cmt-chat__open"
+                            t-on-click="() => this.openDiscuss(state.thread ? state.thread.id : false)">Open Discuss</button>
+
+                    <!--
+                        The X is a second way out, next to Escape and a
+                        click outside. Labelled rather than left as a
+                        glyph: "✕" reads as nothing to a screen reader.
+                    -->
+                    <button type="button" class="cmt-chat__close"
+                            aria-label="Close chat" t-on-click="close">
+                        <i class="fa fa-times" role="img" aria-hidden="true"/>
+                    </button>
+                </header>
+
+                <!-- ── The conversation list ──────────────────── -->
+                <div class="cmt-chat__body" t-if="state.view === 'list'">
+
+                    <p class="cmt-chat__state" t-if="state.loading">
+                        <i class="fa fa-circle-o-notch fa-spin me-2" role="img" aria-hidden="true"/>
+                        Loading conversations…
+                    </p>
+
+                    <ul class="cmt-chat__list" t-elif="state.threads.length">
+                        <li t-foreach="state.threads" t-as="thread" t-key="thread.id">
+                            <button type="button" class="cmt-chat__row"
+                                    t-on-click="() => this.openThread(thread)">
+
+                                <!--
+                                    Two glyphs, as in Discuss itself: a
+                                    "#" for a channel, the first letter
+                                    of the name for a conversation with
+                                    people. Decorative — the name is
+                                    right beside it.
+                                -->
+                                <span class="cmt-chat__avatar" aria-hidden="true">
+                                    <t t-if="thread.is_channel">#</t>
+                                    <t t-else="" t-esc="thread.initial"/>
+                                </span>
+
+                                <span class="cmt-chat__body-text">
+                                    <span class="cmt-chat__name" t-esc="thread.name"/>
+                                    <span class="cmt-chat__preview" t-esc="thread.preview"/>
+                                </span>
+
+                                <span class="cmt-chat__meta">
+                                    <span class="cmt-chat__time" t-esc="thread.time_ago"/>
+                                    <span class="cmt-chat__unread" t-if="thread.unread"
+                                          t-esc="thread.unread"/>
+                                </span>
+                            </button>
+                        </li>
+                    </ul>
+
+                    <p class="cmt-chat__state" t-else="">
+                        No conversations yet. Start one from Discuss.
+                    </p>
+                </div>
+
+                <!-- ── One conversation ───────────────────────── -->
+                <div class="cmt-chat__thread" t-else="">
+
+                    <!--
+                        The scroller is its own element rather than the
+                        panel body: the composer below it must stay put
+                        while the messages move, and js/chat_launcher.js
+                        pins this one to its bottom on every change.
+                    -->
+                    <div class="cmt-chat__scroll" t-ref="scroller">
+
+                        <p class="cmt-chat__state" t-if="state.loadingMessages">
+                            <i class="fa fa-circle-o-notch fa-spin me-2" role="img" aria-hidden="true"/>
+                            Loading messages…
+                        </p>
+
+                        <t t-elif="state.messages.length">
+                            <article t-foreach="state.messages" t-as="message" t-key="message.id"
+                                     class="cmt-chat__msg"
+                                     t-att-class="{ 'cmt-chat__msg--self': message.is_self }">
+
+                                <span class="cmt-chat__msg-avatar" aria-hidden="true">
+                                    <img t-if="message.avatar" t-att-src="message.avatar" alt=""/>
+                                    <t t-else="" t-esc="message.initial"/>
+                                </span>
+
+                                <div class="cmt-chat__bubble">
+                                    <span class="cmt-chat__msg-author" t-esc="message.author"/>
+                                    <!--
+                                        t-out, not t-esc: a message body
+                                        is HTML in the database, and the
+                                        server sanitises it on the way
+                                        out. See prepare() in
+                                        js/chat_launcher.js.
+                                    -->
+                                    <div class="cmt-chat__msg-body" t-out="message.body"/>
+                                    <span class="cmt-chat__msg-time" t-esc="message.time_ago"/>
+                                </div>
+                            </article>
+                        </t>
+
+                        <p class="cmt-chat__state" t-else="">
+                            No messages yet. Say hello.
+                        </p>
+                    </div>
+
+                    <!--
+                        Kept out of the scroller so it cannot scroll
+                        away, and a real form so Enter and the button
+                        are one code path.
+                    -->
+                    <form class="cmt-chat__composer" t-on-submit.prevent="onSend">
+                        <p class="cmt-chat__error" t-if="state.error"
+                           role="alert" t-esc="state.error"/>
+
+                        <div class="cmt-chat__composer-row">
+                            <!--
+                                A textarea rather than an input: a
+                                message with a line break in it is a
+                                normal thing to write, and Shift+Enter
+                                writes one. Enter itself sends; see
+                                onComposerKeydown.
+                            -->
+                            <textarea class="cmt-chat__input" rows="1"
+                                      placeholder="Write a message..."
+                                      aria-label="Write a message"
+                                      t-ref="composer"
+                                      t-on-input="onComposerInput"
+                                      t-on-keydown="onComposerKeydown"/>
+
+                            <button type="submit" class="cmt-chat__send"
+                                    aria-label="Send message"
+                                    t-att-disabled="state.sending || !state.draft.trim()">
+                                <i t-attf-class="fa {{ state.sending ? 'fa-circle-o-notch fa-spin' : 'fa-paper-plane' }}"
+                                   role="img" aria-hidden="true"/>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!--
+                The button itself. aria-expanded rather than a second
+                label per state: it is the same control either way, and
+                the icon only tells a sighted reader which way it will
+                go next.
+            -->
+            <button type="button" class="cmt-chat__fab"
+                    t-att-class="{ 'cmt-chat__fab--on': state.open }"
+                    t-att-aria-expanded="state.open ? 'true' : 'false'"
+                    aria-label="Chat"
+                    t-on-click="onToggle">
+                <i t-attf-class="fa {{ state.open ? 'fa-chevron-down' : 'fa-comments' }}"
+                   role="img" aria-hidden="true"/>
+            </button>
+        </div>
+    </t>
+
+</templates>

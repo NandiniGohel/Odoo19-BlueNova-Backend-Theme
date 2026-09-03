@@ -1,0 +1,579 @@
+// ============================================================
+// Chat launcher — the floating bubble on the dashboard
+//
+// A round button pinned to the bottom-right corner and the conversation
+// card it opens above itself. Rendered by js/chat_launcher.js inside
+// the dashboard, so it exists on that page only.
+//
+// `position: fixed` rather than absolute: .cmt-dashboard is the page's
+// own scroll container (see the note at the top of home_dashboard.scss),
+// and an absolutely positioned child of it would scroll away with the
+// last band instead of staying in the corner.
+//
+// Colours are --cmt-* tokens throughout, like every other surface in
+// this theme: the pickers under Settings > Theme Settings repaint the
+// tokens at runtime and dark_mode.scss restates them, so both follow
+// for free and neither needs a rule here.
+// ============================================================
+
+// The gap from the viewport edges, and the button's diameter. Both are
+// read in more than one place — the panel is offset from the button and
+// sized against the space above it — so they live here rather than
+// being written out three times.
+$cmt-chat-inset: 24px;
+$cmt-chat-fab: 56px;
+
+.cmt-chat {
+    position: fixed;
+    right: $cmt-chat-inset;
+    bottom: $cmt-chat-inset;
+    // Above the dashboard's own cards and their hover shadows, below
+    // Odoo's dialogs (1055) and its notifications: a modal is a
+    // deliberate interruption and must never open behind a bubble
+    // somebody left expanded.
+    z-index: 1040;
+    font-family: var(--cmt-font-sans);
+
+    // ── The button ───────────────────────────────────────────
+    .cmt-chat__fab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: $cmt-chat-fab;
+        height: $cmt-chat-fab;
+        padding: 0;
+        border: none;
+        border-radius: var(--cmt-radius-full);
+        background: var(--cmt-primary);
+        color: var(--cmt-on-primary);
+        font-size: 22px;
+        // Two layers: a wide soft drop for the lift off the page, and a
+        // tinted one in the brand colour so the shadow belongs to the
+        // button rather than looking like grey smudge under it.
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18),
+                    0 2px 6px rgba(var(--cmt-primary-rgb), 0.35);
+        cursor: pointer;
+        transition: transform 0.15s ease, background 0.15s ease,
+                    box-shadow 0.15s ease;
+
+        &:hover {
+            background: var(--cmt-primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22),
+                        0 3px 8px rgba(var(--cmt-primary-rgb), 0.4);
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+
+        // The focus ring is drawn rather than left to the browser: the
+        // button is round and sits on an arbitrary background, and the
+        // default outline squares off at the corners of a circle.
+        &:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--cmt-surface),
+                        0 0 0 6px var(--cmt-primary-soft),
+                        0 6px 16px rgba(0, 0, 0, 0.18);
+        }
+    }
+
+    // ── The panel ────────────────────────────────────────────
+    .cmt-chat__panel {
+        position: absolute;
+        right: 0;
+        // Clear of the button, which shares this stacking context.
+        bottom: $cmt-chat-fab + 16px;
+        display: flex;
+        flex-direction: column;
+        width: 360px;
+        // Tall enough to list a working set of conversations, but never
+        // past the viewport: 100vh less the button, the two insets and
+        // the navbar it must not slide under.
+        height: 520px;
+        max-height: calc(100vh - #{$cmt-chat-fab} - #{$cmt-chat-inset * 2} - 72px);
+        overflow: hidden;
+        border: 1px solid var(--cmt-border);
+        border-radius: var(--cmt-radius-xl);
+        background: var(--cmt-surface);
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
+        animation: cmt-chat-rise 0.16s ease-out;
+    }
+
+    // ── Header ───────────────────────────────────────────────
+    .cmt-chat__head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 0 0 auto;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--cmt-border);
+    }
+
+    .cmt-chat__title {
+        flex: 1 1 auto;
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--cmt-text);
+    }
+
+    // A link, styled as one: it navigates away from the dashboard, and
+    // a button here would read as another control of the panel itself.
+    .cmt-chat__open {
+        padding: 0;
+        border: none;
+        background: none;
+        color: var(--cmt-primary);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    .cmt-chat__close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: none;
+        border-radius: var(--cmt-radius-md);
+        background: none;
+        color: var(--cmt-text);
+        font-size: 16px;
+        cursor: pointer;
+
+        &:hover {
+            background: var(--cmt-surface-highest);
+        }
+    }
+
+    // ── The list ─────────────────────────────────────────────
+    .cmt-chat__body {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        // Reaching the end of the conversation list should not start
+        // scrolling the dashboard behind it.
+        overscroll-behavior: contain;
+    }
+
+    .cmt-chat__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    // A <button> per row, so the keyboard reaches it: reset the browser
+    // button box first, then lay it out as three columns.
+    .cmt-chat__row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 12px 20px;
+        border: none;
+        border-bottom: 1px solid var(--cmt-border);
+        background: none;
+        text-align: start;
+        cursor: pointer;
+        transition: background 0.12s ease;
+
+        &:hover {
+            background: var(--cmt-primary-light);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--cmt-primary);
+            outline-offset: -2px;
+        }
+    }
+
+    .cmt-chat__avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--cmt-radius-full);
+        background: var(--cmt-primary-light);
+        color: var(--cmt-primary);
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    // min-width: 0 is what lets the ellipsis below work: a flex item
+    // defaults to min-content width, so a long preview would push the
+    // timestamp off the card instead of truncating.
+    .cmt-chat__body-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .cmt-chat__name {
+        overflow: hidden;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--cmt-text);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .cmt-chat__preview {
+        overflow: hidden;
+        font-size: 13px;
+        color: var(--cmt-text-muted);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .cmt-chat__meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+        flex: 0 0 auto;
+    }
+
+    .cmt-chat__time {
+        font-size: 12px;
+        color: var(--cmt-text-muted);
+        white-space: nowrap;
+    }
+
+    .cmt-chat__unread {
+        min-width: 18px;
+        padding: 1px 5px;
+        border-radius: var(--cmt-radius-full);
+        background: var(--cmt-primary);
+        color: var(--cmt-on-primary);
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 16px;
+        text-align: center;
+    }
+
+    // Loading and "nothing here" share one treatment: both are a single
+    // muted line where the list would be, and neither is an error.
+    .cmt-chat__state {
+        margin: 0;
+        padding: 28px 20px;
+        color: var(--cmt-text-muted);
+        font-size: 13px;
+        text-align: center;
+    }
+
+    // ── One conversation ─────────────────────────────────────
+    //
+    // The second view of the same card: a scrolling tail of messages
+    // with a composer pinned under it. Two boxes rather than one
+    // scrolling body, because the composer must not scroll away from
+    // the person typing into it.
+    .cmt-chat__thread {
+        display: flex;
+        flex-direction: column;
+        // min-height: 0 is what makes the scroller below actually
+        // scroll: a flex item defaults to min-content height, so
+        // without it this box grows to fit every message and the panel
+        // spills past its own border instead.
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .cmt-chat__scroll {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        flex: 1 1 auto;
+        min-height: 0;
+        padding: 16px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    // The back arrow. Same box as the close button on the other end of
+    // the header, so the two read as a pair rather than as one control
+    // and one afterthought.
+    .cmt-chat__back {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 28px;
+        height: 28px;
+        margin-inline-start: -6px;
+        padding: 0;
+        border: none;
+        border-radius: var(--cmt-radius-md);
+        background: none;
+        color: var(--cmt-text);
+        font-size: 20px;
+        cursor: pointer;
+
+        &:hover {
+            background: var(--cmt-surface-highest);
+        }
+    }
+
+    // ── A message ────────────────────────────────────────────
+    .cmt-chat__msg {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+    }
+
+    .cmt-chat__msg-avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 28px;
+        height: 28px;
+        overflow: hidden;
+        border-radius: var(--cmt-radius-full);
+        background: var(--cmt-primary-light);
+        color: var(--cmt-primary);
+        font-size: 12px;
+        font-weight: 600;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .cmt-chat__bubble {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        // Never the full width: a bubble that reaches both edges is
+        // indistinguishable from a paragraph, and the ragged right is
+        // most of what makes a conversation look like one.
+        max-width: 78%;
+        padding: 8px 12px;
+        border-radius: var(--cmt-radius-lg);
+        background: var(--cmt-surface-highest);
+        color: var(--cmt-text);
+    }
+
+    .cmt-chat__msg-author {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--cmt-primary);
+    }
+
+    .cmt-chat__msg-body {
+        font-size: 13.5px;
+        line-height: 1.45;
+        // Message bodies are arbitrary HTML written by other people: a
+        // pasted URL with no spaces in it would otherwise widen the
+        // bubble past the panel.
+        overflow-wrap: anywhere;
+
+        // The tags that actually turn up in a Discuss message. Core
+        // writes each line as its own <p>, which would otherwise open
+        // with a browser default margin the bubble has no room for.
+        p {
+            margin: 0;
+
+            + p {
+                margin-top: 6px;
+            }
+        }
+
+        a {
+            color: inherit;
+            text-decoration: underline;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--cmt-radius-sm);
+        }
+    }
+
+    .cmt-chat__msg-time {
+        align-self: flex-end;
+        font-size: 11px;
+        color: var(--cmt-text-muted);
+    }
+
+    // The user's own messages: brand-coloured, on the other side, and
+    // with no name over them — there is only one person they can be
+    // from, and the avatar and the label would both be saying so.
+    .cmt-chat__msg--self {
+        flex-direction: row-reverse;
+
+        .cmt-chat__msg-avatar {
+            display: none;
+        }
+
+        .cmt-chat__bubble {
+            background: var(--cmt-primary);
+            color: var(--cmt-on-primary);
+        }
+
+        .cmt-chat__msg-author {
+            display: none;
+        }
+
+        .cmt-chat__msg-time {
+            // The muted grey is unreadable on the brand fill; the same
+            // ink at reduced opacity keeps the hierarchy without
+            // needing a second token for one line of text.
+            color: var(--cmt-on-primary);
+            opacity: 0.75;
+        }
+    }
+
+    // ── The composer ─────────────────────────────────────────
+    .cmt-chat__composer {
+        flex: 0 0 auto;
+        padding: 12px 14px;
+        border-top: 1px solid var(--cmt-border);
+        background: var(--cmt-surface);
+    }
+
+    .cmt-chat__composer-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+    }
+
+    .cmt-chat__input {
+        flex: 1 1 auto;
+        min-width: 0;
+        // One line to start with; js/chat_launcher.js grows it to fit
+        // what is typed, up to the ceiling below.
+        height: 38px;
+        max-height: 120px;
+        padding: 9px 12px;
+        border: 1px solid var(--cmt-border);
+        border-radius: var(--cmt-radius-lg);
+        background: var(--cmt-surface-dim);
+        color: var(--cmt-text);
+        font-family: inherit;
+        font-size: 13.5px;
+        line-height: 1.4;
+        // The drag handle would resize the textarea out of the panel,
+        // and the height is managed for the user anyway.
+        resize: none;
+
+        &::placeholder {
+            color: var(--cmt-text-muted);
+        }
+
+        &:focus {
+            outline: none;
+            border-color: var(--cmt-primary);
+            box-shadow: 0 0 0 3px var(--cmt-primary-soft);
+        }
+    }
+
+    .cmt-chat__send {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        border: none;
+        border-radius: var(--cmt-radius-lg);
+        background: var(--cmt-primary);
+        color: var(--cmt-on-primary);
+        font-size: 15px;
+        cursor: pointer;
+        transition: background 0.12s ease;
+
+        &:hover:not(:disabled) {
+            background: var(--cmt-primary-dark);
+        }
+
+        // Disabled on an empty composer and while a message is in
+        // flight. Dimmed rather than hidden: a control that disappears
+        // as you clear the box moves everything beside it.
+        &:disabled {
+            opacity: 0.45;
+            cursor: default;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--cmt-primary);
+            outline-offset: 2px;
+        }
+    }
+
+    // A refused post, over the composer that still holds the text.
+    .cmt-chat__error {
+        margin: 0 0 8px;
+        color: var(--cmt-danger);
+        font-size: 12px;
+    }
+}
+
+// The panel arrives from the button rather than fading in on the spot,
+// so it reads as having been opened by it.
+@keyframes cmt-chat-rise {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+// A phone has no room for a 360px card floating over a 100vw page: the
+// panel takes the width it is given, less the insets it keeps on both
+// sides, and the button shrinks to match the touch targets around it.
+@media (max-width: 575.98px) {
+    .cmt-chat {
+        right: 16px;
+        bottom: 16px;
+
+        .cmt-chat__panel {
+            position: fixed;
+            right: 16px;
+            left: 16px;
+            bottom: 16px + 48px + 12px;
+            width: auto;
+            max-height: calc(100vh - 48px - 32px - 72px);
+        }
+
+        .cmt-chat__fab {
+            width: 48px;
+            height: 48px;
+            font-size: 19px;
+        }
+    }
+}
+
+// Respect a reduced-motion preference: the rise is decoration, and the
+// hover lift is a 2px hint nobody needs to see move.
+@media (prefers-reduced-motion: reduce) {
+    .cmt-chat {
+        .cmt-chat__panel {
+            animation: none;
+        }
+
+        .cmt-chat__fab {
+            transition: background 0.15s ease;
+
+            &:hover {
+                transform: none;
+            }
+        }
+    }
+}
