@@ -307,6 +307,18 @@
                 <p>No apps to summarise yet. Install an app and its figures appear here.</p>
             </div>
 
+            <!--
+                The floating chat bubble, outside the bands: it is
+                pinned to the viewport corner rather than laid out in a
+                grid, and it belongs on the empty dashboard as much as
+                on a full one — a database with no business apps still
+                has Discuss.
+
+                Absent, not disabled, when Discuss is not installed;
+                see showChat in home_dashboard.js.
+            -->
+            <ChatLauncher t-if="showChat"/>
+
         </div>
     </t>
 
