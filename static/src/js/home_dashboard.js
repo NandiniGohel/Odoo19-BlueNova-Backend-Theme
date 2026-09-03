@@ -4,6 +4,8 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { formatInteger } from "@web/views/fields/formatters";
 
+import { ChatLauncher } from "@bluenova_backend_theme/js/chat_launcher";
+
 /**
  * HomeDashboard — the themed landing page inside the web client.
  *
@@ -24,6 +26,7 @@ import { formatInteger } from "@web/views/fields/formatters";
  */
 export class HomeDashboard extends Component {
     static template = "bluenova_backend_theme.HomeDashboard";
+    static components = { ChatLauncher };
     // Client actions are handed `action`, `actionId`, `className` and
     // friends by the action service; none of them are read here.
     static props = { "*": true };
@@ -73,6 +76,18 @@ export class HomeDashboard extends Component {
                 this.state.chart = null;
             }
         });
+    }
+
+    /**
+     * Whether to render the floating chat bubble.
+     *
+     * A getter rather than the static read in the template: OWL
+     * evaluates template expressions against the component, and
+     * `ChatLauncher` is a module binding it cannot see. The question
+     * itself — is Discuss installed — is answered in chat_launcher.js.
+     */
+    get showChat() {
+        return ChatLauncher.isAvailable;
     }
 
     /** Time-of-day greeting, in the browser's local time. */
