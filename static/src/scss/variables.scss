@@ -35,6 +35,30 @@
     // for its rgba() focus rings (--btn-focus-shadow-rgb and friends).
     --cmt-primary-rgb: 57, 89, 176;
 
+    // ── Accent ───────────────────────────────────────────────
+    // The secondary colour: the far stop of the hero gradient below,
+    // the won-opportunity wash and stage counters in kanban.scss, the
+    // selected kanban column, and the figures in stats_banner.scss.
+    //
+    // Defaults in the same sense as the Brand block above — but with a
+    // different relationship to the picker, and it is worth knowing
+    // which. The brand ramp is *fitted*: it reproduces what is written
+    // here when fed #3959b0, so it can run unconditionally. This
+    // family cannot be fitted. The hand-picked Ocean Blue below sits
+    // 24° off the hand-picked indigo, and carrying a 24° rotation onto
+    // an arbitrary pick is how a violet brand ends up with a blue
+    // accent — the exact failure the derivation exists to remove.
+    //
+    // So theme_color.derive_accent_vars() copies the brand's hue and
+    // holds it, moving only lightness and saturation, and
+    // res_config_settings._accent_derived_vars() skips it entirely
+    // while Primary still holds #3959b0. Untouched installs keep the
+    // indigo-into-ocean heroes designed for them; every other pick
+    // gets an accent in its own hue and no second colour to choose.
+    //
+    // Which means these five are the *untouched* palette, not a
+    // starting point a derivation adjusts. Editing one changes the
+    // default install alone.
     --cmt-tertiary: #0284c7;         // Ocean Blue — status + secondary accents
     --cmt-tertiary-container: #e0f2fe;
     --cmt-on-tertiary-container: #0369a1;
@@ -115,6 +139,14 @@
     // literals, so they follow the Primary picker like everything else:
     // pick green and the heroes become a green ramp, with no second
     // colour to choose.
+    //
+    // That was true of gradient-b from the start and only became true
+    // of gradient-a once the accent block above was derived:
+    // --cmt-tertiary was a fixed Ocean Blue, so a green brand produced
+    // a lead card that faded green into blue and a purple one a card
+    // that faded purple into blue. The two stops of gradient-a now
+    // share the brand's hue and travel on lightness instead —
+    // primary-dark is L × .78 and the accent L × 1.22.
     //
     // Two directions, not one repeated: the cards sit side by side, and
     // the same gradient twice reads as one wide card cut in half.

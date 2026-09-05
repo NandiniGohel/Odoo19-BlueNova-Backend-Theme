@@ -42,9 +42,23 @@
     --cmt-on-primary: #0b1120;
     --cmt-primary-rgb: 124, 154, 255;
 
+    // ── Accent ───────────────────────────────────────────────
+    // The dark half of the family documented in the Accent block of
+    // variables.scss, and it follows the same rule: these five are
+    // what an *untouched* install gets, and the moment Primary (Dark)
+    // holds anything but #7c9aff they are replaced wholesale by
+    // theme_color.derive_accent_vars(…, dark=True) in the brand's own
+    // hue. Not fitted, deliberately — see that block for why a family
+    // sitting 24° off the brand cannot be carried onto an arbitrary
+    // pick without putting an unchosen colour back on the screen.
+    //
+    // The dark accent is a step *down* in lightness from the brand
+    // (#7c9aff at L .74 to #38bdf8 at L .60), the opposite of the
+    // light scheme's, because the dark brand is already pale.
     --cmt-tertiary: #38bdf8;
     --cmt-tertiary-container: #0e2f42;
     --cmt-on-tertiary-container: #7dd3fc;
+    // Opaque, per the Surfaces note below.
     --cmt-won-tint: #14283a;
     --cmt-won-tint-hover: #1b3448;
 
@@ -87,6 +101,12 @@
     // color-mix() rather than a second set of hand-picked hex values,
     // because these have to follow the Primary picker: a green brand
     // has to produce green heroes, and no static value can do that.
+    //
+    // Which was half-true for longer than this comment admitted:
+    // gradient-a's far stop is --cmt-tertiary, and that *was* a static
+    // value eight lines up, so a green brand produced a card mixing
+    // green into sky blue. The accent is derived now and both stops
+    // carry the brand's hue.
     --cmt-hero-gradient-a: linear-gradient(135deg,
                                            color-mix(in srgb, var(--cmt-primary) 42%, var(--cmt-bg)) 0%,
                                            color-mix(in srgb, var(--cmt-tertiary) 40%, var(--cmt-bg)) 100%);
