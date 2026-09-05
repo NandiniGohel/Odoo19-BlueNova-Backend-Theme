@@ -262,6 +262,17 @@ is picked, after which they are derived from it. `theme_color.py`'s multipliers 
 reproduce exactly the values in `variables.scss` and `dark_mode.scss` when fed the shipped indigo,
 so a new hand-edited default belongs in both places or in neither.
 
+The *accent* family (`--cmt-tertiary`, `--cmt-tertiary-container`, `--cmt-on-tertiary-container`,
+`--cmt-won-tint/-hover`) follows Primary too, but on a different rule — worth knowing if you edit
+it. It is **not** fitted: the shipped Ocean Blue sits 24° off the shipped indigo, and carrying that
+rotation onto an arbitrary pick is what used to put a colour on screen nobody chose — a green brand
+gave a dashboard hero card that faded green into blue, a purple one purple into blue, because
+`--cmt-tertiary` is the far stop of `--cmt-hero-gradient-a`. So `derive_accent_vars()` copies the
+brand's hue and holds it, separating the accent from the brand on lightness and saturation alone,
+and it is skipped entirely while Primary still holds the colour it shipped with. A fresh install
+keeps its hand-picked indigo-into-ocean heroes; every other pick gets an accent in its own hue.
+Editing the five values above therefore changes the untouched install only.
+
 `$o-brand-primary` in [`primary_variables.scss`](static/src/scss/primary_variables.scss) is a
 *build-time* value and cannot follow a picker — it is what a fresh install compiles against. The
 runtime path to core's brand is Bootstrap's `:root` custom properties plus `brand_bridge.scss`.
