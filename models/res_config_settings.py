@@ -1140,11 +1140,56 @@ class ResConfigSettings(models.TransientModel):
         if primary:
             derived.update(theme_color.derive_brand_vars(primary, dark=dark))
 
+        derived.update(self._accent_derived_vars(primary_field, dark=dark))
+
         light_primary = self._stored_color("theme_color_primary")
         if light_primary:
             derived.update(theme_color.derive_icon_vars(light_primary))
 
         return derived
+
+    @api.model
+    def _accent_derived_vars(self, primary_field, dark=False):
+        """The accent family, once Primary has actually been picked.
+
+        The last colours in the theme that ignored the Primary picker.
+        --cmt-tertiary and its two container tints were compiled Ocean
+        Blue literals, and --cmt-tertiary is the far stop of
+        --cmt-hero-gradient-a — so the dashboard's lead card ran from
+        the picked brand into a fixed blue in both schemes, and the
+        kanban won wash, the stage counters and the stats banner kept
+        the same blue. See theme_color.derive_accent_vars() for what
+        replaces them and why the hue is copied rather than rotated.
+
+        Split from _brand_derived_vars()'s own block because it is
+        gated differently, and that gate is the whole design:
+
+        Unlike the brand ramp, this derivation is *not* fitted to
+        reproduce what variables.scss ships. It cannot be — the shipped
+        accent sits 24° off the shipped brand, and reproducing a 24°
+        rotation from an arbitrary pick is precisely the bug (24° off a
+        violet lands back on blue). So the shipped hand-picked pair is
+        preserved the only other way available: by leaving it alone
+        while Primary still holds the colour it shipped with.
+
+        That is the same test _surface_derived_vars() applies to the
+        Background, and for the same reason — the first save of the
+        settings screen writes every field, so "stored" is not
+        "chosen", and an admin who never opened the swatch must get the
+        theme exactly as it was designed. Pick anything else and the
+        accent follows it in the same hue.
+
+        :param str primary_field: which Primary field this scheme reads
+        :param bool dark: pick the dark scheme's accent ramp
+        :returns: ``{css property: value}``, empty while Primary is
+            untouched
+        """
+        primary = self._stored_color(primary_field)
+        if not primary:
+            return {}
+        if primary.lower() == self._field_default(primary_field).lower():
+            return {}
+        return theme_color.derive_accent_vars(primary, dark=dark)
 
     @api.model
     def _surface_derived_vars(self, background_field):
