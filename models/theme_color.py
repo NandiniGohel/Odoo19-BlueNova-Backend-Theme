@@ -128,7 +128,7 @@ def _from_hsl(h, s, l):
     return (r * 255, g * 255, b * 255)
 
 
-def adjust(rgb, saturation=1.0, lightness=1.0, min_sat=None,
+def adjust(rgb, saturation=1.0, lightness=1.0, min_sat=None, max_sat=None,
            lightness_to=None, clamp_l=None):
     """Move a colour in HSL space, keeping its hue.
 
@@ -137,6 +137,15 @@ def adjust(rgb, saturation=1.0, lightness=1.0, min_sat=None,
     :param float min_sat: floor for S, applied before the multiplier —
         used by the app-icon tints, which have to stay vivid even when
         the brand they come from is a muted slate
+    :param float max_sat: ceiling for S, applied *after* the multiplier.
+        The mirror of ``min_sat`` and the reason it comes after rather
+        than before: a floor is a statement about the input ("however
+        grey the brand is, this surface still shows colour") while a
+        ceiling is a statement about the output ("whatever the sum of
+        the floor and the multiplier works out to, do not shout").
+        Used by the accent family below, where a 1.30 saturation
+        multiplier on an already-vivid brand would otherwise pin every
+        derived accent at a fully-saturated 100%.
     :param float lightness_to: if given, L is moved this fraction of the
         way toward 1.0 instead of being multiplied. Lightening by
         multiplication stops working near the top of the range (an L of
@@ -148,6 +157,8 @@ def adjust(rgb, saturation=1.0, lightness=1.0, min_sat=None,
     if min_sat is not None:
         s = max(s, min_sat)
     s *= saturation
+    if max_sat is not None:
+        s = min(s, max_sat)
     if lightness_to is not None:
         l = l + (1.0 - l) * lightness_to
     else:
@@ -274,6 +285,158 @@ def derive_brand_vars(primary, dark=False):
         derived["--%s" % name] = value
         derived["--bs-%s" % name] = value
 
+    return derived
+
+
+# Below this saturation a colour has no meaningful hue — HSL reports
+# hue 0 for every pure grey, which is red's slot — so the accent
+# derivation drops its saturation floors rather than acting on a
+# placeholder. Set at .04 to catch true greys only: the theme's own
+# tinted neutrals sit an order of magnitude above it (#475569 is at
+# .19), and those do carry a hue worth keeping.
+_ACHROMATIC_SAT = 0.04
+
+
+def derive_accent_vars(primary, dark=False):
+    """The accent family, held to the brand's own hue.
+
+    ── What was wrong ───────────────────────────────────────────
+
+    variables.scss ships an accent family next to the brand — Ocean
+    Blue #0284c7 and its container tints — and it was a compiled
+    literal that no picker reached. Five tokens
+    (--cmt-tertiary, --cmt-tertiary-container,
+    --cmt-on-tertiary-container, --cmt-won-tint, --cmt-won-tint-hover)
+    with the same value in every install.
+
+    That is mostly invisible until you notice where --cmt-tertiary is
+    spent: it is the *far stop of the dashboard hero gradient*
+    (--cmt-hero-gradient-a, both schemes). So the lead card on the
+    landing page ran from the picked brand into a fixed ocean blue.
+    Pick green and the card faded green-to-blue; pick purple and it
+    faded purple-to-blue. The block that builds those gradients in
+    dark_mode.scss already states the intent it could not deliver —
+    "a green brand has to produce green heroes, and no static value
+    can do that" — sitting eight lines under a static --cmt-tertiary.
+
+    The kanban won-opportunity wash, its stage counters, the selected
+    kanban column and the stats banner's figures spend the same family
+    and stripe the same blue through an otherwise repainted backend.
+
+    ── Why one hue, not a second one ────────────────────────────
+
+    The hue is *not* derived — it is copied from the brand and held.
+    That is the whole point: the accent's job here is to give the hero
+    gradient somewhere to travel, and it does that on lightness and
+    saturation alone. Rotating the hue is what puts a colour on screen
+    that the admin did not pick, which is the bug.
+
+    The shipped pair does rotate — #3959b0 (224°) to #0284c7 (200°),
+    a 24° drift — and reproducing that drift from an arbitrary brand
+    is exactly what must not happen: 24° off a violet is blue again.
+    So the shipped values are not reproduced here at all. They are
+    preserved by *not calling this function* while Primary still holds
+    the colour it shipped with, the way derive_surface_vars() is
+    skipped for an untouched Background — see
+    res_config_settings._accent_derived_vars(). An untouched install
+    keeps its hand-picked indigo-into-ocean heroes; the first picked
+    colour takes the accent with it.
+
+    :param str primary: the value stored by the Primary picker for
+        this scheme
+    :param bool dark: derive the dark-scheme accents (the container
+        tints become near-blacks and the accent itself comes *down* in
+        lightness, because the dark brand is already a pale colour on
+        a near-black canvas)
+    :returns: ``{css property: value}``, or ``{}`` when ``primary``
+        could not be parsed
+    """
+    rgb = parse(primary)
+    if rgb is None:
+        return {}
+
+    # Every saturation floor below is dropped for an achromatic brand.
+    # A floor says "however muted the brand, this surface still shows
+    # some of its colour", which is the right call for a slate like
+    # #475569 (S .19, a real blue) and exactly the wrong one for
+    # #808080, where there is no colour to show: HSL reports hue 0 for
+    # any pure grey, so flooring the saturation reads that placeholder
+    # as *red* and hands a grey brand a red hero card. Below the
+    # threshold the accents stay grey and separate on lightness alone,
+    # which is what "no colour I did not pick" has to mean when the
+    # pick was not a colour.
+    floors = _to_hsl(rgb)[1] >= _ACHROMATIC_SAT
+
+    def floor(value):
+        return value if floors else None
+
+    if dark:
+        # The dark brand is a lifted pale colour, so the accent is a
+        # step *down* from it — the shipped pair does the same
+        # (#7c9aff at L .74 to #38bdf8 at L .60). The containers are
+        # near-blacks holding just enough of the hue to read as tinted
+        # rather than as another panel.
+        accent = adjust(rgb, min_sat=floor(0.60), max_sat=0.95,
+                        lightness=0.82, clamp_l=(0.52, 0.68))
+        container = adjust(rgb, min_sat=floor(0.50), saturation=0.68,
+                           max_sat=0.75, clamp_l=(0.15, 0.18))
+        on_container = adjust(rgb, min_sat=floor(0.60), saturation=0.92,
+                              max_sat=0.95, clamp_l=(0.70, 0.80))
+        # Opaque, for the reason the Surfaces block of dark_mode.scss
+        # gives: a translucent fill in dark mode composites over
+        # surfaces core still paints white and comes out washed.
+        won = adjust(rgb, min_sat=floor(0.40), saturation=0.50, max_sat=0.55,
+                     clamp_l=(0.15, 0.15))
+        won_hover = adjust(rgb, min_sat=floor(0.40), saturation=0.50,
+                           max_sat=0.55, clamp_l=(0.19, 0.19))
+        derived = {
+            "--cmt-won-tint": to_hex(won),
+            "--cmt-won-tint-hover": to_hex(won_hover),
+        }
+    else:
+        # Brighter and more saturated than the brand, which is what
+        # gives --cmt-hero-gradient-a its travel now that both stops
+        # share a hue: the gradient runs from --cmt-primary-dark
+        # (L × .78) up to this (L × 1.22). The shipped pair got the
+        # same effect out of the hue rotation and sits at practically
+        # one lightness — #1e40af and #0284c7 are both L ≈ .39 — which
+        # is not an option here.
+        #
+        # The ceiling is raised to the brand's own lightness rather
+        # than being the flat .56 it reads as, because a flat one is a
+        # ceiling that turns into a floor: a pale brand like #a5b4fc
+        # sits at L .82, so .56 pulled its accent *down* to a deep blue
+        # — and the hero ink had already been chosen from the pale
+        # brand, so the card ended up with near-black text on a dark
+        # far corner at 3.1:1. Whatever this returns has to stay on the
+        # same side of on_color()'s crossover as the brand it came
+        # from, and never being darker than the brand is the cheap way
+        # to guarantee that.
+        lightness = _to_hsl(rgb)[2]
+        accent = adjust(rgb, min_sat=floor(0.45), saturation=1.30, max_sat=0.92,
+                        lightness=1.22, clamp_l=(0.40, max(0.56, lightness)))
+        # Same construction as --cmt-primary-light, one notch more
+        # saturated: these are the pale washes behind won cards and
+        # counters, and they have to stay a wash.
+        container = adjust(rgb, min_sat=floor(0.85), max_sat=0.95,
+                           clamp_l=(0.93, 0.95))
+        on_container = adjust(rgb, min_sat=floor(0.55), saturation=1.30,
+                              max_sat=0.95, lightness=0.72,
+                              clamp_l=(0.25, 0.36))
+        # Translucent in light mode, matching the shipped
+        # rgba(224, 242, 254, …) — the won card reads as glass over
+        # the canvas, and the two alphas are the shipped ones.
+        tint = to_triplet(container)
+        derived = {
+            "--cmt-won-tint": "rgba(%s, 0.35)" % tint,
+            "--cmt-won-tint-hover": "rgba(%s, 0.6)" % tint,
+        }
+
+    derived.update({
+        "--cmt-tertiary": to_hex(accent),
+        "--cmt-tertiary-container": to_hex(container),
+        "--cmt-on-tertiary-container": to_hex(on_container),
+    })
     return derived
 
 
